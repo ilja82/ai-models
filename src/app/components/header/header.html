@@ -1,0 +1,48 @@
+<header class="app-header">
+  <div class="header-title">
+    <h1>AI Models</h1>
+    <span class="subtitle">Compare prices &amp; intelligence</span>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label class="group-label">Intelligence</label>
+      <div class="btn-group">
+        <button
+          [class.active]="state.intelligenceMetric() === 'overall'"
+          (click)="setMetric('overall')">Overall</button>
+        <button
+          [class.active]="state.intelligenceMetric() === 'coding'"
+          (click)="setMetric('coding')">Coding</button>
+        <button
+          [class.active]="state.intelligenceMetric() === 'agentic'"
+          (click)="setMetric('agentic')">Agentic</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label class="group-label">Availability</label>
+      <div class="btn-group">
+        <button
+          [class.active]="state.showLiteLLM()"
+          (click)="state.showLiteLLM.update(v => !v)">LiteLLM</button>
+        <button
+          [class.active]="state.showLocal()"
+          (click)="state.showLocal.update(v => !v)">Local</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label class="group-label" for="vram-input">Max VRAM (GB)</label>
+      <input
+        id="vram-input"
+        type="number"
+        min="0"
+        placeholder="All"
+        [value]="vramValue"
+        (input)="setVram($any($event.target).value)"
+        class="vram-input"
+      />
+    </div>
+  </div>
+</header>

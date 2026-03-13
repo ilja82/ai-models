@@ -1,0 +1,16 @@
+<div class="model-toggle-panel">
+  <h3 class="panel-title">Models</h3>
+  <ul class="model-list">
+    @for (model of state.allModels(); track model.id) {
+      <li
+        class="model-item"
+        [class.disabled]="state.disabledModelIds().has(model.id)"
+        (click)="state.toggleModel(model.id)"
+        [title]="model.modelName"
+      >
+        <span class="dot" [class.local]="model.availableForLocal" [class.litellm]="model.availableInLiteLLM && !model.availableForLocal" [class.both]="model.availableInLiteLLM && model.availableForLocal"></span>
+        <span class="name">{{ model.publicName }}</span>
+      </li>
+    }
+  </ul>
+</div>

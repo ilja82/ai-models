@@ -1,0 +1,41 @@
+<div class="app-layout">
+  <app-header />
+
+  <div class="main-content">
+    <aside class="sidebar">
+      <app-model-toggle />
+    </aside>
+
+    <main class="view-area">
+      <nav class="tab-nav">
+        <button
+          [class.active]="activeTab() === 'table'"
+          (click)="activeTab.set('table')">
+          Table
+        </button>
+        <button
+          [class.active]="activeTab() === 'bar'"
+          (click)="activeTab.set('bar')">
+          Bar Chart
+        </button>
+        <button
+          [class.active]="activeTab() === 'scatter'"
+          (click)="activeTab.set('scatter')">
+          Scatter Plot
+        </button>
+      </nav>
+
+      <div class="view-content">
+        @if (activeTab() === 'table') {
+          <app-data-table />
+        }
+        @if (activeTab() === 'bar') {
+          <app-bar-chart />
+        }
+        @if (activeTab() === 'scatter') {
+          <app-scatter-plot />
+        }
+      </div>
+    </main>
+  </div>
+</div>

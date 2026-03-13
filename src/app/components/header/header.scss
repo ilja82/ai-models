@@ -1,0 +1,84 @@
+.app-header {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+
+  .header-title {
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+    .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .controls {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .group-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 0.25rem;
+
+    button {
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        background: var(--surface-2);
+      }
+
+      &.active {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+    }
+  }
+
+  .vram-input {
+    width: 80px;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 0.85rem;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+}

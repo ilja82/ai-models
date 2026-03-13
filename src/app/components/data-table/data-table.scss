@@ -1,0 +1,121 @@
+.table-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+
+    .search-input {
+      flex: 1;
+      max-width: 300px;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.85rem;
+
+      &::placeholder { color: var(--text-muted); }
+    }
+
+    .count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+  }
+
+  .table-scroll {
+    flex: 1;
+    overflow: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  thead tr {
+    position: sticky;
+    top: 0;
+    background: var(--surface-1);
+    z-index: 1;
+  }
+
+  th {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+
+    &.sortable {
+      cursor: pointer;
+      user-select: none;
+      &:hover { color: var(--text); }
+    }
+  }
+
+  td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+
+    &.mono {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    &.num {
+      text-align: right;
+    }
+
+    &.center {
+      text-align: center;
+    }
+
+    &.intel {
+      font-weight: 600;
+    }
+
+    &.empty {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+  }
+
+  tr:hover td {
+    background: var(--surface-2);
+  }
+
+  tr.useful td {
+    background: rgba(var(--accent-rgb), 0.06);
+  }
+
+  tr.useful:hover td {
+    background: rgba(var(--accent-rgb), 0.12);
+  }
+
+  .name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .useful-badge {
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+}

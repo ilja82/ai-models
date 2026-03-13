@@ -1,0 +1,67 @@
+.bar-chart-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+
+  .chart-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+
+    .chart-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .legend {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        &.api { background: rgba(99, 140, 210, 0.85); }
+        &.local { background: rgba(70, 180, 180, 0.85); }
+        &.both { background: rgba(147, 112, 219, 0.85); }
+        &.useful { background: rgba(99, 179, 99, 0.85); }
+      }
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-left: auto;
+
+      input[type="checkbox"] {
+        cursor: pointer;
+      }
+    }
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}

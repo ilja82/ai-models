@@ -1,0 +1,55 @@
+.model-toggle-panel {
+  padding: 0.75rem;
+  height: 100%;
+  overflow-y: auto;
+
+  .panel-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0 0 0.5rem;
+  }
+
+  .model-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .model-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.15s;
+    user-select: none;
+
+    &:hover {
+      background: var(--surface-2);
+    }
+
+    &.disabled {
+      opacity: 0.35;
+      text-decoration: line-through;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+
+      &.litellm { background: var(--color-litellm); }
+      &.local { background: var(--color-local); }
+      &.both { background: var(--color-both); }
+    }
+  }
+}

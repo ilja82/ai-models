@@ -1,0 +1,20 @@
+<div class="bar-chart-container">
+  <div class="chart-toolbar">
+    <span class="chart-title">Intelligence Comparison</span>
+    <div class="legend">
+      <span class="legend-item"><span class="dot api"></span>API only</span>
+      <span class="legend-item"><span class="dot local"></span>Local only</span>
+      <span class="legend-item"><span class="dot both"></span>Both</span>
+      @if (state.showUsefulModels()) {
+        <span class="legend-item"><span class="dot useful"></span>Pareto efficient</span>
+      }
+    </div>
+    <label class="toggle-label">
+      <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)" />
+      Show useful models
+    </label>
+  </div>
+  <div class="canvas-wrap">
+    <canvas #canvas></canvas>
+  </div>
+</div>

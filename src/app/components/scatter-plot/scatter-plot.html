@@ -1,0 +1,26 @@
+<div class="scatter-container">
+  <div class="chart-toolbar">
+    <span class="chart-title">Cost vs Intelligence</span>
+    <div class="legend">
+      <span class="legend-item"><span class="shape circle"></span>API only</span>
+      <span class="legend-item"><span class="shape triangle"></span>Local only</span>
+      <span class="legend-item"><span class="shape diamond"></span>Both</span>
+      @if (state.showUsefulModels()) {
+        <span class="legend-item"><span class="shape useful"></span>Pareto efficient</span>
+      }
+    </div>
+    <div class="toolbar-right">
+      <label class="toggle-label">
+        <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)" />
+        Log X
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)" />
+        Show useful models
+      </label>
+    </div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas #canvas></canvas>
+  </div>
+</div>
