@@ -262,7 +262,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             ticks: {
               color: '#888',
               font: { size: 10 },
-              callback: (v) => `$${v}`,
+              callback: (v) => `$${(+v).toFixed(1)}`,
             },
             grid: { color: 'rgba(128,128,128,0.1)' },
           },

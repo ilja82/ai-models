@@ -3,9 +3,6 @@
     <div class="legend">
       <span class="legend-item"><span class="dot api"></span>API</span>
       <span class="legend-item"><span class="dot local"></span>Local</span>
-      @if (state.showUsefulModels()) {
-        <span class="legend-item"><span class="dot useful"></span>Pareto efficient</span>
-      }
     </div>
     <div class="metric-switcher">
       @for (m of metrics; track m.key) {
@@ -17,10 +14,6 @@
         </button>
       }
     </div>
-    <label class="toggle-label">
-      <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)" />
-      Highlight most relevant models
-    </label>
   </div>
   <div class="canvas-wrap">
     <canvas #canvas></canvas>

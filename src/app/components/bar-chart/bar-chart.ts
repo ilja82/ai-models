@@ -56,8 +56,6 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const models = [...this.state.filteredModels()].sort(
       (a, b) => this.getValue(b, metric) - this.getValue(a, metric)
     );
-    const useful = this.state.usefulModelIds();
-    const showUseful = this.state.showUsefulModels();
     const metricDef = METRICS.find(x => x.key === metric)!;
 
     const values = models.map(m => this.getValue(m, metric));
@@ -73,7 +71,6 @@ export class BarChartComponent implements OnInit, OnDestroy {
       labels: models.map(m => m.publicName),
       data: values,
       colors: models.map(m => {
-        if (showUseful && useful.has(m.id)) return 'rgba(99, 179, 99, 0.85)';
         if (m.localModel) return 'rgba(70, 180, 180, 0.75)';
         return 'rgba(99, 140, 210, 0.75)';
       }),

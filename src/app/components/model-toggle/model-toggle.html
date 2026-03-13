@@ -1,7 +1,7 @@
 <div class="model-toggle-panel">
   <h3 class="panel-title">Models</h3>
   <ul class="model-list">
-    @for (model of state.allModels(); track model.id) {
+    @for (model of sortedModels(); track model.id) {
       <li
         class="model-item"
         [class.disabled]="state.disabledModelIds().has(model.id)"
