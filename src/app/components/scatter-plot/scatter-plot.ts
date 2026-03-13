@@ -1,11 +1,6 @@
-import {
-  Component, computed, inject, OnDestroy, OnInit, ElementRef, ViewChild, effect
-} from '@angular/core';
-import {
-  Chart, ChartConfiguration, ScatterController, PointElement, LinearScale, LogarithmicScale,
-  Tooltip, Legend, Plugin
-} from 'chart.js';
-import { AppState } from '../../state/app.state';
+import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Chart, ChartConfiguration, Legend, LinearScale, LogarithmicScale, Plugin, PointElement, ScatterController, Tooltip} from 'chart.js';
+import {AppState} from '../../state/app.state';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -64,11 +59,22 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
+  readonly yBounds = computed(() => {
+    const ys = this.plotData().map(d => d.y);
+    if (ys.length === 0) return {min: 0, max: 100};
+    const pad = 3;
+    return {
+      min: Math.max(0, Math.floor(Math.min(...ys) - pad)),
+      max: Math.min(100, Math.ceil(Math.max(...ys) + pad)),
+    };
+  });
+
   constructor() {
     effect(() => {
       const data = this.plotData();
       const logScale = this.state.logScaleX();
-      this.updateChart(data, logScale);
+      const bounds = this.yBounds();
+      this.updateChart(data, logScale, bounds);
     });
   }
 
@@ -144,6 +150,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const ctx = this.canvasRef.nativeElement.getContext('2d')!;
     const data = this.plotData();
     const logScale = this.state.logScaleX();
+    const bounds = this.yBounds();
 
     const config: ChartConfiguration<'scatter'> = {
       type: 'scatter',
@@ -176,7 +183,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
                   `${model.publicName}`,
                   `Run cost: $${model.costsToRun.toFixed(2)}`,
                   `Intelligence: ${pt.y}`,
-                  `Type: ${model.localModel ? 'Local' : 'LiteLLM'}`,
+                  `Type: ${model.localModel ? 'Local' : 'Remote'}`,
                   model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
                 ].filter(Boolean);
               },
@@ -200,8 +207,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             grid: { color: 'rgba(128,128,128,0.1)' },
           },
           y: {
-            min: 0,
-            max: 100,
+            min: bounds.min,
+            max: bounds.max,
             title: {
               display: true,
               text: 'Intelligence Score',
@@ -220,7 +227,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   private updateChart(
     data: { x: number; y: number; label: string; color: string; pointStyle: string; isUseful: boolean }[],
-    logScale: boolean
+    logScale: boolean,
+    bounds: { min: number; max: number }
   ): void {
     if (!this.chart) return;
 
@@ -230,6 +238,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
 
     (this.chart.options.scales!['x'] as any).type = logScale ? 'logarithmic' : 'linear';
+    (this.chart.options.scales!['y'] as any).min = bounds.min;
+    (this.chart.options.scales!['y'] as any).max = bounds.max;
 
     this.chart.update('none');
   }

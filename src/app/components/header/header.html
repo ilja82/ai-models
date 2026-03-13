@@ -25,7 +25,8 @@
       <div class="btn-group">
         <button
           [class.active]="state.showLiteLLM()"
-          (click)="state.showLiteLLM.update(v => !v)">LiteLLM</button>
+          (click)="state.showLiteLLM.update(v => !v)">Remote
+        </button>
         <button
           [class.active]="state.showLocal()"
           (click)="state.showLocal.update(v => !v)">Local</button>

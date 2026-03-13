@@ -1,10 +1,16 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { AppState } from '../../state/app.state';
-import { AiModel } from '../../models/ai-model.model';
+import {Component, computed, effect, inject, signal} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {AppState} from '../../state/app.state';
+import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 
 type SortKey = keyof AiModel;
 type SortDir = 'asc' | 'desc';
+
+const METRIC_TO_SORT_KEY: Record<IntelligenceMetric, SortKey> = {
+  overall: 'overallIntelligence',
+  coding: 'codingIntelligence',
+  agentic: 'agenticIntelligence',
+};
 
 @Component({
   selector: 'app-data-table',
@@ -17,8 +23,16 @@ export class DataTableComponent {
   readonly state = inject(AppState);
 
   readonly searchText = signal('');
-  readonly sortKey = signal<SortKey>('publicName');
-  readonly sortDir = signal<SortDir>('asc');
+  readonly sortKey = signal<SortKey>(METRIC_TO_SORT_KEY[this.state.intelligenceMetric()]);
+  readonly sortDir = signal<SortDir>('desc');
+
+  constructor() {
+    effect(() => {
+      const metric = this.state.intelligenceMetric();
+      this.sortKey.set(METRIC_TO_SORT_KEY[metric]);
+      this.sortDir.set('desc');
+    });
+  }
 
   readonly tableModels = computed(() => {
     const search = this.searchText().toLowerCase();

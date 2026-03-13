@@ -1,6 +1,6 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
-import { AiModel, IntelligenceMetric } from '../models/ai-model.model';
-import { AI_MODELS } from '../models/ai-models.data';
+import {computed, effect, Injectable, signal} from '@angular/core';
+import {AiModel, IntelligenceMetric} from '../models/ai-model.model';
+import {AI_MODELS} from '../models/ai-models.data';
 
 @Injectable({ providedIn: 'root' })
 export class AppState {
@@ -12,7 +12,7 @@ export class AppState {
   readonly showLocal = signal(true);
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showUsefulModels = signal(true);
-  readonly logScaleX = signal(false);
+  readonly logScaleX = signal(true);
 
   constructor() {
     effect(() => {

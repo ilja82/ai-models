@@ -1,4 +1,4 @@
-import { AiModel, computeCostsToRun } from './ai-model.model';
+import {AiModel, computeCostsToRun} from './ai-model.model';
 
 function m(base: Omit<AiModel, 'costsToRun'>): AiModel {
   return { ...base, costsToRun: computeCostsToRun(base.inputCosts, base.outputCosts) };
@@ -52,7 +52,7 @@ export const AI_MODELS: AiModel[] = [
     outputCosts: 0.07,
     contextWindow: 262000,
     localModel: true,
-    minVramRequirement: 0,
+    minVramRequirement: 18,
     overallIntelligence: 32,
     codingIntelligence: 25,
     agenticIntelligence: 37,
