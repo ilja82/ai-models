@@ -36,10 +36,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       let color: string;
       let pointStyle: string;
 
-      if (m.availableForLocal && m.availableInLiteLLM) {
-        color = 'rgba(147,112,219,0.9)';
-        pointStyle = 'rectRot';
-      } else if (m.availableForLocal) {
+      if (m.localModel) {
         color = 'rgba(70,180,180,0.9)';
         pointStyle = 'triangle';
       } else {
@@ -179,9 +176,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
                   `${model.publicName}`,
                   `Run cost: $${model.costsToRun.toFixed(2)}`,
                   `Intelligence: ${pt.y}`,
-                  `LiteLLM: ${model.availableInLiteLLM ? 'Yes' : 'No'}`,
-                  `Local: ${model.availableForLocal ? 'Yes' : 'No'}`,
-                  model.availableForLocal ? `VRAM: ${model.minVramRequirement}GB` : '',
+                  `Type: ${model.localModel ? 'Local' : 'LiteLLM'}`,
+                  model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
                 ].filter(Boolean);
               },
             },

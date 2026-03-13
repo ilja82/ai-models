@@ -1,6 +1,6 @@
 {
-  "name": "ai-models-temp",
-  "short_name": "ai-models-temp",
+  "name": "AI Models",
+  "short_name": "AI Models",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

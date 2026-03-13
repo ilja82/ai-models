@@ -4,7 +4,6 @@
     <div class="legend">
       <span class="legend-item"><span class="shape circle"></span>API only</span>
       <span class="legend-item"><span class="shape triangle"></span>Local only</span>
-      <span class="legend-item"><span class="shape diamond"></span>Both</span>
       @if (state.showUsefulModels()) {
         <span class="legend-item"><span class="shape useful"></span>Pareto efficient</span>
       }
@@ -16,7 +15,7 @@
       </label>
       <label class="toggle-label">
         <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)" />
-        Show useful models
+        Highlight most relevant models
       </label>
     </div>
   </div>

@@ -6,8 +6,7 @@ export interface AiModel {
   outputCosts: number;
   contextWindow: number;
   costsToRun: number;
-  availableInLiteLLM: boolean;
-  availableForLocal: boolean;
+  localModel: boolean;
   minVramRequirement: number;
   overallIntelligence: number;
   codingIntelligence: number;
@@ -15,3 +14,7 @@ export interface AiModel {
 }
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';
+
+export function computeCostsToRun(inputCosts: number, outputCosts: number): number {
+  return inputCosts + 5.0 * outputCosts;
+}

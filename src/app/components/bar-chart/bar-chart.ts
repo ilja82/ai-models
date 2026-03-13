@@ -28,8 +28,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
       data: models.map(m => this.state.getIntelligence(m)),
       colors: models.map(m => {
         if (showUseful && useful.has(m.id)) return 'rgba(99, 179, 99, 0.85)';
-        if (m.availableForLocal && m.availableInLiteLLM) return 'rgba(147, 112, 219, 0.75)';
-        if (m.availableForLocal) return 'rgba(70, 180, 180, 0.75)';
+        if (m.localModel) return 'rgba(70, 180, 180, 0.75)';
         return 'rgba(99, 140, 210, 0.75)';
       }),
     };

@@ -1,4 +1,4 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, effect, Injectable, signal } from '@angular/core';
 import { AiModel, IntelligenceMetric } from '../models/ai-model.model';
 import { AI_MODELS } from '../models/ai-models.data';
 
@@ -10,9 +10,24 @@ export class AppState {
   readonly intelligenceMetric = signal<IntelligenceMetric>('overall');
   readonly showLiteLLM = signal(true);
   readonly showLocal = signal(true);
-  readonly maxVram = signal<number | null>(null);
-  readonly showUsefulModels = signal(false);
+  readonly maxVram = signal<number | null>(this.loadMaxVram());
+  readonly showUsefulModels = signal(true);
   readonly logScaleX = signal(false);
+
+  constructor() {
+    effect(() => {
+      const v = this.maxVram();
+      localStorage.setItem('ai-models.maxVram', v === null ? '' : String(v));
+    });
+  }
+
+  private loadMaxVram(): number | null {
+    const stored = localStorage.getItem('ai-models.maxVram');
+    if (stored === null) return 32;
+    if (stored === '') return null;
+    const num = parseFloat(stored);
+    return isNaN(num) ? 32 : num;
+  }
 
   readonly filteredModels = computed(() => {
     const disabled = this.disabledModelIds();
@@ -22,10 +37,9 @@ export class AppState {
 
     return this.allModels().filter(m => {
       if (disabled.has(m.id)) return false;
-      if (!showLiteLLM && m.availableInLiteLLM && !m.availableForLocal) return false;
-      if (!showLocal && m.availableForLocal && !m.availableInLiteLLM) return false;
-      if (!showLiteLLM && !showLocal) return false;
-      if (maxVram !== null && m.availableForLocal && m.minVramRequirement > maxVram) return false;
+      if (!showLiteLLM && !m.localModel) return false;
+      if (!showLocal && m.localModel) return false;
+      if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) return false;
       return true;
     });
   });
@@ -50,10 +64,9 @@ export class AppState {
     let minCostSoFar = Infinity;
 
     for (const model of sorted) {
-      const cost = model.costsToRun;
-      if (cost < minCostSoFar) {
+      if (model.costsToRun < minCostSoFar) {
         useful.push(model.id);
-        minCostSoFar = cost;
+        minCostSoFar = model.costsToRun;
       }
     }
 

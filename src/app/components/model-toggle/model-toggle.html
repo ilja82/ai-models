@@ -8,7 +8,7 @@
         (click)="state.toggleModel(model.id)"
         [title]="model.modelName"
       >
-        <span class="dot" [class.local]="model.availableForLocal" [class.litellm]="model.availableInLiteLLM && !model.availableForLocal" [class.both]="model.availableInLiteLLM && model.availableForLocal"></span>
+        <span class="dot" [class.local]="model.localModel" [class.litellm]="!model.localModel"></span>
         <span class="name">{{ model.publicName }}</span>
       </li>
     }
