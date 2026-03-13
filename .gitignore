@@ -13,6 +13,7 @@ yarn-error.log
 
 # IDEs and editors
 .idea/
+/ai-models.iml
 .project
 .classpath
 .c9/
