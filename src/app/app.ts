@@ -1,9 +1,9 @@
-import { Component, signal } from '@angular/core';
-import { HeaderComponent } from './components/header/header';
-import { ModelToggleComponent } from './components/model-toggle/model-toggle';
-import { DataTableComponent } from './components/data-table/data-table';
-import { BarChartComponent } from './components/bar-chart/bar-chart';
-import { ScatterPlotComponent } from './components/scatter-plot/scatter-plot';
+import {Component, signal} from '@angular/core';
+import {HeaderComponent} from './components/header/header';
+import {ModelToggleComponent} from './components/model-toggle/model-toggle';
+import {DataTableComponent} from './components/data-table/data-table';
+import {BarChartComponent} from './components/bar-chart/bar-chart';
+import {ScatterPlotComponent} from './components/scatter-plot/scatter-plot';
 
 type ViewTab = 'table' | 'bar' | 'scatter';
 
@@ -21,5 +21,5 @@ type ViewTab = 'table' | 'bar' | 'scatter';
   styleUrl: './app.scss',
 })
 export class App {
-  readonly activeTab = signal<ViewTab>('table');
+  readonly activeTab = signal<ViewTab>('scatter');
 }

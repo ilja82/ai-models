@@ -1,17 +1,25 @@
 <div class="bar-chart-container">
   <div class="chart-toolbar">
-    <span class="chart-title">Intelligence Comparison</span>
     <div class="legend">
-      <span class="legend-item"><span class="dot api"></span>API only</span>
-      <span class="legend-item"><span class="dot local"></span>Local only</span>
-      <span class="legend-item"><span class="dot both"></span>Both</span>
+      <span class="legend-item"><span class="dot api"></span>API</span>
+      <span class="legend-item"><span class="dot local"></span>Local</span>
       @if (state.showUsefulModels()) {
         <span class="legend-item"><span class="dot useful"></span>Pareto efficient</span>
       }
     </div>
+    <div class="metric-switcher">
+      @for (m of metrics; track m.key) {
+        <button
+          class="metric-btn"
+          [class.active]="barMetric() === m.key"
+          (click)="barMetric.set(m.key)">
+          {{ m.label }}
+        </button>
+      }
+    </div>
     <label class="toggle-label">
       <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)" />
-      Show useful models
+      Highlight most relevant models
     </label>
   </div>
   <div class="canvas-wrap">

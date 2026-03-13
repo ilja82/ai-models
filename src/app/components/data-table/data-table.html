@@ -7,6 +7,10 @@
       (input)="searchText.set($any($event.target).value)"
       class="search-input"
     />
+    <label class="toggle-label">
+      <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)"/>
+      Highlight most relevant models
+    </label>
     <span class="count">{{ tableModels().length }} models</span>
   </div>
 
@@ -41,7 +45,7 @@
             <td class="num">{{ formatCost(model.outputCosts) }}</td>
             <td class="num">{{ formatCost(model.costsToRun) }}</td>
             <td class="num">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
-            <td class="center">{{ model.localModel ? 'Local' : 'Remote' }}</td>
+            <td class="center">{{ model.localModel ? 'Local' : 'API' }}</td>
             <td class="num">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}</td>
             <td class="num intel">{{ model.overallIntelligence }}</td>
             <td class="num intel">{{ model.codingIntelligence }}</td>

@@ -6,9 +6,9 @@ function m(base: Omit<AiModel, 'costsToRun'>): AiModel {
 
 export const AI_MODELS: AiModel[] = [
   m({
-    id: 'gpt-oss-20b-litellm',
-    publicName: 'GPT OSS 20b',
-    modelName: 'gpt-oss-20b',
+    id: 'gpt-oss-20B-litellm',
+    publicName: 'GPT OSS 20B',
+    modelName: 'gpt-oss-20B',
     inputCosts: 0.07,
     outputCosts: 0.3,
     contextWindow: 128000,
@@ -97,7 +97,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 21,
   }),
   m({
-    id: 'qwen3-235b',
+    id: 'qwen3-235B',
     publicName: 'Qwen3 235B',
     modelName: 'qwen3-235B',
     inputCosts: 0.22,
@@ -105,13 +105,13 @@ export const AI_MODELS: AiModel[] = [
     contextWindow: 262000,
     localModel: false,
     minVramRequirement: 0,
-    overallIntelligence: 28,
-    codingIntelligence: 21,
-    agenticIntelligence: 27,
+    overallIntelligence: 30,
+    codingIntelligence: 23,
+    agenticIntelligence: 30,
   }),
   m({
     id: 'glm-4.7-flash',
-    publicName: 'GLM 4.7 Flash',
+    publicName: 'GLM 4.7 Flash (30B)',
     modelName: 'glm-4.7-flash',
     inputCosts: 0.07,
     outputCosts: 0.4,

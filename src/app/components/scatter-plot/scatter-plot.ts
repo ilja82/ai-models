@@ -69,12 +69,25 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     };
   });
 
+  readonly xBounds = computed(() => {
+    const xs = this.plotData().map(d => d.x);
+    if (xs.length === 0) return {min: undefined, max: undefined};
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    if (this.state.logScaleX()) {
+      return {min: minX / 1.4, max: maxX * 1.4};
+    }
+    const range = maxX - minX || 1;
+    return {min: Math.max(0, minX - range * 0.05), max: maxX + range * 0.05};
+  });
+
   constructor() {
     effect(() => {
       const data = this.plotData();
       const logScale = this.state.logScaleX();
       const bounds = this.yBounds();
-      this.updateChart(data, logScale, bounds);
+      const xBounds = this.xBounds();
+      this.updateChart(data, logScale, bounds, xBounds);
     });
   }
 
@@ -84,6 +97,47 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+  }
+
+  private quadrantPlugin(): Plugin {
+    return {
+      id: 'quadrantBackground',
+      beforeDraw: (chart: Chart) => {
+        const ctx = chart.ctx;
+        const xAxis = chart.scales['x'];
+        const yAxis = chart.scales['y'];
+        if (!xAxis || !yAxis) return;
+
+        const left = xAxis.left;
+        const right = xAxis.right;
+        const top = yAxis.top;
+        const bottom = yAxis.bottom;
+        const xMid = (left + right) / 2;
+        const yMid = (top + bottom) / 2;
+
+        ctx.save();
+
+        // Upper-left: most attractive (light green)
+        ctx.fillStyle = 'rgba(120, 210, 130, 0.10)';
+        ctx.fillRect(left, top, xMid - left, yMid - top);
+
+        // Lower-right: least attractive (light gray)
+        ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
+        ctx.fillRect(xMid, yMid, right - xMid, bottom - yMid);
+
+        // Quadrant labels
+        ctx.font = '10px system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(80, 160, 90, 0.55)';
+        ctx.textAlign = 'left';
+        ctx.fillText('Most attractive', left + 6, top + 14);
+
+        ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
+        ctx.textAlign = 'right';
+        ctx.fillText('Least attractive', right - 6, bottom - 6);
+
+        ctx.restore();
+      },
+    };
   }
 
   private labelPlugin(): Plugin {
@@ -151,10 +205,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const data = this.plotData();
     const logScale = this.state.logScaleX();
     const bounds = this.yBounds();
+    const xBounds = this.xBounds();
 
     const config: ChartConfiguration<'scatter'> = {
       type: 'scatter',
-      plugins: [this.labelPlugin()],
+      plugins: [this.quadrantPlugin(), this.labelPlugin()],
       data: {
         datasets: [{
           label: 'Models',
@@ -181,9 +236,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
                 if (!model) return '';
                 return [
                   `${model.publicName}`,
-                  `Run cost: $${model.costsToRun.toFixed(2)}`,
+                  `Type: ${model.localModel ? 'Local' : 'API'}`,
+                  `Input: $${model.inputCosts.toFixed(3)}/M tokens`,
+                  `Output: $${model.outputCosts.toFixed(3)}/M tokens`,
+                  `Run cost: $${model.costsToRun.toFixed(2)}/M tokens`,
+                  `Context: ${(model.contextWindow / 1000).toFixed(0)}K tokens`,
                   `Intelligence: ${pt.y}`,
-                  `Type: ${model.localModel ? 'Local' : 'Remote'}`,
                   model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
                 ].filter(Boolean);
               },
@@ -193,6 +251,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         scales: {
           x: {
             type: logScale ? 'logarithmic' : 'linear',
+            min: xBounds.min,
+            max: xBounds.max,
             title: {
               display: true,
               text: 'Cost to Run ($/M tokens)',
@@ -228,7 +288,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private updateChart(
     data: { x: number; y: number; label: string; color: string; pointStyle: string; isUseful: boolean }[],
     logScale: boolean,
-    bounds: { min: number; max: number }
+    bounds: { min: number; max: number },
+    xBounds: { min: number | undefined; max: number | undefined }
   ): void {
     if (!this.chart) return;
 
@@ -238,6 +299,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
 
     (this.chart.options.scales!['x'] as any).type = logScale ? 'logarithmic' : 'linear';
+    (this.chart.options.scales!['x'] as any).min = xBounds.min;
+    (this.chart.options.scales!['x'] as any).max = xBounds.max;
     (this.chart.options.scales!['y'] as any).min = bounds.min;
     (this.chart.options.scales!['y'] as any).max = bounds.max;
 
