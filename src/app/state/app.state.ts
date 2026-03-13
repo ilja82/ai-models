@@ -29,19 +29,22 @@ export class AppState {
     return isNaN(num) ? 32 : num;
   }
 
-  readonly filteredModels = computed(() => {
-    const disabled = this.disabledModelIds();
+  readonly availableModels = computed(() => {
     const showLiteLLM = this.showLiteLLM();
     const showLocal = this.showLocal();
     const maxVram = this.maxVram();
 
     return this.allModels().filter(m => {
-      if (disabled.has(m.id)) return false;
       if (!showLiteLLM && !m.localModel) return false;
       if (!showLocal && m.localModel) return false;
       if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) return false;
       return true;
     });
+  });
+
+  readonly filteredModels = computed(() => {
+    const disabled = this.disabledModelIds();
+    return this.availableModels().filter(m => !disabled.has(m.id));
   });
 
   readonly usefulModelIds = computed(() => {

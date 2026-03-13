@@ -11,7 +11,7 @@ export class ModelToggleComponent {
   readonly state = inject(AppState);
 
   readonly sortedModels = computed(() =>
-    [...this.state.allModels()].sort(
+    [...this.state.availableModels()].sort(
       (a, b) => this.state.getIntelligence(b) - this.state.getIntelligence(a)
     )
   );
