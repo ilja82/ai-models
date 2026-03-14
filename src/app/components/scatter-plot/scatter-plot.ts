@@ -5,7 +5,9 @@ import {effectiveCutoffDate} from '../../models/ai-model.model';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
-export type PlotType = 'cost' | 'cutoff' | 'release';
+export type PlotType = 'cost' | 'release';
+
+const PLOT_TYPE_KEY = 'ai-models.plotType';
 
 @Component({
   selector: 'app-scatter-plot',
@@ -19,11 +21,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly state = inject(AppState);
   private chart?: Chart;
 
-  readonly plotType = signal<PlotType>('cost');
+  readonly plotType = signal<PlotType>((localStorage.getItem(PLOT_TYPE_KEY) as PlotType) ?? 'cost');
 
   readonly plotTypes: { key: PlotType; label: string }[] = [
     {key: 'cost', label: 'Cost vs Intelligence'},
-    {key: 'cutoff', label: 'Cutoff vs Intelligence'},
     {key: 'release', label: 'Release vs Intelligence'},
   ];
 
@@ -59,14 +60,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         : metric === 'agentic' ? m.agenticIntelligence
         : m.overallIntelligence;
 
-      let xVal: number;
-      if (plotType === 'cutoff') {
-        xVal = new Date(effectiveCutoffDate(m)).getTime();
-      } else if (plotType === 'release') {
-        xVal = new Date(m.releaseDate).getTime();
-      } else {
-        xVal = m.costsToRun === 0 ? 0.001 : m.costsToRun;
-      }
+      const xVal = plotType === 'release'
+        ? new Date(m.releaseDate).getTime()
+        : m.costsToRun === 0 ? 0.001 : m.costsToRun;
 
       return {
         x: xVal,
@@ -79,8 +75,26 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
+  private readonly allAxisData = computed(() => {
+    const models = this.state.allModels();
+    const metric = this.state.intelligenceMetric();
+    const plotType = this.plotType();
+
+    return models.map(m => {
+      const intel = metric === 'coding' ? m.codingIntelligence
+        : metric === 'agentic' ? m.agenticIntelligence
+          : m.overallIntelligence;
+
+      const xVal = plotType === 'release'
+        ? new Date(m.releaseDate).getTime()
+        : m.costsToRun === 0 ? 0.001 : m.costsToRun;
+
+      return {x: xVal, y: intel};
+    });
+  });
+
   readonly yBounds = computed(() => {
-    const ys = this.plotData().map(d => d.y);
+    const ys = this.allAxisData().map(d => d.y);
     if (ys.length === 0) return {min: 0, max: 100};
     const pad = 3;
     return {
@@ -90,7 +104,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   readonly xBounds = computed(() => {
-    const xs = this.plotData().map(d => d.x);
+    const xs = this.allAxisData().map(d => d.x);
     if (xs.length === 0) return {min: undefined, max: undefined};
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
@@ -98,7 +112,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     if (plotType !== 'cost') {
       const range = maxX - minX || 1;
-      return {min: minX - range * 0.05, max: maxX + range * 0.05};
+      const todayMs = Date.now();
+      return {min: minX - range * 0.05, max: todayMs};
     }
 
     if (this.state.logScaleX()) {
@@ -109,6 +124,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
+    effect(() => {
+      localStorage.setItem(PLOT_TYPE_KEY, this.plotType());
+    });
     effect(() => {
       const data = this.plotData();
       const logScale = this.state.logScaleX();
@@ -249,9 +267,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   private xAxisConfig(plotType: PlotType, logScale: boolean, xBounds: { min: number | undefined; max: number | undefined }) {
     const isDate = plotType !== 'cost';
-    const title = plotType === 'cutoff' ? 'Cutoff Date'
-      : plotType === 'release' ? 'Release Date'
-        : 'Cost to Run ($/M tokens)';
+    const title = plotType === 'release' ? 'Release Date' : 'Cost to Run ($/M tokens)';
 
     const tickCallback = isDate
       ? (v: any) => new Date(+v).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})
@@ -299,18 +315,25 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           tooltip: {
             callbacks: {
               label: (ctx) => {
-                const pt = data[ctx.dataIndex];
                 const model = this.state.filteredModels()[ctx.dataIndex];
                 if (!model) return '';
+                const metric = this.state.intelligenceMetric();
+                const intel = metric === 'coding' ? model.codingIntelligence
+                  : metric === 'agentic' ? model.agenticIntelligence
+                    : model.overallIntelligence;
+                const metricLabel = metric === 'coding' ? 'Coding Intelligence'
+                  : metric === 'agentic' ? 'Agentic Intelligence'
+                    : 'Overall Intelligence';
                 return [
                   `${model.publicName}`,
+                  `★ ${metricLabel}: ${intel}`,
+                  `★ Run cost: $${model.costsToRun.toFixed(2)}/M tokens`,
+                  `★ Release: ${model.releaseDate}`,
+                  `─────────────────`,
                   `Type: ${model.localModel ? 'Local' : 'API'}`,
                   `Input: $${model.inputCosts.toFixed(3)}/M tokens`,
                   `Output: $${model.outputCosts.toFixed(3)}/M tokens`,
-                  `Run cost: $${model.costsToRun.toFixed(2)}/M tokens`,
                   `Context: ${(model.contextWindow / 1000).toFixed(0)}K tokens`,
-                  `Intelligence: ${pt.y}`,
-                  `Release: ${model.releaseDate}`,
                   `Cutoff: ${model.cutoffDate ?? `${effectiveCutoffDate(model)} (estimated)`}`,
                   model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
                 ].filter(Boolean);

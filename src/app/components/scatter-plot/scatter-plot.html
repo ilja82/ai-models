@@ -1,12 +1,5 @@
 <div class="scatter-container">
   <div class="chart-toolbar">
-    <div class="legend">
-      <span class="legend-item"><span class="shape circle"></span>API</span>
-      <span class="legend-item"><span class="shape triangle"></span>Local</span>
-      @if (state.showUsefulModels()) {
-        <span class="legend-item"><span class="shape useful"></span>Pareto efficient</span>
-      }
-    </div>
     <div class="plot-switcher">
       @for (p of plotTypes; track p.key) {
         <button
@@ -15,6 +8,13 @@
           (click)="plotType.set(p.key)">
           {{ p.label }}
         </button>
+      }
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="shape circle"></span>API</span>
+      <span class="legend-item"><span class="shape triangle"></span>Local</span>
+      @if (state.showUsefulModels()) {
+        <span class="legend-item"><span class="shape useful"></span>Pareto efficient</span>
       }
     </div>
     <div class="toolbar-right">
