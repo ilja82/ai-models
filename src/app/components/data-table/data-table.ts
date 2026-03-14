@@ -49,8 +49,8 @@ export class DataTableComponent {
     }
 
     return [...models].sort((a, b) => {
-      const av = a[key];
-      const bv = b[key];
+      const av = a[key] ?? '';
+      const bv = b[key] ?? '';
       let cmp = 0;
       if (typeof av === 'string' && typeof bv === 'string') {
         cmp = av.localeCompare(bv);

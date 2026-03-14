@@ -26,6 +26,8 @@
           <th (click)="sort('contextWindow')" class="sortable">Context {{ sortIcon('contextWindow') }}</th>
           <th (click)="sort('localModel')" class="sortable">Type {{ sortIcon('localModel') }}</th>
           <th (click)="sort('minVramRequirement')" class="sortable">VRAM {{ sortIcon('minVramRequirement') }}</th>
+          <th (click)="sort('releaseDate')" class="sortable">Released {{ sortIcon('releaseDate') }}</th>
+          <th (click)="sort('cutoffDate')" class="sortable">Cutoff {{ sortIcon('cutoffDate') }}</th>
           <th (click)="sort('overallIntelligence')" class="sortable">Overall {{ sortIcon('overallIntelligence') }}</th>
           <th (click)="sort('codingIntelligence')" class="sortable">Coding {{ sortIcon('codingIntelligence') }}</th>
           <th (click)="sort('agenticIntelligence')" class="sortable">Agentic {{ sortIcon('agenticIntelligence') }}</th>
@@ -47,6 +49,8 @@
             <td class="num">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
             <td class="center">{{ model.localModel ? 'Local' : 'API' }}</td>
             <td class="num">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}</td>
+            <td class="center">{{ model.releaseDate }}</td>
+            <td class="center">{{ model.cutoffDate ?? '—' }}</td>
             <td class="num intel">{{ model.overallIntelligence }}</td>
             <td class="num intel">{{ model.codingIntelligence }}</td>
             <td class="num intel">{{ model.agenticIntelligence }}</td>
@@ -54,7 +58,7 @@
         }
         @empty {
           <tr>
-            <td colspan="11" class="empty">No models match the current filters.</td>
+            <td colspan="13" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>
