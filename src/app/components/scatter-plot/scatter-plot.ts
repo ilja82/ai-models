@@ -1,9 +1,11 @@
-import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {Chart, ChartConfiguration, Legend, LinearScale, LogarithmicScale, Plugin, PointElement, ScatterController, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
+import {effectiveCutoffDate} from '../../models/ai-model.model';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
+export type PlotType = 'cost' | 'cutoff' | 'release';
 
 @Component({
   selector: 'app-scatter-plot',
@@ -17,13 +19,22 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly state = inject(AppState);
   private chart?: Chart;
 
+  readonly plotType = signal<PlotType>('cost');
+
+  readonly plotTypes: { key: PlotType; label: string }[] = [
+    {key: 'cost', label: 'Cost vs Intelligence'},
+    {key: 'cutoff', label: 'Cutoff vs Intelligence'},
+    {key: 'release', label: 'Release vs Intelligence'},
+  ];
+
   readonly plotData = computed(() => {
     const models = this.state.filteredModels();
     const metric = this.state.intelligenceMetric();
     const useful = this.state.usefulModelIds();
     const showUseful = this.state.showUsefulModels();
+    const plotType = this.plotType();
 
-    return models.map((m, i): {
+    return models.map((m): {
       x: number; y: number; label: string;
       color: string; pointStyle: string;
       isUseful: boolean;
@@ -48,8 +59,17 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         : metric === 'agentic' ? m.agenticIntelligence
         : m.overallIntelligence;
 
+      let xVal: number;
+      if (plotType === 'cutoff') {
+        xVal = new Date(effectiveCutoffDate(m)).getTime();
+      } else if (plotType === 'release') {
+        xVal = new Date(m.releaseDate).getTime();
+      } else {
+        xVal = m.costsToRun === 0 ? 0.001 : m.costsToRun;
+      }
+
       return {
-        x: m.costsToRun === 0 ? 0.001 : m.costsToRun,
+        x: xVal,
         y: intel,
         label: m.publicName,
         color,
@@ -74,6 +94,13 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (xs.length === 0) return {min: undefined, max: undefined};
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
+    const plotType = this.plotType();
+
+    if (plotType !== 'cost') {
+      const range = maxX - minX || 1;
+      return {min: minX - range * 0.05, max: maxX + range * 0.05};
+    }
+
     if (this.state.logScaleX()) {
       return {min: minX / 1.4, max: maxX * 1.4};
     }
@@ -87,7 +114,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       const logScale = this.state.logScaleX();
       const bounds = this.yBounds();
       const xBounds = this.xBounds();
-      this.updateChart(data, logScale, bounds, xBounds);
+      const plotType = this.plotType();
+      this.updateChart(data, logScale, bounds, xBounds, plotType);
     });
   }
 
@@ -103,6 +131,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return {
       id: 'quadrantBackground',
       beforeDraw: (chart: Chart) => {
+        const plotType = this.plotType();
+
         const ctx = chart.ctx;
         const xAxis = chart.scales['x'];
         const yAxis = chart.scales['y'];
@@ -117,23 +147,41 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
         ctx.save();
 
-        // Upper-left: most attractive (light green)
-        ctx.fillStyle = 'rgba(120, 210, 130, 0.10)';
-        ctx.fillRect(left, top, xMid - left, yMid - top);
+        if (plotType === 'cost') {
+          // Upper-left: most attractive (low cost, high intelligence)
+          ctx.fillStyle = 'rgba(120, 210, 130, 0.22)';
+          ctx.fillRect(left, top, xMid - left, yMid - top);
 
-        // Lower-right: least attractive (light gray)
-        ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
-        ctx.fillRect(xMid, yMid, right - xMid, bottom - yMid);
+          // Lower-right: least attractive (high cost, low intelligence)
+          ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
+          ctx.fillRect(xMid, yMid, right - xMid, bottom - yMid);
 
-        // Quadrant labels
-        ctx.font = '10px system-ui, sans-serif';
-        ctx.fillStyle = 'rgba(80, 160, 90, 0.55)';
-        ctx.textAlign = 'left';
-        ctx.fillText('Most attractive', left + 6, top + 14);
+          ctx.font = '10px system-ui, sans-serif';
+          ctx.fillStyle = 'rgba(80, 160, 90, 0.55)';
+          ctx.textAlign = 'left';
+          ctx.fillText('Most attractive', left + 6, top + 14);
 
-        ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
-        ctx.textAlign = 'right';
-        ctx.fillText('Least attractive', right - 6, bottom - 6);
+          ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
+          ctx.textAlign = 'right';
+          ctx.fillText('Least attractive', right - 6, bottom - 6);
+        } else {
+          // Upper-right: most attractive (recent date, high intelligence)
+          ctx.fillStyle = 'rgba(120, 210, 130, 0.22)';
+          ctx.fillRect(xMid, top, right - xMid, yMid - top);
+
+          // Lower-left: least attractive (old date, low intelligence)
+          ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
+          ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
+
+          ctx.font = '10px system-ui, sans-serif';
+          ctx.fillStyle = 'rgba(80, 160, 90, 0.55)';
+          ctx.textAlign = 'right';
+          ctx.fillText('Most attractive', right - 6, top + 14);
+
+          ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
+          ctx.textAlign = 'left';
+          ctx.fillText('Least attractive', left + 6, bottom - 6);
+        }
 
         ctx.restore();
       },
@@ -171,7 +219,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           let labelY = pos.py - 10;
 
           // Nudge to avoid overlap
-          let attempts = 0;
           let placed = false;
           const offsets = [0, -14, 14, -28, 28, -42, 42];
           for (const offset of offsets) {
@@ -200,12 +247,33 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     };
   }
 
+  private xAxisConfig(plotType: PlotType, logScale: boolean, xBounds: { min: number | undefined; max: number | undefined }) {
+    const isDate = plotType !== 'cost';
+    const title = plotType === 'cutoff' ? 'Cutoff Date'
+      : plotType === 'release' ? 'Release Date'
+        : 'Cost to Run ($/M tokens)';
+
+    const tickCallback = isDate
+      ? (v: any) => new Date(+v).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})
+      : (v: any) => `$${(+v).toFixed(1)}`;
+
+    return {
+      type: (!isDate && logScale) ? 'logarithmic' : 'linear',
+      min: xBounds.min,
+      max: xBounds.max,
+      title: {display: true, text: title, color: '#888', font: {size: 11}},
+      ticks: {color: '#888', font: {size: 10}, callback: tickCallback},
+      grid: {color: 'rgba(128,128,128,0.1)'},
+    };
+  }
+
   private initChart(): void {
     const ctx = this.canvasRef.nativeElement.getContext('2d')!;
     const data = this.plotData();
     const logScale = this.state.logScaleX();
     const bounds = this.yBounds();
     const xBounds = this.xBounds();
+    const plotType = this.plotType();
 
     const config: ChartConfiguration<'scatter'> = {
       type: 'scatter',
@@ -242,6 +310,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
                   `Run cost: $${model.costsToRun.toFixed(2)}/M tokens`,
                   `Context: ${(model.contextWindow / 1000).toFixed(0)}K tokens`,
                   `Intelligence: ${pt.y}`,
+                  `Release: ${model.releaseDate}`,
+                  `Cutoff: ${model.cutoffDate ?? `${effectiveCutoffDate(model)} (estimated)`}`,
                   model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
                 ].filter(Boolean);
               },
@@ -249,23 +319,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           },
         },
         scales: {
-          x: {
-            type: logScale ? 'logarithmic' : 'linear',
-            min: xBounds.min,
-            max: xBounds.max,
-            title: {
-              display: true,
-              text: 'Cost to Run ($/M tokens)',
-              color: '#888',
-              font: { size: 11 },
-            },
-            ticks: {
-              color: '#888',
-              font: { size: 10 },
-              callback: (v) => `$${(+v).toFixed(1)}`,
-            },
-            grid: { color: 'rgba(128,128,128,0.1)' },
-          },
+          x: this.xAxisConfig(plotType, logScale, xBounds) as any,
           y: {
             min: bounds.min,
             max: bounds.max,
@@ -289,7 +343,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     data: { x: number; y: number; label: string; color: string; pointStyle: string; isUseful: boolean }[],
     logScale: boolean,
     bounds: { min: number; max: number },
-    xBounds: { min: number | undefined; max: number | undefined }
+    xBounds: { min: number | undefined; max: number | undefined },
+    plotType: PlotType,
   ): void {
     if (!this.chart) return;
 
@@ -298,9 +353,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     (this.chart.data.datasets[0] as any).borderColor = data.map(d => d.color);
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
 
-    (this.chart.options.scales!['x'] as any).type = logScale ? 'logarithmic' : 'linear';
-    (this.chart.options.scales!['x'] as any).min = xBounds.min;
-    (this.chart.options.scales!['x'] as any).max = xBounds.max;
+    const xConf = this.xAxisConfig(plotType, logScale, xBounds);
+    const xScale = this.chart.options.scales!['x'] as any;
+    xScale.type = xConf.type;
+    xScale.min = xConf.min;
+    xScale.max = xConf.max;
+    xScale.title.text = xConf.title.text;
+    xScale.ticks.callback = xConf.ticks.callback;
+
     (this.chart.options.scales!['y'] as any).min = bounds.min;
     (this.chart.options.scales!['y'] as any).max = bounds.max;
 

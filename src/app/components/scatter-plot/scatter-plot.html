@@ -1,6 +1,5 @@
 <div class="scatter-container">
   <div class="chart-toolbar">
-    <span class="chart-title">Cost vs Intelligence</span>
     <div class="legend">
       <span class="legend-item"><span class="shape circle"></span>API</span>
       <span class="legend-item"><span class="shape triangle"></span>Local</span>
@@ -8,11 +7,23 @@
         <span class="legend-item"><span class="shape useful"></span>Pareto efficient</span>
       }
     </div>
+    <div class="plot-switcher">
+      @for (p of plotTypes; track p.key) {
+        <button
+          class="plot-btn"
+          [class.active]="plotType() === p.key"
+          (click)="plotType.set(p.key)">
+          {{ p.label }}
+        </button>
+      }
+    </div>
     <div class="toolbar-right">
-      <label class="toggle-label">
-        <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)" />
-        Log X
-      </label>
+      @if (plotType() === 'cost') {
+        <label class="toggle-label">
+          <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)"/>
+          Log X
+        </label>
+      }
       <label class="toggle-label">
         <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)" />
         Highlight most relevant models
