@@ -13,12 +13,13 @@ export interface AiModel {
   agenticIntelligence: number;
   releaseDate: string;
   cutoffDate: string | null;
+  reasoning: boolean;
 }
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';
 
-export function computeCostsToRun(inputCosts: number, outputCosts: number): number {
-  return inputCosts + 5.0 * outputCosts;
+export function computeCostsToRun(inputCosts: number, outputCosts: number, reasoning: boolean): number {
+  return inputCosts + (reasoning ? 5 : 1) * outputCosts;
 }
 
 /** Returns the known cutoffDate, or an estimate of releaseDate minus 12 months. */

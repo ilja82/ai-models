@@ -1,7 +1,7 @@
 import {AiModel, computeCostsToRun} from './ai-model.model';
 
 function m(base: Omit<AiModel, 'costsToRun'>): AiModel {
-  return { ...base, costsToRun: computeCostsToRun(base.inputCosts, base.outputCosts) };
+  return {...base, costsToRun: computeCostsToRun(base.inputCosts, base.outputCosts, base.reasoning)};
 }
 
 export const AI_MODELS: AiModel[] = [
@@ -19,6 +19,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 28,
     releaseDate: '2025-08-05',
     cutoffDate: '2024-06-01',
+    reasoning: true,
   }),
   m({
     id: 'gpt-oss-20B-local',
@@ -34,6 +35,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 26,
     releaseDate: '2025-08-05',
     cutoffDate: '2024-06-01',
+    reasoning: true,
   }),
   m({
     id: 'gpt-oss-120B',
@@ -49,6 +51,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 38,
     releaseDate: '2025-08-05',
     cutoffDate: '2024-06-01',
+    reasoning: true,
   }),
   m({
     id: 'gpt-oss-120B-local',
@@ -64,6 +67,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 36,
     releaseDate: '2025-08-05',
     cutoffDate: '2024-06-01',
+    reasoning: true,
   }),
   m({
     id: 'qwen3.5-9B-local',
@@ -79,6 +83,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 35,
     releaseDate: '2026-03-02',
     cutoffDate: null,
+    reasoning: true,
   }),
   m({
     id: 'qwen3.5-27B-local',
@@ -94,6 +99,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 53,
     releaseDate: '2026-02-24',
     cutoffDate: null,
+    reasoning: true,
   }),
   m({
     id: 'qwen3-coder-30B',
@@ -109,6 +115,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 21,
     releaseDate: '2025-05-14',
     cutoffDate: null,
+    reasoning: false,
   }),
   m({
     id: 'qwen3-coder-30B-local',
@@ -124,6 +131,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 19,
     releaseDate: '2025-05-14',
     cutoffDate: null,
+    reasoning: false,
   }),
   m({
     id: 'qwen3-235B',
@@ -139,6 +147,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 30,
     releaseDate: '2025-04-29',
     cutoffDate: null,
+    reasoning: true,
   }),
   m({
     id: 'glm-4.7-flash',
@@ -154,6 +163,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 46,
     releaseDate: '2026-01-14',
     cutoffDate: null,
+    reasoning: true,
   }),
   m({
     id: 'glm-4.7-flash-local',
@@ -169,6 +179,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 44,
     releaseDate: '2026-01-14',
     cutoffDate: null,
+    reasoning: true,
   }),
   m({
     id: 'minimax-m2.1',
@@ -184,6 +195,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 47,
     releaseDate: '2025-12-23',
     cutoffDate: null,
+    reasoning: true,
   }),
   m({
     id: 'claude-haiku-4.5',
@@ -199,6 +211,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 40,
     releaseDate: '2025-10-15',
     cutoffDate: '2025-02-28',
+    reasoning: true,
   }),
   m({
     id: 'claude-sonnet-4.6',
@@ -214,6 +227,7 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 63,
     releaseDate: '2026-02-17',
     cutoffDate: '2025-08-01',
+    reasoning: true,
   }),
   m({
     id: 'claude-opus-4.6',
@@ -229,5 +243,6 @@ export const AI_MODELS: AiModel[] = [
     agenticIntelligence: 68,
     releaseDate: '2026-02-05',
     cutoffDate: '2025-05-01',
+    reasoning: true,
   }),
 ];
