@@ -271,7 +271,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     const tickCallback = isDate
       ? (v: any) => new Date(+v).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})
-      : (v: any) => `$${(+v).toFixed(1)}`;
+      : (v: any) => `${(+v).toFixed(1)}`;
 
     return {
       type: (!isDate && logScale) ? 'logarithmic' : 'linear',
