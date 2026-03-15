@@ -209,7 +209,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private labelPlugin(): Plugin {
     return {
       id: 'labelPlugin',
-      afterDraw: (chart: Chart) => {
+      afterDatasetsDraw: (chart: Chart) => {
         const ctx = chart.ctx;
         const points = this.plotData();
         const xAxis = chart.scales['x'];
@@ -227,7 +227,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         const usedRects: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
         ctx.save();
-        ctx.font = '10px system-ui, sans-serif';
+        ctx.font = '13px system-ui, sans-serif';
         ctx.textAlign = 'center';
 
         for (const pos of positions) {
@@ -277,7 +277,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       type: (!isDate && logScale) ? 'logarithmic' : 'linear',
       min: xBounds.min,
       max: xBounds.max,
-      title: {display: true, text: title, color: '#888', font: {size: 11}},
+      title: {display: true, text: title, color: '#888', font: {size: 13}},
       ticks: {color: '#888', font: {size: 10}, callback: tickCallback},
       grid: {color: 'rgba(128,128,128,0.1)'},
     };
@@ -309,10 +309,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 200 },
-        layout: { padding: { top: 20, right: 20, bottom: 10, left: 10 } },
+        layout: {padding: {top: 10, right: 10, bottom: 10, left: 10}},
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: 'rgba(30, 30, 40, 0.97)',
             callbacks: {
               label: (ctx) => {
                 const model = this.state.filteredModels()[ctx.dataIndex];
@@ -350,7 +351,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
               display: true,
               text: 'Intelligence Score',
               color: '#888',
-              font: { size: 11 },
+              font: {size: 13},
             },
             ticks: { color: '#888', font: { size: 10 } },
             grid: { color: 'rgba(128,128,128,0.1)' },
