@@ -5,7 +5,7 @@ import {effectiveCutoffDate} from '../../models/ai-model.model';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
-export type PlotType = 'cost' | 'release';
+export type PlotType = 'cost' | 'release' | 'context';
 
 const PLOT_TYPE_KEY = 'ai-models.plotType';
 
@@ -26,6 +26,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly plotTypes: { key: PlotType; label: string }[] = [
     {key: 'cost', label: 'Cost vs Intelligence'},
     {key: 'release', label: 'Release vs Intelligence'},
+    {key: 'context', label: 'Context vs Intelligence'},
   ];
 
   readonly plotData = computed(() => {
@@ -60,9 +61,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         : metric === 'agentic' ? m.agenticIntelligence
         : m.overallIntelligence;
 
-      const xVal = plotType === 'release'
-        ? new Date(m.releaseDate).getTime()
-        : m.costsToRun === 0 ? 0.001 : m.costsToRun;
+      let xVal: number;
+      if (plotType === 'release') {
+        xVal = new Date(m.releaseDate).getTime();
+      } else if (plotType === 'context') {
+        xVal = m.contextWindow;
+      } else {
+        xVal = m.costsToRun === 0 ? 0.001 : m.costsToRun;
+      }
 
       return {
         x: xVal,
@@ -85,9 +91,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         : metric === 'agentic' ? m.agenticIntelligence
           : m.overallIntelligence;
 
-      const xVal = plotType === 'release'
-        ? new Date(m.releaseDate).getTime()
-        : m.costsToRun === 0 ? 0.001 : m.costsToRun;
+      let xVal: number;
+      if (plotType === 'release') {
+        xVal = new Date(m.releaseDate).getTime();
+      } else if (plotType === 'context') {
+        xVal = m.contextWindow;
+      } else {
+        xVal = m.costsToRun === 0 ? 0.001 : m.costsToRun;
+      }
 
       return {x: xVal, y: intel};
     });
@@ -110,10 +121,18 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const maxX = Math.max(...xs);
     const plotType = this.plotType();
 
-    if (plotType !== 'cost') {
+    if (plotType === 'release') {
       const range = maxX - minX || 1;
       const todayMs = Date.now();
       return {min: minX - range * 0.05, max: todayMs};
+    }
+
+    if (plotType === 'context') {
+      if (this.state.logScaleX()) {
+        return {min: minX / 1.4, max: maxX * 1.4};
+      }
+      const range = maxX - minX || 1;
+      return {min: Math.max(0, minX - range * 0.05), max: maxX + range * 0.05};
     }
 
     if (this.state.logScaleX()) {
@@ -183,11 +202,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           ctx.textAlign = 'right';
           ctx.fillText('Least attractive', right - 6, bottom - 6);
         } else {
-          // Upper-right: most attractive (recent date, high intelligence)
+          // Upper-right: most attractive (recent/large context, high intelligence)
           ctx.fillStyle = 'rgba(120, 210, 130, 0.22)';
           ctx.fillRect(xMid, top, right - xMid, yMid - top);
 
-          // Lower-left: least attractive (old date, low intelligence)
+          // Lower-left: least attractive (old/small context, low intelligence)
           ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
           ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
 
@@ -266,15 +285,31 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   private xAxisConfig(plotType: PlotType, logScale: boolean, xBounds: { min: number | undefined; max: number | undefined }) {
-    const isDate = plotType !== 'cost';
-    const title = plotType === 'release' ? 'Release Date' : 'Cost to Run ($/M tokens)';
+    let title: string;
+    let tickCallback: (v: any) => string;
+    let axisType: string;
 
-    const tickCallback = isDate
-      ? (v: any) => new Date(+v).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})
-      : (v: any) => `${(+v).toFixed(1)}`;
+    if (plotType === 'release') {
+      title = 'Release Date';
+      tickCallback = (v: any) => new Date(+v).toLocaleDateString('en-US', {month: 'short', year: 'numeric'});
+      axisType = 'linear';
+    } else if (plotType === 'context') {
+      title = 'Context Window (tokens)';
+      tickCallback = (v: any) => {
+        const n = +v;
+        if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+        if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+        return String(n);
+      };
+      axisType = logScale ? 'logarithmic' : 'linear';
+    } else {
+      title = 'Cost to Run ($/M tokens)';
+      tickCallback = (v: any) => `${(+v).toFixed(1)}`;
+      axisType = logScale ? 'logarithmic' : 'linear';
+    }
 
     return {
-      type: (!isDate && logScale) ? 'logarithmic' : 'linear',
+      type: axisType,
       min: xBounds.min,
       max: xBounds.max,
       title: {display: true, text: title, color: '#888', font: {size: 13}},
