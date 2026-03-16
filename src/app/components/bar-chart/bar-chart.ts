@@ -41,7 +41,7 @@ const METRICS: MetricDef[] = [
   {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
   {key: 'tokensPerSecond', label: 'Tokens/sec', unit: 'tok/s', axisLabel: 'Tokens Per Second', sortAsc: false, stacked: false},
-  {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s)', sortAsc: true, stacked: true},
+  {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s) - Time until first token', sortAsc: true, stacked: true},
   {key: 'responseTime', label: 'Response Time', unit: 's', axisLabel: 'Response Time until first 500 tokens (s)', sortAsc: true, stacked: true},
 ];
 
