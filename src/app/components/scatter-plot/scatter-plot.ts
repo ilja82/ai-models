@@ -11,16 +11,16 @@ interface PlotTypeDef {
   key: PlotType;
   label: string;
   supportsLogX: boolean;
-  attractiveQuadrant: 'upper-left' | 'upper-right';
+  reverseX: boolean;
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, attractiveQuadrant: 'upper-left'},
-  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, attractiveQuadrant: 'upper-right'},
-  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, attractiveQuadrant: 'upper-right'},
-  {key: 'speed', label: 'Speed vs Intelligence', supportsLogX: false, attractiveQuadrant: 'upper-right'},
-  {key: 'responseVsIntel', label: 'Response Time vs Intelligence', supportsLogX: false, attractiveQuadrant: 'upper-left'},
-  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: false, attractiveQuadrant: 'upper-left'},
+  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true},
+  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false},
+  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false},
+  {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false},
+  {key: 'responseVsIntel', label: 'Response Time vs Intelligence', supportsLogX: false, reverseX: true},
+  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: false, reverseX: true},
 ];
 
 const PLOT_TYPE_KEY = 'ai-models.plotType';
@@ -157,9 +157,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return {
       id: 'quadrantBackground',
       beforeDraw: (chart: Chart) => {
-        const plotDef = this.currentPlotDef();
-        const isUpperLeft = plotDef.attractiveQuadrant === 'upper-left';
-
         const ctx = chart.ctx;
         const xAxis = chart.scales['x'];
         const yAxis = chart.scales['y'];
@@ -172,31 +169,18 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
         ctx.save();
 
-        if (isUpperLeft) {
-          ctx.fillStyle = 'rgba(120, 220, 130, 0.35)';
-          ctx.fillRect(left, top, xMid - left, yMid - top);
-          ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
-          ctx.fillRect(xMid, yMid, right - xMid, bottom - yMid);
-          ctx.font = '10px system-ui, sans-serif';
-          ctx.fillStyle = 'rgba(80, 200, 90, 0.9)';
-          ctx.textAlign = 'left';
-          ctx.fillText('Most attractive', left + 6, top + 14);
-          ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
-          ctx.textAlign = 'right';
-          ctx.fillText('Least attractive', right - 6, bottom - 6);
-        } else {
-          ctx.fillStyle = 'rgba(120, 220, 130, 0.35)';
-          ctx.fillRect(xMid, top, right - xMid, yMid - top);
-          ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
-          ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
-          ctx.font = '10px system-ui, sans-serif';
-          ctx.fillStyle = 'rgba(80, 200, 90, 0.9)';
-          ctx.textAlign = 'right';
-          ctx.fillText('Most attractive', right - 6, top + 14);
-          ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
-          ctx.textAlign = 'left';
-          ctx.fillText('Least attractive', left + 6, bottom - 6);
-        }
+        // Most attractive is always upper-right
+        ctx.fillStyle = 'rgba(120, 220, 130, 0.35)';
+        ctx.fillRect(xMid, top, right - xMid, yMid - top);
+        ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
+        ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
+        ctx.font = '10px system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(80, 200, 90, 0.9)';
+        ctx.textAlign = 'right';
+        ctx.fillText('Most attractive', right - 6, top + 14);
+        ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
+        ctx.textAlign = 'left';
+        ctx.fillText('Least attractive', left + 6, bottom - 6);
 
         ctx.restore();
       },
@@ -260,7 +244,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     };
   }
 
-  private xAxisConfig(plotType: PlotType, logScale: boolean, xBounds: { min: number | undefined; max: number | undefined }) {
+  private xAxisConfig(plotType: PlotType, logScale: boolean, xBounds: {
+    min: number | undefined;
+    max: number | undefined
+  }, reverseX: boolean = false) {
     let title: string;
     let tickCallback: (v: any) => string;
     let axisType: string;
@@ -288,7 +275,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         break;
       case 'responseVsIntel':
       case 'responseVsSpeed':
-        title = 'Response Time (s)';
+        title = 'Response Time until first 500 tokens (s)';
         tickCallback = (v: any) => `${(+v).toFixed(1)}s`;
         axisType = 'linear';
         break;
@@ -302,6 +289,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       type: axisType,
       min: xBounds.min,
       max: xBounds.max,
+      reverse: reverseX,
       title: {display: true, text: title, color: '#888', font: {size: 13}},
       ticks: {color: '#888', font: {size: 10}, callback: tickCallback},
       grid: {color: 'rgba(128,128,128,0.1)'},
@@ -349,7 +337,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           },
         },
         scales: {
-          x: this.xAxisConfig(plotType, logScale, xBounds) as any,
+          x: this.xAxisConfig(plotType, logScale, xBounds, this.currentPlotDef().reverseX) as any,
           y: {
             min: bounds.min,
             max: bounds.max,
@@ -406,11 +394,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     (this.chart.data.datasets[0] as any).borderColor = data.map(d => d.color);
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
 
-    const xConf = this.xAxisConfig(plotType, logScale, xBounds);
+    const xConf = this.xAxisConfig(plotType, logScale, xBounds, this.currentPlotDef().reverseX);
     const xScale = this.chart.options.scales!['x'] as any;
     xScale.type = xConf.type;
     xScale.min = xConf.min;
     xScale.max = xConf.max;
+    xScale.reverse = xConf.reverse;
     xScale.title.text = xConf.title.text;
     xScale.ticks.callback = xConf.ticks.callback;
 

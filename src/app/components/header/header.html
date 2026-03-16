@@ -24,8 +24,8 @@
       <label class="group-label">Availability</label>
       <div class="btn-group">
         <button
-          [class.active]="state.showLiteLLM()"
-          (click)="state.showLiteLLM.update(v => !v)">API
+          [class.active]="state.showAPI()"
+          (click)="state.showAPI.update(v => !v)">API
         </button>
         <button
           [class.active]="state.showLocal()"

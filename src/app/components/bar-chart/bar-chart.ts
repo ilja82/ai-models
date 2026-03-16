@@ -8,6 +8,8 @@ Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, L
 type BarMetric = 'intelligence' | 'costsToRun' | 'inputCosts' | 'outputCosts' | 'contextWindow'
   | 'tokensPerSecond' | 'latency' | 'responseTime';
 
+const BAR_METRIC_KEY = 'ai-models.barMetric';
+
 interface MetricDef {
   key: BarMetric;
   label: string;
@@ -40,7 +42,7 @@ const METRICS: MetricDef[] = [
   {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
   {key: 'tokensPerSecond', label: 'Tokens/sec', unit: 'tok/s', axisLabel: 'Tokens Per Second', sortAsc: false, stacked: false},
   {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s)', sortAsc: true, stacked: true},
-  {key: 'responseTime', label: 'Response Time', unit: 's', axisLabel: 'Response Time (s)', sortAsc: true, stacked: true},
+  {key: 'responseTime', label: 'Response Time', unit: 's', axisLabel: 'Response Time until first 500 tokens (s)', sortAsc: true, stacked: true},
 ];
 
 @Component({
@@ -53,7 +55,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   readonly state = inject(AppState);
-  readonly barMetric = signal<BarMetric>('intelligence');
+  readonly barMetric = signal<BarMetric>((localStorage.getItem(BAR_METRIC_KEY) as BarMetric) ?? 'intelligence');
   readonly metrics = METRICS;
   readonly isStackedMetric = computed(() => this.barMetric() === 'latency' || this.barMetric() === 'responseTime');
   private chart?: Chart;
@@ -140,6 +142,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
+    effect(() => {
+      localStorage.setItem(BAR_METRIC_KEY, this.barMetric());
+    });
     effect(() => {
       const data = this.chartData();
       this.updateChart(data);
@@ -252,7 +257,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
       display: true,
       text: data.metricDef.axisLabel,
       color: '#888',
-      font: {size: 11},
+      font: {size: 13},
     };
     (this.chart.options.plugins!.legend as any).display = data.isStacked;
     (this.chart.options.plugins!.tooltip as any).mode = 'index';

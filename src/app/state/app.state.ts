@@ -10,8 +10,8 @@ export class AppState {
   readonly disabledModelIds = signal<Set<string>>(this.loadDisabledIds());
 
   readonly intelligenceMetric = signal<IntelligenceMetric>(this.loadStr('metric', 'overall') as IntelligenceMetric);
-  readonly showLiteLLM = signal(this.loadBool('showLiteLLM', true));
-  readonly showLocal = signal(this.loadBool('showLocal', true));
+  readonly showAPI = signal(this.loadBool('showAPI', true));
+  readonly showLocal = signal(this.loadBool('showLocal', false));
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showUsefulModels = signal(this.loadBool('showUsefulModels', true));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
@@ -25,7 +25,7 @@ export class AppState {
       localStorage.setItem(KEY('metric'), this.intelligenceMetric());
     });
     effect(() => {
-      localStorage.setItem(KEY('showLiteLLM'), String(this.showLiteLLM()));
+      localStorage.setItem(KEY('showAPI'), String(this.showAPI()));
     });
     effect(() => {
       localStorage.setItem(KEY('showLocal'), String(this.showLocal()));
@@ -69,12 +69,12 @@ export class AppState {
   }
 
   readonly availableModels = computed(() => {
-    const showLiteLLM = this.showLiteLLM();
+    const showAPI = this.showAPI();
     const showLocal = this.showLocal();
     const maxVram = this.maxVram();
 
     return this.allModels().filter(m => {
-      if (!showLiteLLM && !m.localModel) return false;
+      if (!showAPI && !m.localModel) return false;
       if (!showLocal && m.localModel) return false;
       if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) return false;
       return true;

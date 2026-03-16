@@ -31,6 +31,13 @@
           <th (click)="sort('overallIntelligence')" class="sortable">Overall {{ sortIcon('overallIntelligence') }}</th>
           <th (click)="sort('codingIntelligence')" class="sortable">Coding {{ sortIcon('codingIntelligence') }}</th>
           <th (click)="sort('agenticIntelligence')" class="sortable">Agentic {{ sortIcon('agenticIntelligence') }}</th>
+          <th (click)="sort('reasoning')" class="sortable">Reasoning {{ sortIcon('reasoning') }}</th>
+          <th (click)="sort('tokensPerSecond')" class="sortable">Tok/s {{ sortIcon('tokensPerSecond') }}</th>
+          <th (click)="sort('inputProcessingTime')" class="sortable">Input Time {{ sortIcon('inputProcessingTime') }}</th>
+          <th (click)="sort('thinkingTime')" class="sortable">Think Time {{ sortIcon('thinkingTime') }}</th>
+          <th (click)="sort('outputTime')" class="sortable">Output Time {{ sortIcon('outputTime') }}</th>
+          <th class="sortable" (click)="sortByComputed('latency')">Latency {{ sortComputedIcon('latency') }}</th>
+          <th class="sortable" (click)="sortByComputed('responseTime')">Response Time {{ sortComputedIcon('responseTime') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -54,11 +61,18 @@
             <td class="num intel">{{ model.overallIntelligence }}</td>
             <td class="num intel">{{ model.codingIntelligence }}</td>
             <td class="num intel">{{ model.agenticIntelligence }}</td>
+            <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
+            <td class="num">{{ model.tokensPerSecond > 0 ? model.tokensPerSecond : '—' }}</td>
+            <td class="num">{{ formatTime(model.inputProcessingTime) }}</td>
+            <td class="num">{{ formatTime(model.thinkingTime) }}</td>
+            <td class="num">{{ formatTime(model.outputTime) }}</td>
+            <td class="num">{{ formatTime(model.inputProcessingTime + model.thinkingTime) }}</td>
+            <td class="num">{{ formatTime(model.inputProcessingTime + model.thinkingTime + model.outputTime) }}</td>
           </tr>
         }
         @empty {
           <tr>
-            <td colspan="13" class="empty">No models match the current filters.</td>
+            <td colspan="20" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>
