@@ -14,6 +14,10 @@ export interface AiModel {
   releaseDate: string;
   cutoffDate: string | null;
   reasoning: boolean;
+  tokensPerSecond: number;
+  inputProcessingTime: number;
+  thinkingTime: number;
+  outputTime: number;
 }
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';

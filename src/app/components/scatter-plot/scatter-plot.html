@@ -18,7 +18,7 @@
       }
     </div>
     <div class="toolbar-right">
-      @if (plotType() === 'cost' || plotType() === 'context') {
+      @if (currentPlotDef().supportsLogX) {
         <label class="toggle-label">
           <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)"/>
           Log X

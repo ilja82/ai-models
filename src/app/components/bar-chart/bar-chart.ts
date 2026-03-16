@@ -5,21 +5,42 @@ import {AiModel} from '../../models/ai-model.model';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
-type BarMetric = 'intelligence' | 'costsToRun' | 'inputCosts' | 'outputCosts' | 'contextWindow';
+type BarMetric = 'intelligence' | 'costsToRun' | 'inputCosts' | 'outputCosts' | 'contextWindow'
+  | 'tokensPerSecond' | 'latency' | 'responseTime';
 
 interface MetricDef {
   key: BarMetric;
   label: string;
   unit: string;
   axisLabel: string;
+  sortAsc: boolean;
+  stacked: boolean;
+}
+
+interface StackSegment {
+  label: string;
+  color: string | string[];
+  values: number[];
+}
+
+interface ChartDataResult {
+  labels: string[];
+  segments: StackSegment[];
+  isStacked: boolean;
+  yMax?: number;
+  yMin: number;
+  metricDef: MetricDef;
 }
 
 const METRICS: MetricDef[] = [
-  {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score'},
-  {key: 'costsToRun', label: 'Run Cost', unit: '$/M', axisLabel: 'Cost to Run ($/M tokens)'},
-  {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)'},
-  {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)'},
-  {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)'},
+  {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score', sortAsc: false, stacked: false},
+  {key: 'costsToRun', label: 'Run Cost', unit: '$/M', axisLabel: 'Cost to Run ($/M tokens)', sortAsc: false, stacked: false},
+  {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', sortAsc: false, stacked: false},
+  {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', sortAsc: false, stacked: false},
+  {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
+  {key: 'tokensPerSecond', label: 'Tokens/sec', unit: 'tok/s', axisLabel: 'Tokens Per Second', sortAsc: false, stacked: false},
+  {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s)', sortAsc: true, stacked: true},
+  {key: 'responseTime', label: 'Response Time', unit: 's', axisLabel: 'Response Time (s)', sortAsc: true, stacked: true},
 ];
 
 @Component({
@@ -34,9 +55,10 @@ export class BarChartComponent implements OnInit, OnDestroy {
   readonly state = inject(AppState);
   readonly barMetric = signal<BarMetric>('intelligence');
   readonly metrics = METRICS;
+  readonly isStackedMetric = computed(() => this.barMetric() === 'latency' || this.barMetric() === 'responseTime');
   private chart?: Chart;
 
-  private getValue(m: AiModel, metric: BarMetric): number {
+  private getTotalValue(m: AiModel, metric: BarMetric): number {
     switch (metric) {
       case 'intelligence':
         return this.state.getIntelligence(m);
@@ -48,34 +70,71 @@ export class BarChartComponent implements OnInit, OnDestroy {
         return m.outputCosts;
       case 'contextWindow':
         return m.contextWindow / 1000;
+      case 'tokensPerSecond':
+        return m.tokensPerSecond;
+      case 'latency':
+        return m.inputProcessingTime + m.thinkingTime;
+      case 'responseTime':
+        return m.inputProcessingTime + m.thinkingTime + m.outputTime;
     }
   }
 
-  readonly chartData = computed(() => {
+  readonly chartData = computed((): ChartDataResult => {
     const metric = this.barMetric();
-    const models = [...this.state.filteredModels()].sort(
-      (a, b) => this.getValue(b, metric) - this.getValue(a, metric)
-    );
     const metricDef = METRICS.find(x => x.key === metric)!;
 
-    const values = models.map(m => this.getValue(m, metric));
-    const maxVal = values.length ? Math.max(...values) : 0;
+    const models = [...this.state.filteredModels()].sort((a, b) => {
+      const va = this.getTotalValue(a, metric);
+      const vb = this.getTotalValue(b, metric);
+      return metricDef.sortAsc ? va - vb : vb - va;
+    });
 
+    const labels = models.map(m => m.publicName);
+
+    if (metric === 'latency') {
+      return {
+        labels,
+        segments: [
+          {label: 'Input Processing', color: 'rgba(99,140,210,0.82)', values: models.map(m => m.inputProcessingTime)},
+          {label: 'Thinking', color: 'rgba(180,100,210,0.82)', values: models.map(m => m.thinkingTime)},
+        ],
+        isStacked: true,
+        yMin: 0,
+        metricDef,
+      };
+    }
+
+    if (metric === 'responseTime') {
+      return {
+        labels,
+        segments: [
+          {label: 'Input Processing', color: 'rgba(99,140,210,0.82)', values: models.map(m => m.inputProcessingTime)},
+          {label: 'Thinking', color: 'rgba(180,100,210,0.82)', values: models.map(m => m.thinkingTime)},
+          {label: 'Output', color: 'rgba(70,180,180,0.82)', values: models.map(m => m.outputTime)},
+        ],
+        isStacked: true,
+        yMin: 0,
+        metricDef,
+      };
+    }
+
+    const values = models.map(m => this.getTotalValue(m, metric));
+    const maxVal = values.length ? Math.max(...values) : 0;
     let yMax: number | undefined;
-    let yMin: number | undefined = 0;
     if (metric === 'intelligence') {
       yMax = Math.min(100, Math.ceil(maxVal) + 5);
     }
 
     return {
-      labels: models.map(m => m.publicName),
-      data: values,
-      colors: models.map(m => {
-        if (m.localModel) return 'rgba(70, 180, 180, 0.75)';
-        return 'rgba(99, 140, 210, 0.75)';
-      }),
+      labels,
+      segments: [{
+        label: metricDef.label,
+        color: models.map(m => m.localModel ? 'rgba(70,180,180,0.75)' : 'rgba(99,140,210,0.75)'),
+        values,
+      }],
+      isStacked: false,
       yMax,
-      yMin,
+      yMin: 0,
       metricDef,
     };
   });
@@ -95,6 +154,30 @@ export class BarChartComponent implements OnInit, OnDestroy {
     this.chart?.destroy();
   }
 
+  private formatValue(val: number, unit: string): string {
+    if (unit === '$/M') return `$${val.toFixed(2)}/M`;
+    if (unit === 'K tokens') return `${val.toFixed(0)}K tokens`;
+    if (unit === 's') return `${val.toFixed(2)}s`;
+    if (unit === 'tok/s') return `${val.toFixed(0)} tok/s`;
+    return `${val}`;
+  }
+
+  private buildTooltipCallbacks(data: ChartDataResult) {
+    const {unit} = data.metricDef;
+    const label = (ctx: any): string => {
+      const val: number = ctx.parsed.y ?? 0;
+      return `${ctx.dataset.label}: ${this.formatValue(val, unit)}`;
+    };
+    if (!data.isStacked) return {label};
+    const afterTitle = (items: any[]): string => {
+      if (!items.length) return '';
+      const idx = items[0].dataIndex;
+      const total = data.segments.reduce((sum, seg) => sum + (seg.values[idx] ?? 0), 0);
+      return `Total: ${this.formatValue(total, unit)}`;
+    };
+    return {afterTitle, label};
+  }
+
   private initChart(): void {
     const ctx = this.canvasRef.nativeElement.getContext('2d')!;
     const data = this.chartData();
@@ -104,44 +187,40 @@ export class BarChartComponent implements OnInit, OnDestroy {
       type: 'bar',
       data: {
         labels: data.labels,
-        datasets: [{
-          label: data.metricDef.label,
-          data: data.data,
-          backgroundColor: data.colors,
+        datasets: data.segments.map(seg => ({
+          label: seg.label,
+          data: seg.values,
+          backgroundColor: seg.color as any,
           borderRadius: 4,
           borderSkipped: false,
-        }],
+        })),
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 200 },
+        animation: {duration: 200},
         plugins: {
-          legend: { display: false },
+          legend: {display: data.isStacked},
           tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const unit = data.metricDef.unit;
-                const val: number = ctx.parsed.y ?? 0;
-                const formatted = unit === '$/M' ? `$${val.toFixed(2)}/M` : unit === 'K tokens' ? `${val.toFixed(0)}K tokens` : String(val);
-                return `${data.metricDef.label}: ${formatted}`;
-              },
-            },
+            mode: 'index',
+            callbacks: this.buildTooltipCallbacks(data),
           },
         },
         scales: {
           x: {
+            stacked: data.isStacked,
             ticks: {color: textMuted, maxRotation: 45, minRotation: 30, font: {size: 11}},
-            grid: { display: false },
+            grid: {display: false},
           },
           y: {
+            stacked: data.isStacked,
             min: data.yMin,
             max: data.yMax,
             title: {
               display: true,
               text: data.metricDef.axisLabel,
               color: textMuted,
-              font: { size: 11 },
+              font: {size: 11},
             },
             ticks: {color: textMuted, font: {size: 11}},
             grid: {color: 'rgba(128,128,128,0.15)'},
@@ -153,13 +232,20 @@ export class BarChartComponent implements OnInit, OnDestroy {
     this.chart = new Chart(ctx, config);
   }
 
-  private updateChart(data: ReturnType<typeof this.chartData>): void {
+  private updateChart(data: ChartDataResult): void {
     if (!this.chart) return;
-    this.chart.data.labels = data.labels;
-    this.chart.data.datasets[0].data = data.data;
-    this.chart.data.datasets[0].label = data.metricDef.label;
-    (this.chart.data.datasets[0] as any).backgroundColor = data.colors;
 
+    this.chart.data.labels = data.labels;
+    this.chart.data.datasets = data.segments.map(seg => ({
+      label: seg.label,
+      data: seg.values,
+      backgroundColor: seg.color as any,
+      borderRadius: 4,
+      borderSkipped: false,
+    }));
+
+    (this.chart.options.scales!['x'] as any).stacked = data.isStacked;
+    (this.chart.options.scales!['y'] as any).stacked = data.isStacked;
     (this.chart.options.scales!['y'] as any).min = data.yMin;
     (this.chart.options.scales!['y'] as any).max = data.yMax;
     (this.chart.options.scales!['y'] as any).title = {
@@ -168,14 +254,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
       color: '#888',
       font: {size: 11},
     };
-    (this.chart.options.plugins!.tooltip as any).callbacks = {
-      label: (ctx: any) => {
-        const unit = data.metricDef.unit;
-        const val: number = ctx.parsed.y ?? 0;
-        const formatted = unit === '$/M' ? `$${val.toFixed(2)}/M` : unit === 'K tokens' ? `${val.toFixed(0)}K tokens` : String(val);
-        return `${data.metricDef.label}: ${formatted}`;
-      },
-    };
+    (this.chart.options.plugins!.legend as any).display = data.isStacked;
+    (this.chart.options.plugins!.tooltip as any).mode = 'index';
+    (this.chart.options.plugins!.tooltip as any).callbacks = this.buildTooltipCallbacks(data);
 
     this.chart.update('none');
   }
