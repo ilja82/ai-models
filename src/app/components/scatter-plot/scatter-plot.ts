@@ -1,7 +1,8 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {Chart, ChartConfiguration, Legend, LinearScale, LogarithmicScale, Plugin, PointElement, ScatterController, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
-import {AiModel, effectiveCutoffDate, IntelligenceMetric} from '../../models/ai-model.model';
+import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
+import {buildModelTooltipLines} from '../../models/tooltip.util';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -352,32 +353,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     this.chart = new Chart(ctx, config);
   }
 
-  private buildTooltipLines(dataIndex: number, plotType: PlotType): string[] {
+  private buildTooltipLines(dataIndex: number, _plotType: PlotType): string[] {
     const model = this.state.filteredModels()[dataIndex];
     if (!model) return [];
-    const metric = this.state.intelligenceMetric();
-    const intel = metric === 'coding' ? model.codingIntelligence
-      : metric === 'agentic' ? model.agenticIntelligence
-        : model.overallIntelligence;
-    const metricLabel = metric === 'coding' ? 'Coding Intelligence'
-      : metric === 'agentic' ? 'Agentic Intelligence'
-        : 'Overall Intelligence';
-    const responseTime = model.inputProcessingTime + model.thinkingTime + model.outputTime;
-    return [
-      `${model.publicName}`,
-      `★ ${metricLabel}: ${intel}`,
-      `★ Speed: ${model.tokensPerSecond} tok/s`,
-      `★ Response time: ${responseTime.toFixed(1)}s (in: ${model.inputProcessingTime}s, think: ${model.thinkingTime}s, out: ${model.outputTime}s)`,
-      `★ Run cost: $${model.costsToRun.toFixed(2)}/M tokens`,
-      `★ Release: ${model.releaseDate}`,
-      `─────────────────`,
-      `Type: ${model.localModel ? 'Local' : 'API'}`,
-      `Input: $${model.inputCosts.toFixed(3)}/M tokens`,
-      `Output: $${model.outputCosts.toFixed(3)}/M tokens`,
-      `Context: ${(model.contextWindow / 1000).toFixed(0)}K tokens`,
-      `Cutoff: ${model.cutoffDate ?? `${effectiveCutoffDate(model)} (estimated)`}`,
-      model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
-    ].filter(Boolean);
+    return buildModelTooltipLines(model, this.state.intelligenceMetric());
   }
 
   private updateChart(

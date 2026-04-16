@@ -23,6 +23,11 @@
           (click)="activeTab.set('scatter')">
           Scatter Plot
         </button>
+        <button
+          [class.active]="activeTab() === 'scatter3d'"
+          (click)="activeTab.set('scatter3d')">
+          3D Scatter
+        </button>
       </nav>
 
       <div class="view-content">
@@ -34,6 +39,9 @@
         }
         @if (activeTab() === 'scatter') {
           <app-scatter-plot />
+        }
+        @if (activeTab() === 'scatter3d') {
+          <app-scatter-3d-plot/>
         }
       </div>
     </main>

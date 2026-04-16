@@ -1,0 +1,59 @@
+<div class="scatter3d-container">
+  <div class="chart-toolbar">
+    <div class="axis-pickers">
+      <label class="axis-picker">
+        <span class="axis-label">X</span>
+        <select (change)="onAxisChange('x', $any($event.target).value)">
+          @for (a of axisDefs; track a.key) {
+            <option [value]="a.key" [selected]="xAxis() === a.key">{{ a.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="axis-picker">
+        <span class="axis-label">Y</span>
+        <select (change)="onAxisChange('y', $any($event.target).value)">
+          @for (a of axisDefs; track a.key) {
+            <option [value]="a.key" [selected]="yAxis() === a.key">{{ a.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="axis-picker">
+        <span class="axis-label">Z</span>
+        <select (change)="onAxisChange('z', $any($event.target).value)">
+          @for (a of axisDefs; track a.key) {
+            <option [value]="a.key" [selected]="zAxis() === a.key">{{ a.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="shape circle api"></span>API</span>
+      <span class="legend-item"><span class="shape diamond"></span>Local</span>
+      @if (state.showUsefulModels()) {
+        <span class="legend-item"><span class="shape circle useful"></span>Pareto efficient</span>
+      }
+    </div>
+
+    <div class="toolbar-right">
+      <label class="toggle-label">
+        <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)"/>
+        Log scale (where applicable)
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)"/>
+        Highlight Pareto-efficient
+      </label>
+    </div>
+  </div>
+
+  <div class="plot-wrap">
+    @if (loading()) {
+      <div class="status">Loading 3D library…</div>
+    }
+    @if (errorMsg()) {
+      <div class="status error">{{ errorMsg() }}</div>
+    }
+    <div #plot class="plot"></div>
+  </div>
+</div>

@@ -4,8 +4,9 @@ import {ModelToggleComponent} from './components/model-toggle/model-toggle';
 import {DataTableComponent} from './components/data-table/data-table';
 import {BarChartComponent} from './components/bar-chart/bar-chart';
 import {ScatterPlotComponent} from './components/scatter-plot/scatter-plot';
+import {Scatter3dPlotComponent} from './components/scatter-3d-plot/scatter-3d-plot';
 
-type ViewTab = 'table' | 'bar' | 'scatter';
+type ViewTab = 'table' | 'bar' | 'scatter' | 'scatter3d';
 const TAB_KEY = 'ai-models.activeTab';
 
 @Component({
@@ -17,6 +18,7 @@ const TAB_KEY = 'ai-models.activeTab';
     DataTableComponent,
     BarChartComponent,
     ScatterPlotComponent,
+    Scatter3dPlotComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
