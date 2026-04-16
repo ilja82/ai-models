@@ -97,6 +97,18 @@ const COLOR_API = 'rgba(99,140,210,0.9)';
 const COLOR_LOCAL = 'rgba(70,180,180,0.9)';
 const COLOR_USEFUL = 'rgba(180,180,80,0.95)';
 
+const COLOR_ATTRACTIVE_FILL = 'rgb(120,220,130)';
+const COLOR_UNATTRACTIVE_FILL = 'rgb(220,90,90)';
+const COLOR_ATTRACTIVE_LABEL = 'rgba(80,200,90,0.9)';
+const COLOR_UNATTRACTIVE_LABEL = 'rgba(220,90,90,0.85)';
+
+interface AxisExtent {
+  min: number;
+  max: number;
+  mid: number;
+  log: boolean;
+}
+
 @Component({
   selector: 'app-scatter-3d-plot',
   standalone: true,
@@ -159,6 +171,50 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return useful;
   });
 
+  private computeAxisExtent(models: AiModel[], def: AxisDef, metric: IntelligenceMetric, log: boolean): AxisExtent | null {
+    if (models.length === 0) return null;
+    const values = models.map(m => def.get(m, metric)).filter(v => Number.isFinite(v));
+    if (values.length === 0) return null;
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    if (min === max) return null;
+
+    if (log && min > 0) {
+      const pad = 1.05;
+      min = min / pad;
+      max = max * pad;
+      const mid = Math.sqrt(min * max);
+      return {min, max, mid, log: true};
+    }
+
+    const range = max - min;
+    min = min - range * 0.05;
+    max = max + range * 0.05;
+    return {min, max, mid: (min + max) / 2, log: false};
+  }
+
+  private buildCuboid(
+    xr: [number, number], yr: [number, number], zr: [number, number],
+    color: string, opacity: number, name: string,
+  ): any {
+    const [x0, x1] = xr, [y0, y1] = yr, [z0, z1] = zr;
+    return {
+      type: 'mesh3d',
+      name,
+      x: [x0, x1, x1, x0, x0, x1, x1, x0],
+      y: [y0, y0, y1, y1, y0, y0, y1, y1],
+      z: [z0, z0, z0, z0, z1, z1, z1, z1],
+      i: [0, 0, 4, 4, 0, 0, 3, 3, 0, 0, 1, 1],
+      j: [1, 2, 5, 6, 1, 5, 2, 6, 3, 7, 2, 6],
+      k: [2, 3, 6, 7, 5, 4, 6, 7, 7, 4, 6, 5],
+      color,
+      opacity,
+      flatshading: true,
+      hoverinfo: 'skip',
+      showlegend: false,
+    };
+  }
+
   readonly traces = computed(() => {
     const models = this.state.filteredModels();
     const metric = this.state.intelligenceMetric();
@@ -167,6 +223,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xDef = this.defOf(this.xAxis());
     const yDef = this.defOf(this.yAxis());
     const zDef = this.defOf(this.zAxis());
+    const logScale = this.state.logScaleX();
 
     const groups = {
       api: [] as AiModel[],
@@ -194,7 +251,45 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       marker: {color, size, symbol, line: {color: 'rgba(0,0,0,0.4)', width: 0.5}, opacity: 0.95},
     });
 
+    const xExt = this.computeAxisExtent(models, xDef, metric, logScale && xDef.logCandidate);
+    const yExt = this.computeAxisExtent(models, yDef, metric, logScale && yDef.logCandidate);
+    const zExt = this.computeAxisExtent(models, zDef, metric, logScale && zDef.logCandidate);
+
+    const regionTraces: any[] = [];
+    if (xExt && yExt && zExt) {
+      const halfRange = (ext: AxisExtent, attractive: boolean, higherIsBetter: boolean): [number, number] => {
+        const pickUpper = higherIsBetter ? attractive : !attractive;
+        return pickUpper ? [ext.mid, ext.max] : [ext.min, ext.mid];
+      };
+      const centroid = (r: [number, number], log: boolean) => log ? Math.sqrt(r[0] * r[1]) : (r[0] + r[1]) / 2;
+
+      const attrX = halfRange(xExt, true, xDef.higherIsBetter);
+      const attrY = halfRange(yExt, true, yDef.higherIsBetter);
+      const attrZ = halfRange(zExt, true, zDef.higherIsBetter);
+      const unX = halfRange(xExt, false, xDef.higherIsBetter);
+      const unY = halfRange(yExt, false, yDef.higherIsBetter);
+      const unZ = halfRange(zExt, false, zDef.higherIsBetter);
+
+      regionTraces.push(
+        this.buildCuboid(attrX, attrY, attrZ, COLOR_ATTRACTIVE_FILL, 0.35, 'Most attractive'),
+        this.buildCuboid(unX, unY, unZ, COLOR_UNATTRACTIVE_FILL, 0.22, 'Least attractive'),
+        {
+          type: 'scatter3d',
+          mode: 'text',
+          name: 'Region labels',
+          x: [centroid(attrX, xExt.log), centroid(unX, xExt.log)],
+          y: [centroid(attrY, yExt.log), centroid(unY, yExt.log)],
+          z: [centroid(attrZ, zExt.log), centroid(unZ, zExt.log)],
+          text: ['Most attractive', 'Least attractive'],
+          textfont: {size: 12, color: [COLOR_ATTRACTIVE_LABEL, COLOR_UNATTRACTIVE_LABEL]},
+          hoverinfo: 'skip',
+          showlegend: false,
+        },
+      );
+    }
+
     return [
+      ...regionTraces,
       buildTrace(groups.api, 'API', COLOR_API, 'circle', 5),
       buildTrace(groups.local, 'Local', COLOR_LOCAL, 'diamond', 5),
       buildTrace(groups.useful, 'Pareto efficient', COLOR_USEFUL, 'circle', 8),
@@ -228,7 +323,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         xaxis: axisCfg(xDef),
         yaxis: axisCfg(yDef),
         zaxis: axisCfg(zDef),
-        camera: {eye: {x: 1.6, y: 1.6, z: 1.2}},
+        camera: {eye: {x: 1.6, y: -1.6, z: 1.2}},
       },
     };
   });
