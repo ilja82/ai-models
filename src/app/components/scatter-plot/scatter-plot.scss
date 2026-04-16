@@ -56,6 +56,19 @@
           border-radius: 50%;
           background: rgba(180, 180, 80, 0.95);
         }
+
+        &.star {
+          width: 12px;
+          height: 12px;
+          background: #ffd166;
+          clip-path: polygon(50% 2%, 61% 38%, 98% 38%, 68% 60%, 79% 96%, 50% 74%, 21% 96%, 32% 60%, 2% 38%, 39% 38%);
+        }
+
+        &.rect-rot {
+          transform: rotate(45deg);
+          background: #e7b94a;
+          border-radius: 1px;
+        }
       }
     }
 

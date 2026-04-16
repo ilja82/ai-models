@@ -6,6 +6,16 @@ import {buildModelTooltipLines} from '../../models/tooltip.util';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
+function makeStarImage(color: string, size: number): HTMLImageElement {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">` +
+    `<polygon fill="${color}" points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38"/></svg>`;
+  const img = new Image(size, size);
+  img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  return img;
+}
+
+const STAR_ICON = makeStarImage('#ffd166', 22);
+
 export type PlotType = 'cost' | 'release' | 'context' | 'speed' | 'responseVsIntel' | 'responseVsSpeed';
 
 interface PlotTypeDef {
@@ -64,21 +74,99 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     }
   }
 
+  readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
+    const models = this.state.filteredModels();
+    if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
+    const metric = this.state.intelligenceMetric();
+    const plotType = this.plotType();
+    const plotDef = this.currentPlotDef();
+    const higherXIsBetter = !plotDef.reverseX;
+    const higherYIsBetter = true;
+
+    const pts = models.map(m => ({id: m.id, ...this.getXY(m, plotType, metric)}));
+
+    const bestOn = (key: 'x' | 'y', higherIsBetter: boolean): string | null => {
+      let bestId: string | null = null;
+      let bestVal = higherIsBetter ? -Infinity : Infinity;
+      for (const p of pts) {
+        const v = p[key];
+        if (!Number.isFinite(v)) continue;
+        if (higherIsBetter ? v > bestVal : v < bestVal) {
+          bestVal = v;
+          bestId = p.id;
+        }
+      }
+      return bestId;
+    };
+
+    const axisBestIds = new Set<string>();
+    const bx = bestOn('x', higherXIsBetter);
+    const by = bestOn('y', higherYIsBetter);
+    if (bx) axisBestIds.add(bx);
+    if (by) axisBestIds.add(by);
+
+    const xs = pts.map(p => p.x).filter(v => Number.isFinite(v));
+    const ys = pts.map(p => p.y).filter(v => Number.isFinite(v));
+    if (xs.length === 0 || ys.length === 0) return {axisBestIds, balancedId: null};
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const yMin = Math.min(...ys), yMax = Math.max(...ys);
+    const xLog = this.state.logScaleX() && (plotType === 'cost' || plotType === 'context') && xMin > 0;
+
+    const norm = (v: number, lo: number, hi: number, log: boolean, higherIsBetter: boolean): number => {
+      if (hi === lo) return 0.5;
+      let t: number;
+      if (log && v > 0 && lo > 0) {
+        const a = Math.log(lo), b = Math.log(hi);
+        t = (Math.log(v) - a) / (b - a);
+      } else {
+        t = (v - lo) / (hi - lo);
+      }
+      t = Math.max(0, Math.min(1, t));
+      return higherIsBetter ? t : 1 - t;
+    };
+
+    let balancedId: string | null = null;
+    let bestDist = Infinity;
+    for (const p of pts) {
+      const nx = norm(p.x, xMin, xMax, xLog, higherXIsBetter);
+      const ny = norm(p.y, yMin, yMax, false, higherYIsBetter);
+      const d = (1 - nx) * (1 - nx) + (1 - ny) * (1 - ny);
+      if (d < bestDist) {
+        bestDist = d;
+        balancedId = p.id;
+      }
+    }
+
+    return {axisBestIds, balancedId};
+  });
+
   readonly plotData = computed(() => {
     const models = this.state.filteredModels();
     const metric = this.state.intelligenceMetric();
     const useful = this.state.usefulModelIds();
     const showUseful = this.state.showUsefulModels();
     const plotType = this.plotType();
+    const {axisBestIds, balancedId} = this.specialMarkers2d();
 
     return models.map(m => {
       let color = m.localModel ? 'rgba(70,180,180,0.9)' : 'rgba(99,140,210,0.9)';
-      const pointStyle = m.localModel ? 'triangle' : 'circle';
+      let pointStyle: string | HTMLImageElement = m.localModel ? 'triangle' : 'circle';
+      let radius = 7;
       const isUseful = showUseful && useful.has(m.id);
       if (isUseful) color = 'rgba(180,180,80,0.95)';
+      if (axisBestIds.has(m.id)) {
+        pointStyle = STAR_ICON;
+        color = '#ffd166';
+        radius = 11;
+      }
+      if (m.id === balancedId) {
+        pointStyle = 'rectRot';
+        color = '#e7b94a';
+        radius = 10;
+      }
 
       const {x, y} = this.getXY(m, plotType, metric);
-      return {x, y, label: m.publicName, color, pointStyle, isUseful};
+      return {x, y, label: m.publicName, color, pointStyle, radius, isUseful};
     });
   });
 
@@ -319,8 +407,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           backgroundColor: data.map(d => d.color),
           borderColor: data.map(d => d.color),
           pointStyle: data.map(d => d.pointStyle) as any,
-          pointRadius: 7,
-          pointHoverRadius: 10,
+          pointRadius: data.map(d => d.radius),
+          pointHoverRadius: data.map(d => d.radius + 3),
         }],
       },
       options: {
@@ -360,7 +448,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   private updateChart(
-    data: { x: number; y: number; label: string; color: string; pointStyle: string; isUseful: boolean }[],
+    data: { x: number; y: number; label: string; color: string; pointStyle: string | HTMLImageElement; radius: number; isUseful: boolean }[],
     logScale: boolean,
     bounds: { min: number; max: number },
     xBounds: { min: number | undefined; max: number | undefined },
@@ -372,6 +460,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     (this.chart.data.datasets[0] as any).backgroundColor = data.map(d => d.color);
     (this.chart.data.datasets[0] as any).borderColor = data.map(d => d.color);
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
+    (this.chart.data.datasets[0] as any).pointRadius = data.map(d => d.radius);
+    (this.chart.data.datasets[0] as any).pointHoverRadius = data.map(d => d.radius + 3);
 
     const xConf = this.xAxisConfig(plotType, logScale, xBounds, this.currentPlotDef().reverseX);
     const xScale = this.chart.options.scales!['x'] as any;

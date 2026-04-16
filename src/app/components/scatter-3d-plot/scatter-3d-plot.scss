@@ -74,6 +74,18 @@
       &.useful {
         background: rgba(180, 180, 80, 0.95);
       }
+
+      &.diamond-open.axis-best {
+        transform: rotate(45deg);
+        background: transparent;
+        border: 1.5px solid #ffd166;
+        border-radius: 1px;
+      }
+
+      &.square.balanced {
+        background: #e7b94a;
+        border-radius: 1px;
+      }
     }
   }
 

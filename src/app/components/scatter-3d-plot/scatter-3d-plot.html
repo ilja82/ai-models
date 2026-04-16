@@ -33,11 +33,13 @@
       @if (state.showUsefulModels()) {
         <span class="legend-item"><span class="shape circle useful"></span>Pareto efficient</span>
       }
+      <span class="legend-item"><span class="shape diamond-open axis-best"></span>Best per axis</span>
+      <span class="legend-item"><span class="shape square balanced"></span>Best balanced</span>
     </div>
 
     <div class="toolbar-right">
       <label class="toggle-label">
-        <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)"/>
+        <input type="checkbox" [checked]="state.logScale3d()" (change)="state.logScale3d.update(v => !v)"/>
         Log scale (where applicable)
       </label>
       <label class="toggle-label">

@@ -15,6 +15,7 @@ export class AppState {
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showUsefulModels = signal(this.loadBool('showUsefulModels', true));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
+  readonly logScale3d = signal(this.loadBool('logScale3d', false));
 
   constructor() {
     effect(() => {
@@ -35,6 +36,9 @@ export class AppState {
     });
     effect(() => {
       localStorage.setItem(KEY('logScaleX'), String(this.logScaleX()));
+    });
+    effect(() => {
+      localStorage.setItem(KEY('logScale3d'), String(this.logScale3d()));
     });
     effect(() => {
       localStorage.setItem(KEY('disabledIds'), JSON.stringify([...this.disabledModelIds()]));

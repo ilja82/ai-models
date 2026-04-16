@@ -102,6 +102,9 @@ const COLOR_UNATTRACTIVE_FILL = 'rgb(220,90,90)';
 const COLOR_ATTRACTIVE_LABEL = 'rgba(80,200,90,0.9)';
 const COLOR_UNATTRACTIVE_LABEL = 'rgba(220,90,90,0.85)';
 
+const COLOR_AXIS_BEST = '#ffd166';
+const COLOR_BALANCED = '#e7b94a';
+
 interface AxisExtent {
   min: number;
   max: number;
@@ -171,6 +174,63 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return useful;
   });
 
+  /** Returns a value in [0,1] where 1 = best on this axis. */
+  private normalizeToBest(v: number, ext: AxisExtent, higherIsBetter: boolean): number {
+    let t: number;
+    if (ext.log && v > 0 && ext.min > 0 && ext.max > 0) {
+      const lo = Math.log(ext.min);
+      const hi = Math.log(ext.max);
+      t = hi === lo ? 0.5 : (Math.log(v) - lo) / (hi - lo);
+    } else {
+      t = ext.max === ext.min ? 0.5 : (v - ext.min) / (ext.max - ext.min);
+    }
+    t = Math.max(0, Math.min(1, t));
+    return higherIsBetter ? t : 1 - t;
+  }
+
+  readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
+    const models = this.state.filteredModels();
+    if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
+    const metric = this.state.intelligenceMetric();
+    const logScale = this.state.logScale3d();
+    const axes = [this.defOf(this.xAxis()), this.defOf(this.yAxis()), this.defOf(this.zAxis())];
+
+    const axisBestIds = new Set<string>();
+    for (const a of axes) {
+      let bestModel: AiModel | null = null;
+      let bestVal = a.higherIsBetter ? -Infinity : Infinity;
+      for (const m of models) {
+        const v = a.get(m, metric);
+        if (!Number.isFinite(v)) continue;
+        if (a.higherIsBetter ? v > bestVal : v < bestVal) {
+          bestVal = v;
+          bestModel = m;
+        }
+      }
+      if (bestModel) axisBestIds.add(bestModel.id);
+    }
+
+    const exts = axes.map(a => this.computeAxisExtent(models, a, metric, logScale && a.logCandidate));
+    let balancedId: string | null = null;
+    if (exts.every(e => e !== null)) {
+      let bestDist = Infinity;
+      for (const m of models) {
+        let sumSq = 0;
+        for (let i = 0; i < axes.length; i++) {
+          const v = axes[i].get(m, metric);
+          const n = this.normalizeToBest(v, exts[i]!, axes[i].higherIsBetter);
+          const d = 1 - n;
+          sumSq += d * d;
+        }
+        if (sumSq < bestDist) {
+          bestDist = sumSq;
+          balancedId = m.id;
+        }
+      }
+    }
+    return {axisBestIds, balancedId};
+  });
+
   private computeAxisExtent(models: AiModel[], def: AxisDef, metric: IntelligenceMetric, log: boolean): AxisExtent | null {
     if (models.length === 0) return null;
     const values = models.map(m => def.get(m, metric)).filter(v => Number.isFinite(v));
@@ -223,15 +283,20 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xDef = this.defOf(this.xAxis());
     const yDef = this.defOf(this.yAxis());
     const zDef = this.defOf(this.zAxis());
-    const logScale = this.state.logScaleX();
+    const logScale = this.state.logScale3d();
+    const {axisBestIds, balancedId} = this.specialMarkers3d();
 
     const groups = {
       api: [] as AiModel[],
       local: [] as AiModel[],
       useful: [] as AiModel[],
+      axisBest: [] as AiModel[],
+      balanced: [] as AiModel[],
     };
     for (const m of models) {
-      if (showUseful && useful.has(m.id)) groups.useful.push(m);
+      if (m.id === balancedId) groups.balanced.push(m);
+      else if (axisBestIds.has(m.id)) groups.axisBest.push(m);
+      else if (showUseful && useful.has(m.id)) groups.useful.push(m);
       else if (m.localModel) groups.local.push(m);
       else groups.api.push(m);
     }
@@ -293,6 +358,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       buildTrace(groups.api, 'API', COLOR_API, 'circle', 5),
       buildTrace(groups.local, 'Local', COLOR_LOCAL, 'diamond', 5),
       buildTrace(groups.useful, 'Pareto efficient', COLOR_USEFUL, 'circle', 8),
+      buildTrace(groups.axisBest, 'Best per axis', COLOR_AXIS_BEST, 'diamond-open', 10),
+      buildTrace(groups.balanced, 'Best balanced', COLOR_BALANCED, 'square', 10),
     ];
   });
 
@@ -300,7 +367,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xDef = this.defOf(this.xAxis());
     const yDef = this.defOf(this.yAxis());
     const zDef = this.defOf(this.zAxis());
-    const logScale = this.state.logScaleX();
+    const logScale = this.state.logScale3d();
 
     const axisCfg = (def: AxisDef) => ({
       title: {text: def.label, font: {color: '#aaa', size: 12}},
