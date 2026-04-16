@@ -173,13 +173,13 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         // Most attractive is always upper-right
         ctx.fillStyle = 'rgba(120, 220, 130, 0.35)';
         ctx.fillRect(xMid, top, right - xMid, yMid - top);
-        ctx.fillStyle = 'rgba(170, 170, 170, 0.13)';
+        ctx.fillStyle = 'rgba(220, 90, 90, 0.18)';
         ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
         ctx.font = '10px system-ui, sans-serif';
         ctx.fillStyle = 'rgba(80, 200, 90, 0.9)';
         ctx.textAlign = 'right';
         ctx.fillText('Most attractive', right - 6, top + 14);
-        ctx.fillStyle = 'rgba(130, 130, 130, 0.55)';
+        ctx.fillStyle = 'rgba(220, 90, 90, 0.75)';
         ctx.textAlign = 'left';
         ctx.fillText('Least attractive', left + 6, bottom - 6);
 

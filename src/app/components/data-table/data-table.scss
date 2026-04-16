@@ -111,11 +111,11 @@
   }
 
   tr.useful td {
-    background: rgba(var(--accent-rgb), 0.06);
+    background: rgba(180, 180, 80, 0.10);
   }
 
   tr.useful:hover td {
-    background: rgba(var(--accent-rgb), 0.12);
+    background: rgba(180, 180, 80, 0.18);
   }
 
   .name-cell {
@@ -125,7 +125,7 @@
   }
 
   .useful-badge {
-    color: var(--accent);
+    color: rgba(180, 180, 80, 0.95);
     font-size: 0.75rem;
   }
 }
