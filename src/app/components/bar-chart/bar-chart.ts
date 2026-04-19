@@ -2,6 +2,7 @@ import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, sign
 import {BarController, BarElement, CategoryScale, Chart, ChartConfiguration, Legend, LinearScale, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {AiModel} from '../../models/ai-model.model';
+import {COSTS_TO_RUN_SCALE} from '../../models/ai-models.data';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -41,7 +42,7 @@ const DEPRECATED_STACK_COLOR = 'rgba(150,150,150,0.6)';
 
 const METRICS: MetricDef[] = [
   {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score', sortAsc: false, stacked: false},
-  {key: 'costsToRun', label: 'Run Cost', unit: '$/M', axisLabel: 'Cost to Run ($/M tokens)', sortAsc: false, stacked: false},
+  {key: 'costsToRun', label: 'Run Cost', unit: '$', axisLabel: 'Total Test Suite Cost ($)', sortAsc: false, stacked: true},
   {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
@@ -64,7 +65,10 @@ export class BarChartComponent implements OnInit, OnDestroy {
   readonly state = inject(AppState);
   readonly barMetric = signal<BarMetric>((localStorage.getItem(BAR_METRIC_KEY) as BarMetric) ?? 'intelligence');
   readonly metrics = METRICS;
-  readonly isStackedMetric = computed(() => this.barMetric() === 'latency' || this.barMetric() === 'responseTime');
+  readonly isStackedMetric = computed(() => {
+    const m = this.barMetric();
+    return m === 'latency' || m === 'responseTime' || m === 'costsToRun';
+  });
   private chart?: Chart;
 
   private getTotalValue(m: AiModel, metric: BarMetric): number {
@@ -135,6 +139,33 @@ export class BarChartComponent implements OnInit, OnDestroy {
       };
     }
 
+    if (metric === 'costsToRun') {
+      return {
+        labels,
+        segments: [
+          {
+            label: 'Input Cost',
+            color: stackColor('rgba(99,140,210,0.82)'),
+            values: models.map(m => m.inputFactor * m.inputCosts * COSTS_TO_RUN_SCALE)
+          },
+          {
+            label: 'Reasoning Cost',
+            color: stackColor('rgba(180,100,210,0.82)'),
+            values: models.map(m => m.reasoningFactor * m.outputCosts * COSTS_TO_RUN_SCALE)
+          },
+          {
+            label: 'Output Cost',
+            color: stackColor('rgba(70,180,180,0.82)'),
+            values: models.map(m => m.outputFactor * m.outputCosts * COSTS_TO_RUN_SCALE)
+          },
+        ],
+        isStacked: true,
+        yMin: 0,
+        metricDef,
+        models,
+      };
+    }
+
     const values = models.map(m => this.getTotalValue(m, metric));
     const maxVal = values.length ? Math.max(...values) : 0;
     let yMax: number | undefined;
@@ -179,6 +210,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
   }
 
   private formatValue(val: number, unit: string): string {
+    if (unit === '$') return `$${val.toFixed(2)}`;
     if (unit === '$/M') return `$${val.toFixed(2)}/M`;
     if (unit === 'K tokens') return `${val.toFixed(0)}K tokens`;
     if (unit === 's') return `${val.toFixed(2)}s`;

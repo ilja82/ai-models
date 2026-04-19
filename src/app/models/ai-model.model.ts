@@ -17,6 +17,8 @@ export interface AiModel {
   cutoffDate: string | null;
   reasoning: boolean;
   reasoningFactor: number;
+  inputFactor: number;
+  outputFactor: number;
   tokensPerSecond: number;
   inputProcessingTime: number;
   thinkingTime: number;
@@ -27,14 +29,21 @@ export interface AiModel {
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';
 
-export function computeCostsToRun(inputCosts: number, outputCosts: number, reasoningFactor: number): number {
-  return inputCosts + reasoningFactor * outputCosts;
+export function computeCostsToRun(
+  inputCosts: number,
+  outputCosts: number,
+  reasoningFactor: number,
+  inputFactor: number,
+  outputFactor: number,
+): number {
+  return inputFactor * inputCosts + reasoningFactor * outputCosts + outputFactor * outputCosts;
 }
 
 /** Returns the known cutoffDate, or an estimate of releaseDate minus 12 months. */
 export function effectiveCutoffDate(model: Pick<AiModel, 'cutoffDate' | 'releaseDate'>): string {
   if (model.cutoffDate) return model.cutoffDate;
   const d = new Date(model.releaseDate);
+  if (Number.isNaN(d.getTime())) return 'unknown';
   d.setFullYear(d.getFullYear() - 1);
   return d.toISOString().slice(0, 10);
 }
