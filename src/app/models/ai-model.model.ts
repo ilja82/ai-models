@@ -5,6 +5,8 @@ export interface AiModel {
   inputCosts: number;
   outputCosts: number;
   contextWindow: number;
+  maxInputTokens: number;
+  maxOutputTokens: number;
   costsToRun: number;
   localModel: boolean;
   minVramRequirement: number;

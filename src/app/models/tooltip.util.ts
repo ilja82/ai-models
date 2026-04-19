@@ -20,6 +20,8 @@ export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetri
     `Input: $${model.inputCosts.toFixed(3)}/M tokens`,
     `Output: $${model.outputCosts.toFixed(3)}/M tokens`,
     `Context: ${(model.contextWindow / 1000).toFixed(0)}K tokens`,
+    `Max In: ${(model.maxInputTokens / 1000).toFixed(0)}K tokens`,
+    `Max Out: ${(model.maxOutputTokens / 1000).toFixed(0)}K tokens`,
     `Cutoff: ${model.cutoffDate ?? `${effectiveCutoffDate(model)} (estimated)`}`,
     model.localModel ? `VRAM: ${model.minVramRequirement}GB` : '',
   ].filter(Boolean);

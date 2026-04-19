@@ -6,6 +6,7 @@ import {AiModel} from '../../models/ai-model.model';
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 type BarMetric = 'intelligence' | 'costsToRun' | 'inputCosts' | 'outputCosts' | 'contextWindow'
+  | 'maxInputTokens' | 'maxOutputTokens'
   | 'tokensPerSecond' | 'latency' | 'responseTime';
 
 const BAR_METRIC_KEY = 'ai-models.barMetric';
@@ -40,6 +41,8 @@ const METRICS: MetricDef[] = [
   {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
+  {key: 'maxInputTokens', label: 'Max Input', unit: 'K tokens', axisLabel: 'Max Input Tokens (K)', sortAsc: false, stacked: false},
+  {key: 'maxOutputTokens', label: 'Max Output', unit: 'K tokens', axisLabel: 'Max Output Tokens (K)', sortAsc: false, stacked: false},
   {key: 'tokensPerSecond', label: 'Tokens/sec', unit: 'tok/s', axisLabel: 'Tokens Per Second', sortAsc: false, stacked: false},
   {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s) - Time until first token', sortAsc: true, stacked: true},
   {key: 'responseTime', label: 'Response Time', unit: 's', axisLabel: 'Response Time until first 500 tokens (s)', sortAsc: true, stacked: true},
@@ -72,6 +75,10 @@ export class BarChartComponent implements OnInit, OnDestroy {
         return m.outputCosts;
       case 'contextWindow':
         return m.contextWindow / 1000;
+      case 'maxInputTokens':
+        return m.maxInputTokens / 1000;
+      case 'maxOutputTokens':
+        return m.maxOutputTokens / 1000;
       case 'tokensPerSecond':
         return m.tokensPerSecond;
       case 'latency':

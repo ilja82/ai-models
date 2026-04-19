@@ -24,6 +24,8 @@
           <th (click)="sort('outputCosts')" class="sortable">Output $/M {{ sortIcon('outputCosts') }}</th>
           <th (click)="sort('costsToRun')" class="sortable">Run Cost {{ sortIcon('costsToRun') }}</th>
           <th (click)="sort('contextWindow')" class="sortable">Context {{ sortIcon('contextWindow') }}</th>
+          <th (click)="sort('maxInputTokens')" class="sortable">Max In {{ sortIcon('maxInputTokens') }}</th>
+          <th (click)="sort('maxOutputTokens')" class="sortable">Max Out {{ sortIcon('maxOutputTokens') }}</th>
           <th (click)="sort('localModel')" class="sortable">Type {{ sortIcon('localModel') }}</th>
           <th (click)="sort('minVramRequirement')" class="sortable">VRAM {{ sortIcon('minVramRequirement') }}</th>
           <th (click)="sort('releaseDate')" class="sortable">Released {{ sortIcon('releaseDate') }}</th>
@@ -54,6 +56,8 @@
             <td class="num">{{ formatCost(model.outputCosts) }}</td>
             <td class="num">{{ formatCost(model.costsToRun) }}</td>
             <td class="num">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
+            <td class="num">{{ (model.maxInputTokens / 1000).toFixed(0) }}K</td>
+            <td class="num">{{ (model.maxOutputTokens / 1000).toFixed(0) }}K</td>
             <td class="center">{{ model.localModel ? 'Local' : 'API' }}</td>
             <td class="num">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}</td>
             <td class="center">{{ model.releaseDate }}</td>
@@ -72,7 +76,7 @@
         }
         @empty {
           <tr>
-            <td colspan="20" class="empty">No models match the current filters.</td>
+            <td colspan="22" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>

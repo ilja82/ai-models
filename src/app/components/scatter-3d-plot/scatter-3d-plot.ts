@@ -6,7 +6,7 @@ import {buildModelTooltipLines} from '../../models/tooltip.util';
 type PlotlyModule = typeof import('plotly.js-dist-min');
 type AxisField =
   | 'costsToRun' | 'inputCosts' | 'outputCosts'
-  | 'contextWindow' | 'minVramRequirement'
+  | 'contextWindow' | 'maxInputTokens' | 'maxOutputTokens' | 'minVramRequirement'
   | 'intelligence' | 'overallIntelligence' | 'codingIntelligence' | 'agenticIntelligence'
   | 'tokensPerSecond' | 'inputProcessingTime' | 'thinkingTime' | 'outputTime' | 'responseTime'
   | 'releaseDate';
@@ -40,6 +40,14 @@ const AXIS_DEFS: AxisDef[] = [
   {
     key: 'contextWindow', label: 'Context Window (tokens)', higherIsBetter: true, logCandidate: true,
     get: m => m.contextWindow, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
+  },
+  {
+    key: 'maxInputTokens', label: 'Max Input Tokens', higherIsBetter: true, logCandidate: true,
+    get: m => m.maxInputTokens, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
+  },
+  {
+    key: 'maxOutputTokens', label: 'Max Output Tokens', higherIsBetter: true, logCandidate: true,
+    get: m => m.maxOutputTokens, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
   },
   {
     key: 'minVramRequirement', label: 'Min VRAM (GB)', higherIsBetter: false, logCandidate: false,
