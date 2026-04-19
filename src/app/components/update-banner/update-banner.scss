@@ -1,0 +1,50 @@
+.update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  font-size: 0.85rem;
+  max-width: calc(100vw - 2rem);
+
+  .message {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .reload-btn {
+    padding: 0.3rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s;
+
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+
+  @media (max-width: 480px) {
+    left: 0.75rem;
+    right: 0.75rem;
+    transform: none;
+
+    .message {
+      white-space: normal;
+    }
+  }
+}

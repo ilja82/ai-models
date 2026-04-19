@@ -5,6 +5,7 @@ import {DataTableComponent} from './components/data-table/data-table';
 import {BarChartComponent} from './components/bar-chart/bar-chart';
 import {ScatterPlotComponent} from './components/scatter-plot/scatter-plot';
 import {Scatter3dPlotComponent} from './components/scatter-3d-plot/scatter-3d-plot';
+import {UpdateBannerComponent} from './components/update-banner/update-banner';
 
 type ViewTab = 'table' | 'bar' | 'scatter' | 'scatter3d';
 const TAB_KEY = 'ai-models.activeTab';
@@ -19,6 +20,7 @@ const TAB_KEY = 'ai-models.activeTab';
     BarChartComponent,
     ScatterPlotComponent,
     Scatter3dPlotComponent,
+    UpdateBannerComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

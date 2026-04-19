@@ -1,0 +1,12 @@
+@if (svc.updateAvailable() || svc.unrecoverable()) {
+  <div class="update-banner" role="status" aria-live="polite">
+    <span class="message">
+      @if (svc.unrecoverable()) {
+        App state is out of sync. Reload to recover.
+      } @else {
+        New version available.
+      }
+    </span>
+    <button type="button" class="reload-btn" (click)="svc.applyUpdate()">Reload</button>
+  </div>
+}
