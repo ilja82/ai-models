@@ -34,13 +34,6 @@
         width: 10px;
         height: 10px;
         border-radius: 2px;
-        &.api { background: rgba(99, 140, 210, 0.85); }
-        &.local { background: rgba(70, 180, 180, 0.85); }
-        &.both { background: rgba(147, 112, 219, 0.85); }
-
-        &.useful {
-          background: rgba(180, 180, 80, 0.95);
-        }
       }
     }
 

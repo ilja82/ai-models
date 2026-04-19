@@ -187,4 +187,8 @@
     font-size: 0.75rem;
     cursor: help;
   }
+
+  td.name-cell.deprecated {
+    color: var(--text-muted);
+  }
 }

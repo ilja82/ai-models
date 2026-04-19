@@ -49,12 +49,12 @@
       <tbody>
         @for (model of tableModels(); track model.id) {
           <tr [class.useful]="isUseful(model.id)">
-            <td class="name-cell">
+            <td class="name-cell" [class.deprecated]="model.deprecated">
               @if (isUseful(model.id)) {
                 <span class="useful-badge" title="Pareto efficient model">★</span>
               }
               @if (model.deprecated) {
-                <span class="deprecation-badge" [title]="model.deprecationInfo">⚠️</span>
+                <span class="deprecation-badge" [title]="'Deprecated: ' + model.deprecationInfo">⚠️</span>
               }
               {{ model.publicName }}
             </td>

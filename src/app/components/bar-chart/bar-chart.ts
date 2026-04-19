@@ -24,7 +24,13 @@ interface MetricDef {
 interface StackSegment {
   label: string;
   color: string | string[];
+  baseColor: string;
   values: number[];
+}
+
+interface LegendItem {
+  label: string;
+  color: string;
 }
 
 interface ChartDataResult {
@@ -39,10 +45,15 @@ interface ChartDataResult {
 
 const DEPRECATED_BAR_COLOR = 'rgba(150,150,150,0.75)';
 const DEPRECATED_STACK_COLOR = 'rgba(150,150,150,0.6)';
+const API_COLOR = 'rgba(99,140,210,0.75)';
+const LOCAL_COLOR = 'rgba(70,180,180,0.75)';
+const SEG_COLOR_1 = 'rgba(99,140,210,0.82)';
+const SEG_COLOR_2 = 'rgba(180,100,210,0.82)';
+const SEG_COLOR_3 = 'rgba(70,180,180,0.82)';
 
 const METRICS: MetricDef[] = [
   {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score', sortAsc: false, stacked: false},
-  {key: 'costsToRun', label: 'Run Cost', unit: '$', axisLabel: 'Total Test Suite Cost ($)', sortAsc: false, stacked: true},
+  {key: 'costsToRun', label: 'Run Cost', unit: '$', axisLabel: 'Total Usage Cost ($)', sortAsc: false, stacked: true},
   {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
@@ -114,8 +125,8 @@ export class BarChartComponent implements OnInit, OnDestroy {
       return {
         labels,
         segments: [
-          {label: 'Input Processing', color: stackColor('rgba(99,140,210,0.82)'), values: models.map(m => m.inputProcessingTime)},
-          {label: 'Thinking', color: stackColor('rgba(180,100,210,0.82)'), values: models.map(m => m.thinkingTime)},
+          {label: 'Input Processing', color: stackColor(SEG_COLOR_1), baseColor: SEG_COLOR_1, values: models.map(m => m.inputProcessingTime)},
+          {label: 'Thinking', color: stackColor(SEG_COLOR_2), baseColor: SEG_COLOR_2, values: models.map(m => m.thinkingTime)},
         ],
         isStacked: true,
         yMin: 0,
@@ -128,9 +139,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
       return {
         labels,
         segments: [
-          {label: 'Input Processing', color: stackColor('rgba(99,140,210,0.82)'), values: models.map(m => m.inputProcessingTime)},
-          {label: 'Thinking', color: stackColor('rgba(180,100,210,0.82)'), values: models.map(m => m.thinkingTime)},
-          {label: 'Output', color: stackColor('rgba(70,180,180,0.82)'), values: models.map(m => m.outputTime)},
+          {label: 'Input Processing', color: stackColor(SEG_COLOR_1), baseColor: SEG_COLOR_1, values: models.map(m => m.inputProcessingTime)},
+          {label: 'Thinking', color: stackColor(SEG_COLOR_2), baseColor: SEG_COLOR_2, values: models.map(m => m.thinkingTime)},
+          {label: 'Output', color: stackColor(SEG_COLOR_3), baseColor: SEG_COLOR_3, values: models.map(m => m.outputTime)},
         ],
         isStacked: true,
         yMin: 0,
@@ -145,17 +156,20 @@ export class BarChartComponent implements OnInit, OnDestroy {
         segments: [
           {
             label: 'Input Cost',
-            color: stackColor('rgba(99,140,210,0.82)'),
+            color: stackColor(SEG_COLOR_1),
+            baseColor: SEG_COLOR_1,
             values: models.map(m => m.inputFactor * m.inputCosts * COSTS_TO_RUN_SCALE)
           },
           {
             label: 'Reasoning Cost',
-            color: stackColor('rgba(180,100,210,0.82)'),
+            color: stackColor(SEG_COLOR_2),
+            baseColor: SEG_COLOR_2,
             values: models.map(m => m.reasoningFactor * m.outputCosts * COSTS_TO_RUN_SCALE)
           },
           {
             label: 'Output Cost',
-            color: stackColor('rgba(70,180,180,0.82)'),
+            color: stackColor(SEG_COLOR_3),
+            baseColor: SEG_COLOR_3,
             values: models.map(m => m.outputFactor * m.outputCosts * COSTS_TO_RUN_SCALE)
           },
         ],
@@ -179,8 +193,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
         label: metricDef.label,
         color: models.map(m =>
           m.deprecated ? DEPRECATED_BAR_COLOR
-            : m.localModel ? 'rgba(70,180,180,0.75)'
-              : 'rgba(99,140,210,0.75)'),
+            : m.localModel ? LOCAL_COLOR
+              : API_COLOR),
+        baseColor: API_COLOR,
         values,
       }],
       isStacked: false,
@@ -190,6 +205,51 @@ export class BarChartComponent implements OnInit, OnDestroy {
       models,
     };
   });
+
+  readonly legendItems = computed((): LegendItem[] => {
+    const data = this.chartData();
+    const items: LegendItem[] = [];
+    if (data.isStacked) {
+      for (const seg of data.segments) {
+        items.push({label: seg.label, color: seg.baseColor});
+      }
+    } else {
+      items.push({label: 'API', color: API_COLOR});
+      items.push({label: 'Local', color: LOCAL_COLOR});
+    }
+    if (data.models.some(m => m.deprecated)) {
+      items.push({label: 'Deprecated', color: DEPRECATED_BAR_COLOR});
+    }
+    return items;
+  });
+
+  private readonly valueLabelsPlugin = {
+    id: 'valueLabels',
+    afterDatasetsDraw: (chart: Chart) => {
+      const data = this.chartData();
+      if (!chart.data.datasets.length || !data.models.length) return;
+      const lastIdx = chart.data.datasets.length - 1;
+      const meta = chart.getDatasetMeta(lastIdx);
+      const ctx = chart.ctx;
+      const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#ddd';
+      ctx.save();
+      ctx.fillStyle = textColor;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      meta.data.forEach((bar: any, i: number) => {
+        const total = data.segments.reduce((s, seg) => s + (seg.values[i] ?? 0), 0);
+        const label = this.formatValue(total, data.metricDef.unit);
+        const x = bar.x;
+        const y = bar.y;
+        ctx.fillText(label, x, y - 4);
+        if (data.models[i]?.deprecated) {
+          ctx.fillText('⚠️', x, y - 18);
+        }
+      });
+      ctx.restore();
+    },
+  };
 
   constructor() {
     effect(() => {
@@ -256,12 +316,14 @@ export class BarChartComponent implements OnInit, OnDestroy {
           borderSkipped: false,
         })),
       },
+      plugins: [this.valueLabelsPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: {duration: 200},
+        layout: {padding: {top: 28}},
         plugins: {
-          legend: {display: data.isStacked},
+          legend: {display: false},
           tooltip: {
             mode: 'index',
             callbacks: this.buildTooltipCallbacks(data),
@@ -315,7 +377,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
       color: '#888',
       font: {size: 13},
     };
-    (this.chart.options.plugins!.legend as any).display = data.isStacked;
+    (this.chart.options.plugins!.legend as any).display = false;
     (this.chart.options.plugins!.tooltip as any).mode = 'index';
     (this.chart.options.plugins!.tooltip as any).callbacks = this.buildTooltipCallbacks(data);
 

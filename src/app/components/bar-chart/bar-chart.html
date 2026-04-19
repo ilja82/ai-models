@@ -10,12 +10,13 @@
         </button>
       }
     </div>
-    @if (!isStackedMetric()) {
-      <div class="legend">
-        <span class="legend-item"><span class="dot api"></span>API</span>
-        <span class="legend-item"><span class="dot local"></span>Local</span>
-      </div>
-    }
+    <div class="legend">
+      @for (item of legendItems(); track item.label) {
+        <span class="legend-item">
+          <span class="dot" [style.background]="item.color"></span>{{ item.label }}
+        </span>
+      }
+    </div>
   </div>
   <div class="canvas-wrap">
     <canvas #canvas></canvas>
