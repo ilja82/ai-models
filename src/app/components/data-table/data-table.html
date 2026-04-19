@@ -1,4 +1,4 @@
-<div class="table-container">
+<div class="table-container" [class.histogram-on]="showHistogram()">
   <div class="table-toolbar">
     <input
       type="search"
@@ -10,6 +10,10 @@
     <label class="toggle-label">
       <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)"/>
       Highlight most relevant models
+    </label>
+    <label class="toggle-label">
+      <input type="checkbox" [checked]="showHistogram()" (change)="showHistogram.update(v => !v)"/>
+      Histogram cells
     </label>
     <span class="count">{{ tableModels().length }} models</span>
   </div>
@@ -55,26 +59,30 @@
               {{ model.publicName }}
             </td>
             <td class="mono">{{ model.modelName }}</td>
-            <td class="num">{{ formatCost(model.inputCosts) }}</td>
-            <td class="num">{{ formatCost(model.outputCosts) }}</td>
-            <td class="num">{{ formatCost(model.costsToRun) }}</td>
-            <td class="num">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
-            <td class="num">{{ (model.maxInputTokens / 1000).toFixed(0) }}K</td>
-            <td class="num">{{ (model.maxOutputTokens / 1000).toFixed(0) }}K</td>
+            <td class="num hist" [style]="cellStyle(model, 'inputCosts')">{{ formatCost(model.inputCosts) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'outputCosts')">{{ formatCost(model.outputCosts) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'costsToRun')">{{ formatCost(model.costsToRun) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'contextWindow')">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
+            <td class="num hist" [style]="cellStyle(model, 'maxInputTokens')">{{ (model.maxInputTokens / 1000).toFixed(0) }}K</td>
+            <td class="num hist" [style]="cellStyle(model, 'maxOutputTokens')">{{ (model.maxOutputTokens / 1000).toFixed(0) }}K</td>
             <td class="center">{{ model.localModel ? 'Local' : 'API' }}</td>
-            <td class="num">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}</td>
+            <td class="num hist"
+                [style]="cellStyle(model, 'minVramRequirement')">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}
+            </td>
             <td class="center">{{ model.releaseDate }}</td>
             <td class="center">{{ model.cutoffDate ?? '—' }}</td>
-            <td class="num intel">{{ model.overallIntelligence }}</td>
-            <td class="num intel">{{ model.codingIntelligence }}</td>
-            <td class="num intel">{{ model.agenticIntelligence }}</td>
+            <td class="num intel hist" [style]="cellStyle(model, 'overallIntelligence')">{{ model.overallIntelligence }}</td>
+            <td class="num intel hist" [style]="cellStyle(model, 'codingIntelligence')">{{ model.codingIntelligence }}</td>
+            <td class="num intel hist" [style]="cellStyle(model, 'agenticIntelligence')">{{ model.agenticIntelligence }}</td>
             <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
-            <td class="num">{{ model.tokensPerSecond > 0 ? model.tokensPerSecond : '—' }}</td>
-            <td class="num">{{ formatTime(model.inputProcessingTime) }}</td>
-            <td class="num">{{ formatTime(model.thinkingTime) }}</td>
-            <td class="num">{{ formatTime(model.outputTime) }}</td>
-            <td class="num">{{ formatTime(model.inputProcessingTime + model.thinkingTime) }}</td>
-            <td class="num">{{ formatTime(model.inputProcessingTime + model.thinkingTime + model.outputTime) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'tokensPerSecond')">{{ model.tokensPerSecond > 0 ? model.tokensPerSecond : '—' }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'inputProcessingTime')">{{ formatTime(model.inputProcessingTime) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'thinkingTime')">{{ formatTime(model.thinkingTime) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'outputTime')">{{ formatTime(model.outputTime) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'latency')">{{ formatTime(model.inputProcessingTime + model.thinkingTime) }}</td>
+            <td class="num hist"
+                [style]="cellStyle(model, 'responseTime')">{{ formatTime(model.inputProcessingTime + model.thinkingTime + model.outputTime) }}
+            </td>
           </tr>
         }
         @empty {
