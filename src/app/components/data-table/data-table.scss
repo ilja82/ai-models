@@ -49,7 +49,8 @@
 
   table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 0.82rem;
   }
 
@@ -136,9 +137,45 @@
   }
 
   .name-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+    vertical-align: middle;
+
+    .useful-badge,
+    .deprecation-badge {
+      margin-right: 0.4rem;
+    }
+  }
+
+  thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface-1);
+  }
+
+  td.name-cell {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface-1);
+  }
+
+  thead th:first-child,
+  td.name-cell {
+    border-right: 1px solid var(--border);
+  }
+
+  tr:hover td.name-cell {
+    background: var(--surface-2);
+  }
+
+  tr.useful td.name-cell {
+    background: linear-gradient(rgba(180, 180, 80, 0.10), rgba(180, 180, 80, 0.10)),
+    var(--surface-1);
+  }
+
+  tr.useful:hover td.name-cell {
+    background: linear-gradient(rgba(180, 180, 80, 0.18), rgba(180, 180, 80, 0.18)),
+    var(--surface-2);
   }
 
   .useful-badge {
