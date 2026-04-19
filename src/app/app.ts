@@ -5,9 +5,10 @@ import {DataTableComponent} from './components/data-table/data-table';
 import {BarChartComponent} from './components/bar-chart/bar-chart';
 import {ScatterPlotComponent} from './components/scatter-plot/scatter-plot';
 import {Scatter3dPlotComponent} from './components/scatter-3d-plot/scatter-3d-plot';
+import {ModelProfilesComponent} from './components/model-profiles/model-profiles';
 import {UpdateBannerComponent} from './components/update-banner/update-banner';
 
-type ViewTab = 'table' | 'bar' | 'scatter' | 'scatter3d';
+type ViewTab = 'table' | 'bar' | 'scatter' | 'scatter3d' | 'profiles';
 const TAB_KEY = 'ai-models.activeTab';
 
 @Component({
@@ -20,6 +21,7 @@ const TAB_KEY = 'ai-models.activeTab';
     BarChartComponent,
     ScatterPlotComponent,
     Scatter3dPlotComponent,
+    ModelProfilesComponent,
     UpdateBannerComponent,
   ],
   templateUrl: './app.html',

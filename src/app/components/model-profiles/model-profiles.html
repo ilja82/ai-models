@@ -1,0 +1,71 @@
+<div class="profiles-container">
+  <div class="profiles-toolbar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search models…"
+      [ngModel]="searchText()"
+      (ngModelChange)="searchText.set($event)"/>
+    <span class="count">{{ shownCount() }} of {{ totalCount() }}</span>
+  </div>
+
+  @if (profiles().length === 0) {
+    <div class="empty">No models match the current filter.</div>
+  } @else {
+    <div class="profiles-grid">
+      @for (entry of profiles(); track entry.model.id) {
+        <article
+          class="profile-card"
+          [class.deprecated]="entry.model.deprecated"
+          [title]="tooltipFor(entry)">
+          <header class="card-head">
+            <h3 class="name">{{ entry.model.publicName }}</h3>
+            <code class="model-id">{{ entry.model.modelName }}</code>
+          </header>
+
+          <p class="headline">{{ entry.headline }}</p>
+
+          @if (strengths(entry).length > 0) {
+            <div class="badge-group">
+              @for (b of strengths(entry); track b.id) {
+                <span class="badge badge--strength" [title]="b.tooltip">
+                  <span class="icon">{{ b.icon }}</span>{{ b.label }}
+                </span>
+              }
+            </div>
+          }
+
+          @if (weaknesses(entry).length > 0) {
+            @if (strengths(entry).length > 0) {
+              <div class="divider"></div>
+            }
+            <div class="badge-group">
+              @for (b of weaknesses(entry); track b.id) {
+                <span class="badge badge--weakness" [title]="b.tooltip">
+                  <span class="icon">{{ b.icon }}</span>{{ b.label }}
+                </span>
+              }
+            </div>
+          }
+
+          @if (neutrals(entry).length > 0) {
+            <div class="badge-group neutrals">
+              @for (b of neutrals(entry); track b.id) {
+                <span class="badge" [class.badge--neutral]="b.kind === 'neutral'"
+                      [class.badge--meta]="b.kind === 'meta'"
+                      [title]="b.tooltip">
+                  <span class="icon">{{ b.icon }}</span>{{ b.label }}
+                </span>
+              }
+            </div>
+          }
+
+          <footer class="card-foot">
+            <span>Released {{ entry.model.releaseDate }}</span>
+            <span>{{ (entry.model.contextWindow / 1000).toFixed(0) }}K ctx</span>
+          </footer>
+        </article>
+      }
+    </div>
+  }
+</div>
