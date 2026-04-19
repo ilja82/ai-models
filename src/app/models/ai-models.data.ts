@@ -1,7 +1,15 @@
 import {AiModel, computeCostsToRun} from './ai-model.model';
 
-function m(base: Omit<AiModel, 'costsToRun'>): AiModel {
-  return {...base, costsToRun: computeCostsToRun(base.inputCosts, base.outputCosts, base.reasoning)};
+type MInput = Omit<AiModel, 'costsToRun' | 'deprecated' | 'deprecationInfo'>
+  & { deprecated?: boolean; deprecationInfo?: string };
+
+function m(base: MInput): AiModel {
+  return {
+    ...base,
+    deprecated: base.deprecated ?? false,
+    deprecationInfo: base.deprecationInfo ?? '',
+    costsToRun: computeCostsToRun(base.inputCosts, base.outputCosts, base.reasoning),
+  };
 }
 
 export const AI_MODELS: AiModel[] = [

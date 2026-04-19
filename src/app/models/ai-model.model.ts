@@ -20,6 +20,8 @@ export interface AiModel {
   inputProcessingTime: number;
   thinkingTime: number;
   outputTime: number;
+  deprecated: boolean;
+  deprecationInfo: string;
 }
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';

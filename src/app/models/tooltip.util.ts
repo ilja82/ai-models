@@ -10,6 +10,7 @@ export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetri
   const responseTime = model.inputProcessingTime + model.thinkingTime + model.outputTime;
   return [
     `${model.publicName}`,
+    model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
     `★ ${metricLabel}: ${intel}`,
     `★ Speed: ${model.tokensPerSecond} tok/s`,
     `★ Response time: ${responseTime.toFixed(1)}s (in: ${model.inputProcessingTime}s, think: ${model.thinkingTime}s, out: ${model.outputTime}s)`,

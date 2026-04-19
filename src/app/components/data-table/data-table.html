@@ -49,6 +49,9 @@
               @if (isUseful(model.id)) {
                 <span class="useful-badge" title="Pareto efficient model">★</span>
               }
+              @if (model.deprecated) {
+                <span class="deprecation-badge" [title]="model.deprecationInfo">⚠️</span>
+              }
               {{ model.publicName }}
             </td>
             <td class="mono">{{ model.modelName }}</td>

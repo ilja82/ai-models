@@ -92,7 +92,7 @@ export class AppState {
 
   readonly usefulModelIds = computed(() => {
     const metric = this.intelligenceMetric();
-    const models = this.filteredModels();
+    const models = this.filteredModels().filter(m => !m.deprecated);
 
     const getIntelligence = (m: AiModel) => {
       if (metric === 'coding') return m.codingIntelligence;

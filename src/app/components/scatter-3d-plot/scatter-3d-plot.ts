@@ -112,6 +112,7 @@ const COLOR_UNATTRACTIVE_LABEL = 'rgba(220,90,90,0.85)';
 
 const COLOR_AXIS_BEST = '#ffd166';
 const COLOR_BALANCED = '#e7b94a';
+const COLOR_DEPRECATED = 'rgba(150,150,150,0.55)';
 
 interface AxisExtent {
   min: number;
@@ -146,7 +147,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   /** Pareto-useful model IDs for the currently selected 3 axes. */
   readonly useful3d = computed<Set<string>>(() => {
-    const models = this.state.filteredModels();
+    const models = this.state.filteredModels().filter(m => !m.deprecated);
     const metric = this.state.intelligenceMetric();
     const axes = [this.defOf(this.xAxis()), this.defOf(this.yAxis()), this.defOf(this.zAxis())];
 
@@ -197,7 +198,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   }
 
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const models = this.state.filteredModels();
+    const models = this.state.filteredModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const metric = this.state.intelligenceMetric();
     const logScale = this.state.logScale3d();
@@ -295,6 +296,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const {axisBestIds, balancedId} = this.specialMarkers3d();
 
     const groups = {
+      deprecated: [] as AiModel[],
       api: [] as AiModel[],
       local: [] as AiModel[],
       useful: [] as AiModel[],
@@ -302,7 +304,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       balanced: [] as AiModel[],
     };
     for (const m of models) {
-      if (m.id === balancedId) groups.balanced.push(m);
+      if (m.deprecated) groups.deprecated.push(m);
+      else if (m.id === balancedId) groups.balanced.push(m);
       else if (axisBestIds.has(m.id)) groups.axisBest.push(m);
       else if (showUseful && useful.has(m.id)) groups.useful.push(m);
       else if (m.localModel) groups.local.push(m);
@@ -363,6 +366,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     return [
       ...regionTraces,
+      buildTrace(groups.deprecated, 'Deprecated', COLOR_DEPRECATED, 'circle', 4),
       buildTrace(groups.api, 'API', COLOR_API, 'circle', 5),
       buildTrace(groups.local, 'Local', COLOR_LOCAL, 'diamond', 5),
       buildTrace(groups.useful, 'Pareto efficient', COLOR_USEFUL, 'circle', 8),

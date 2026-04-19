@@ -75,7 +75,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const models = this.state.filteredModels();
+    const models = this.state.filteredModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const metric = this.state.intelligenceMetric();
     const plotType = this.plotType();
@@ -149,6 +149,17 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const {axisBestIds, balancedId} = this.specialMarkers2d();
 
     return models.map(m => {
+      if (m.deprecated) {
+        const {x, y} = this.getXY(m, plotType, metric);
+        return {
+          x, y, label: m.publicName,
+          color: 'rgba(150,150,150,0.55)',
+          pointStyle: (m.localModel ? 'triangle' : 'circle') as string | HTMLImageElement,
+          radius: 6,
+          isUseful: false,
+        };
+      }
+
       let color = m.localModel ? 'rgba(70,180,180,0.9)' : 'rgba(99,140,210,0.9)';
       let pointStyle: string | HTMLImageElement = m.localModel ? 'triangle' : 'circle';
       let radius = 7;

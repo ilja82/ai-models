@@ -33,7 +33,11 @@ interface ChartDataResult {
   yMax?: number;
   yMin: number;
   metricDef: MetricDef;
+  models: AiModel[];
 }
+
+const DEPRECATED_BAR_COLOR = 'rgba(150,150,150,0.75)';
+const DEPRECATED_STACK_COLOR = 'rgba(150,150,150,0.6)';
 
 const METRICS: MetricDef[] = [
   {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score', sortAsc: false, stacked: false},
@@ -100,16 +104,19 @@ export class BarChartComponent implements OnInit, OnDestroy {
 
     const labels = models.map(m => m.publicName);
 
+    const stackColor = (base: string) => models.map(m => m.deprecated ? DEPRECATED_STACK_COLOR : base);
+
     if (metric === 'latency') {
       return {
         labels,
         segments: [
-          {label: 'Input Processing', color: 'rgba(99,140,210,0.82)', values: models.map(m => m.inputProcessingTime)},
-          {label: 'Thinking', color: 'rgba(180,100,210,0.82)', values: models.map(m => m.thinkingTime)},
+          {label: 'Input Processing', color: stackColor('rgba(99,140,210,0.82)'), values: models.map(m => m.inputProcessingTime)},
+          {label: 'Thinking', color: stackColor('rgba(180,100,210,0.82)'), values: models.map(m => m.thinkingTime)},
         ],
         isStacked: true,
         yMin: 0,
         metricDef,
+        models,
       };
     }
 
@@ -117,13 +124,14 @@ export class BarChartComponent implements OnInit, OnDestroy {
       return {
         labels,
         segments: [
-          {label: 'Input Processing', color: 'rgba(99,140,210,0.82)', values: models.map(m => m.inputProcessingTime)},
-          {label: 'Thinking', color: 'rgba(180,100,210,0.82)', values: models.map(m => m.thinkingTime)},
-          {label: 'Output', color: 'rgba(70,180,180,0.82)', values: models.map(m => m.outputTime)},
+          {label: 'Input Processing', color: stackColor('rgba(99,140,210,0.82)'), values: models.map(m => m.inputProcessingTime)},
+          {label: 'Thinking', color: stackColor('rgba(180,100,210,0.82)'), values: models.map(m => m.thinkingTime)},
+          {label: 'Output', color: stackColor('rgba(70,180,180,0.82)'), values: models.map(m => m.outputTime)},
         ],
         isStacked: true,
         yMin: 0,
         metricDef,
+        models,
       };
     }
 
@@ -138,13 +146,17 @@ export class BarChartComponent implements OnInit, OnDestroy {
       labels,
       segments: [{
         label: metricDef.label,
-        color: models.map(m => m.localModel ? 'rgba(70,180,180,0.75)' : 'rgba(99,140,210,0.75)'),
+        color: models.map(m =>
+          m.deprecated ? DEPRECATED_BAR_COLOR
+            : m.localModel ? 'rgba(70,180,180,0.75)'
+              : 'rgba(99,140,210,0.75)'),
         values,
       }],
       isStacked: false,
       yMax,
       yMin: 0,
       metricDef,
+      models,
     };
   });
 
@@ -180,14 +192,19 @@ export class BarChartComponent implements OnInit, OnDestroy {
       const val: number = ctx.parsed.y ?? 0;
       return `${ctx.dataset.label}: ${this.formatValue(val, unit)}`;
     };
-    if (!data.isStacked) return {label};
+    const afterBody = (items: any[]): string | string[] => {
+      if (!items.length) return '';
+      const m = data.models[items[0].dataIndex];
+      return m?.deprecated ? `⚠️ Deprecated: ${m.deprecationInfo}` : '';
+    };
+    if (!data.isStacked) return {label, afterBody};
     const afterTitle = (items: any[]): string => {
       if (!items.length) return '';
       const idx = items[0].dataIndex;
       const total = data.segments.reduce((sum, seg) => sum + (seg.values[idx] ?? 0), 0);
       return `Total: ${this.formatValue(total, unit)}`;
     };
-    return {afterTitle, label};
+    return {afterTitle, label, afterBody};
   }
 
   private initChart(): void {
