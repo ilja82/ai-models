@@ -474,7 +474,7 @@ export const AI_MODELS: AiModel[] = [
   }),
   m({
     id: 'minimax-m2.5',
-    publicName: 'MiniMax M2.5',
+    publicName: 'MiniMax M2.5 (230B)',
     modelName: 'minimax-m2.5',
     inputCosts: 0.3,
     outputCosts: 1.2,
