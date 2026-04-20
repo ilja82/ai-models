@@ -25,12 +25,13 @@ export class ModelProfilesComponent {
       return m.publicName.toLowerCase().includes(search)
         || m.modelName.toLowerCase().includes(search);
     });
-    return this.badges.computeProfiles(
-      display,
-      this.state.allModels(),
-      this.state.intelligenceMetric(),
-      this.state.usefulModelIds(),
-    );
+    const sorted = [...display].sort((a, b) => {
+      if (a.deprecated !== b.deprecated) return a.deprecated ? 1 : -1;
+      const intelDiff = b.overallIntelligence - a.overallIntelligence;
+      if (intelDiff !== 0) return intelDiff;
+      return (b.releaseDate || '').localeCompare(a.releaseDate || '');
+    });
+    return this.badges.computeProfiles(sorted, this.state.allModels());
   });
 
   readonly totalCount = computed(() => this.state.filteredModels().length);
