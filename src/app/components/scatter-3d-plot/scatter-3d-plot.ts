@@ -330,9 +330,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       marker: {color, size, symbol, line: {color: 'rgba(0,0,0,0.4)', width: 0.5}, opacity: 0.95},
     });
 
-    const xExt = this.computeAxisExtent(models, xDef, metric, logScale && xDef.logCandidate);
-    const yExt = this.computeAxisExtent(models, yDef, metric, logScale && yDef.logCandidate);
-    const zExt = this.computeAxisExtent(models, zDef, metric, logScale && zDef.logCandidate);
+    const allModels = this.state.allModels();
+    const xExt = this.computeAxisExtent(allModels, xDef, metric, logScale && xDef.logCandidate);
+    const yExt = this.computeAxisExtent(allModels, yDef, metric, logScale && yDef.logCandidate);
+    const zExt = this.computeAxisExtent(allModels, zDef, metric, logScale && zDef.logCandidate);
 
     const regionTraces: any[] = [];
     if (xExt && yExt && zExt) {
@@ -383,7 +384,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xDef = this.defOf(this.xAxis());
     const yDef = this.defOf(this.yAxis());
     const zDef = this.defOf(this.zAxis());
-    const models = this.state.filteredModels();
+    const models = this.state.allModels();
     const metric = this.state.intelligenceMetric();
 
     const axisCfg = (def: AxisDef): any => {
@@ -396,7 +397,13 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         tickfont: {color: '#888', size: 10},
       };
       if (!this.isLogAxis(def)) {
-        base.autorange = def.higherIsBetter ? true : 'reversed';
+        const ext = this.computeAxisExtent(models, def, metric, false);
+        if (!ext) {
+          base.autorange = def.higherIsBetter ? true : 'reversed';
+          return base;
+        }
+        base.range = def.higherIsBetter ? [ext.min, ext.max] : [ext.max, ext.min];
+        base.autorange = false;
         return base;
       }
       const ext = this.computeAxisExtent(models, def, metric, true);
