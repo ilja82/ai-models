@@ -26,8 +26,11 @@ interface Thresholds {
 
 interface BestSets {
   overall: Set<string>;
+  overallBest: Set<string>;
   coding: Set<string>;
+  codingBest: Set<string>;
   agentic: Set<string>;
+  agenticBest: Set<string>;
 }
 
 interface ModelMetrics {
@@ -107,14 +110,21 @@ function buildThresholds(baseline: AiModel[]): Thresholds {
 }
 
 function buildBestSets(baseline: AiModel[]): BestSets {
-  const topN = (key: (m: AiModel) => number): Set<string> => {
+  const ranked = (key: (m: AiModel) => number): { top: Set<string>; best: Set<string> } => {
     const sorted = [...baseline].sort((a, b) => key(b) - key(a));
-    return new Set(sorted.slice(0, 3).map(m => m.id));
+    const ids = sorted.slice(0, 3).map(m => m.id);
+    return {top: new Set(ids), best: new Set(ids.slice(0, 1))};
   };
+  const o = ranked(m => m.overallIntelligence);
+  const c = ranked(m => m.codingIntelligence);
+  const a = ranked(m => m.agenticIntelligence);
   return {
-    overall: topN(m => m.overallIntelligence),
-    coding: topN(m => m.codingIntelligence),
-    agentic: topN(m => m.agenticIntelligence),
+    overall: o.top,
+    overallBest: o.best,
+    coding: c.top,
+    codingBest: c.best,
+    agentic: a.top,
+    agenticBest: a.best,
   };
 }
 
@@ -127,29 +137,56 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
   const topBest = best.overall.has(model.id);
   return [
     {
-      when: topBest,
+      when: best.overallBest.has(model.id),
       badge: {
         id: 'best-overall',
         icon: '👑',
         label: 'Best overall',
+        tooltip: `#1 by overall intelligence (${model.overallIntelligence})`,
+      },
+    },
+    {
+      when: topBest && !best.overallBest.has(model.id),
+      badge: {
+        id: 'top-overall',
+        icon: '👑',
+        label: 'Top-tier overall',
         tooltip: `Top 3 by overall intelligence (${model.overallIntelligence})`,
       },
     },
     {
-      when: best.coding.has(model.id),
+      when: best.codingBest.has(model.id),
       badge: {
         id: 'best-coding',
         icon: '💻',
         label: 'Best at coding',
+        tooltip: `#1 by coding intelligence (${model.codingIntelligence})`,
+      },
+    },
+    {
+      when: best.coding.has(model.id) && !best.codingBest.has(model.id),
+      badge: {
+        id: 'top-coding',
+        icon: '💻',
+        label: 'Top-tier coder',
         tooltip: `Top 3 by coding intelligence (${model.codingIntelligence})`,
       },
     },
     {
-      when: best.agentic.has(model.id),
+      when: best.agenticBest.has(model.id),
       badge: {
         id: 'best-agentic',
         icon: '🤖',
         label: 'Best at agents',
+        tooltip: `#1 by agentic intelligence (${model.agenticIntelligence})`,
+      },
+    },
+    {
+      when: best.agentic.has(model.id) && !best.agenticBest.has(model.id),
+      badge: {
+        id: 'top-agentic',
+        icon: '🤖',
+        label: 'Top-tier agent',
         tooltip: `Top 3 by agentic intelligence (${model.agenticIntelligence})`,
       },
     },
@@ -244,7 +281,7 @@ function weaknessRules(model: AiModel, m: ModelMetrics, t: Thresholds): BadgeRul
       badge: {
         id: 'oldest',
         icon: '📅',
-        label: 'Oldest',
+        label: 'Old',
         tooltip: `Among the oldest 20% (released ${model.releaseDate})`,
       },
     },
