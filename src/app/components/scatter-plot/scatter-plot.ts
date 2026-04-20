@@ -1,8 +1,10 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {Chart, ChartConfiguration, Legend, LinearScale, LogarithmicScale, Plugin, PointElement, ScatterController, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
+import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
+import {getPlotColors} from '../../models/plot-colors';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -13,8 +15,6 @@ function makeStarImage(color: string, size: number): HTMLImageElement {
   img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   return img;
 }
-
-const STAR_ICON = makeStarImage('#ffd166', 22);
 
 export type PlotType = 'cost' | 'release' | 'context' | 'speed' | 'responseVsIntel' | 'responseVsSpeed';
 
@@ -46,7 +46,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   @ViewChild('canvas', {static: true}) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   readonly state = inject(AppState);
+  readonly themeState = inject(ThemeState);
   private chart?: Chart;
+
+  private readonly starIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22));
 
   readonly plotType = signal<PlotType>((localStorage.getItem(PLOT_TYPE_KEY) as PlotType) ?? 'cost');
   readonly plotTypes = PLOT_TYPES;
@@ -155,32 +158,34 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const showUseful = this.state.showUsefulModels();
     const plotType = this.plotType();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
+    const colors = getPlotColors(this.themeState.theme());
+    const starIcon = this.starIcon();
 
     return models.map(m => {
       if (m.deprecated) {
         const {x, y} = this.getXY(m, plotType, metric);
         return {
           x: this.transformX(x, plotType), y, label: m.publicName,
-          color: 'rgba(150,150,150,0.55)',
+          color: colors.deprecated,
           pointStyle: (m.localModel ? 'triangle' : 'circle') as string | HTMLImageElement,
           radius: 6,
           isUseful: false,
         };
       }
 
-      let color = m.localModel ? 'rgba(70,180,180,0.9)' : 'rgba(99,140,210,0.9)';
+      let color = m.localModel ? colors.local : colors.api;
       let pointStyle: string | HTMLImageElement = m.localModel ? 'triangle' : 'circle';
       let radius = 7;
       const isUseful = showUseful && useful.has(m.id);
-      if (isUseful) color = 'rgba(180,180,80,0.95)';
+      if (isUseful) color = colors.useful;
       if (axisBestIds.has(m.id)) {
-        pointStyle = STAR_ICON;
-        color = '#ffd166';
+        pointStyle = starIcon;
+        color = colors.axisBest;
         radius = 11;
       }
       if (m.id === balancedId) {
         pointStyle = 'rectRot';
-        color = '#e7b94a';
+        color = colors.balanced;
         radius = 10;
       }
 
@@ -277,19 +282,20 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         const {top, bottom} = yAxis;
         const xMid = (left + right) / 2;
         const yMid = (top + bottom) / 2;
+        const colors = getPlotColors(this.themeState.theme());
 
         ctx.save();
 
         // Most attractive is always upper-right
-        ctx.fillStyle = 'rgba(120, 220, 130, 0.35)';
+        ctx.fillStyle = colors.attractiveFill;
         ctx.fillRect(xMid, top, right - xMid, yMid - top);
-        ctx.fillStyle = 'rgba(220, 90, 90, 0.18)';
+        ctx.fillStyle = colors.unattractiveFill;
         ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
         ctx.font = '10px system-ui, sans-serif';
-        ctx.fillStyle = 'rgba(80, 200, 90, 0.9)';
+        ctx.fillStyle = colors.attractiveLabel;
         ctx.textAlign = 'right';
         ctx.fillText('Most attractive', right - 6, top + 14);
-        ctx.fillStyle = 'rgba(220, 90, 90, 0.75)';
+        ctx.fillStyle = colors.unattractiveLabel;
         ctx.textAlign = 'left';
         ctx.fillText('Least attractive', left + 6, bottom - 6);
 
@@ -346,7 +352,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             usedRects.push(rect);
           }
 
-          ctx.fillStyle = pos.color.replace('0.9', '1').replace('0.95', '1');
+          ctx.fillStyle = pos.color;
           ctx.fillText(pos.label, labelX, labelY);
         }
 

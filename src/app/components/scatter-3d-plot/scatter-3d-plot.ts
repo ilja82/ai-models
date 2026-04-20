@@ -1,7 +1,9 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {AppState} from '../../state/app.state';
+import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
+import {getPlotColors} from '../../models/plot-colors';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
 type AxisField =
@@ -101,19 +103,6 @@ const KEY_X = 'ai-models.scatter3d.x';
 const KEY_Y = 'ai-models.scatter3d.y';
 const KEY_Z = 'ai-models.scatter3d.z';
 
-const COLOR_API = 'rgba(99,140,210,0.9)';
-const COLOR_LOCAL = 'rgba(70,180,180,0.9)';
-const COLOR_USEFUL = 'rgba(180,180,80,0.95)';
-
-const COLOR_ATTRACTIVE_FILL = 'rgb(120,220,130)';
-const COLOR_UNATTRACTIVE_FILL = 'rgb(220,90,90)';
-const COLOR_ATTRACTIVE_LABEL = 'rgba(80,200,90,0.9)';
-const COLOR_UNATTRACTIVE_LABEL = 'rgba(220,90,90,0.85)';
-
-const COLOR_AXIS_BEST = '#ffd166';
-const COLOR_BALANCED = '#e7b94a';
-const COLOR_DEPRECATED = 'rgba(150,150,150,0.55)';
-
 interface AxisExtent {
   min: number;
   max: number;
@@ -131,6 +120,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   @ViewChild('plot', {static: true}) plotRef!: ElementRef<HTMLDivElement>;
 
   readonly state = inject(AppState);
+  readonly themeState = inject(ThemeState);
   readonly axisDefs = AXIS_DEFS;
 
   readonly xAxis = signal<AxisField>((localStorage.getItem(KEY_X) as AxisField) ?? 'tokensPerSecond');
@@ -306,6 +296,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xLog = this.isLogAxis(xDef);
     const yLog = this.isLogAxis(yDef);
     const zLog = this.isLogAxis(zDef);
+    const colors = getPlotColors(this.themeState.theme());
 
     const groups = {
       deprecated: [] as AiModel[],
@@ -360,8 +351,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       const unZ = halfRange(zExt, false, zDef.higherIsBetter, zLog);
 
       regionTraces.push(
-        this.buildCuboid(attrX, attrY, attrZ, COLOR_ATTRACTIVE_FILL, 0.35, 'Most attractive'),
-        this.buildCuboid(unX, unY, unZ, COLOR_UNATTRACTIVE_FILL, 0.22, 'Least attractive'),
+        this.buildCuboid(attrX, attrY, attrZ, colors.attractiveCuboid, 0.35, 'Most attractive'),
+        this.buildCuboid(unX, unY, unZ, colors.unattractiveCuboid, 0.22, 'Least attractive'),
         {
           type: 'scatter3d',
           mode: 'text',
@@ -370,7 +361,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
           y: [centroid(attrY), centroid(unY)],
           z: [centroid(attrZ), centroid(unZ)],
           text: ['Most attractive', 'Least attractive'],
-          textfont: {size: 12, color: [COLOR_ATTRACTIVE_LABEL, COLOR_UNATTRACTIVE_LABEL]},
+          textfont: {size: 12, color: [colors.attractiveLabel, colors.unattractiveLabel]},
           hoverinfo: 'skip',
           showlegend: false,
         },
@@ -379,12 +370,12 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     return [
       ...regionTraces,
-      buildTrace(groups.deprecated, 'Deprecated', COLOR_DEPRECATED, 'circle', 4),
-      buildTrace(groups.api, 'API', COLOR_API, 'circle', 5),
-      buildTrace(groups.local, 'Local', COLOR_LOCAL, 'diamond', 5),
-      buildTrace(groups.useful, 'Pareto efficient', COLOR_USEFUL, 'circle', 8),
-      buildTrace(groups.axisBest, 'Best per axis', COLOR_AXIS_BEST, 'diamond-open', 10),
-      buildTrace(groups.balanced, 'Best balanced', COLOR_BALANCED, 'square', 10),
+      buildTrace(groups.deprecated, 'Deprecated', colors.deprecated, 'circle', 4),
+      buildTrace(groups.api, 'API', colors.api, 'circle', 5),
+      buildTrace(groups.local, 'Local', colors.local, 'diamond', 5),
+      buildTrace(groups.useful, 'Pareto efficient', colors.useful, 'circle', 8),
+      buildTrace(groups.axisBest, 'Best per axis', colors.axisBest, 'diamond-open', 10),
+      buildTrace(groups.balanced, 'Best balanced', colors.balanced, 'square', 10),
     ];
   });
 

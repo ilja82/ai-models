@@ -62,28 +62,28 @@
 
       &.circle {
         border-radius: 50%;
-        background: rgba(99, 140, 210, 0.9);
+        background: var(--plot-api);
       }
 
       &.diamond {
         transform: rotate(45deg);
-        background: rgba(70, 180, 180, 0.9);
+        background: var(--plot-local);
         border-radius: 1px;
       }
 
       &.useful {
-        background: rgba(180, 180, 80, 0.95);
+        background: var(--plot-useful);
       }
 
       &.diamond-open.axis-best {
         transform: rotate(45deg);
         background: transparent;
-        border: 1.5px solid #ffd166;
+        border: 1.5px solid var(--plot-axis-best);
         border-radius: 1px;
       }
 
       &.square.balanced {
-        background: #e7b94a;
+        background: var(--plot-balanced);
         border-radius: 1px;
       }
     }

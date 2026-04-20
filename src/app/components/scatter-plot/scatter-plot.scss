@@ -37,36 +37,36 @@
 
         &.circle {
           border-radius: 50%;
-          background: rgba(99,140,210,0.9);
+          background: var(--plot-api);
         }
         &.triangle {
           width: 0;
           height: 0;
           border-left: 5px solid transparent;
           border-right: 5px solid transparent;
-          border-bottom: 10px solid rgba(70,180,180,0.9);
+          border-bottom: 10px solid var(--plot-local);
           background: none;
         }
         &.diamond {
           transform: rotate(45deg);
-          background: rgba(147,112,219,0.9);
+          background: var(--color-both);
           border-radius: 1px;
         }
         &.useful {
           border-radius: 50%;
-          background: rgba(180, 180, 80, 0.95);
+          background: var(--plot-useful);
         }
 
         &.star {
           width: 12px;
           height: 12px;
-          background: #ffd166;
+          background: var(--plot-axis-best);
           clip-path: polygon(50% 2%, 61% 38%, 98% 38%, 68% 60%, 79% 96%, 50% 74%, 21% 96%, 32% 60%, 2% 38%, 39% 38%);
         }
 
         &.rect-rot {
           transform: rotate(45deg);
-          background: #e7b94a;
+          background: var(--plot-balanced);
           border-radius: 1px;
         }
       }
