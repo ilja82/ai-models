@@ -140,6 +140,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return {axisBestIds, balancedId};
   });
 
+  private isLogX(plotType: PlotType): boolean {
+    return this.state.logScaleX() && (plotType === 'cost' || plotType === 'context');
+  }
+
+  private transformX(x: number, plotType: PlotType): number {
+    return this.isLogX(plotType) && x > 0 ? Math.log2(x) : x;
+  }
+
   readonly plotData = computed(() => {
     const models = this.state.filteredModels();
     const metric = this.state.intelligenceMetric();
@@ -152,7 +160,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       if (m.deprecated) {
         const {x, y} = this.getXY(m, plotType, metric);
         return {
-          x, y, label: m.publicName,
+          x: this.transformX(x, plotType), y, label: m.publicName,
           color: 'rgba(150,150,150,0.55)',
           pointStyle: (m.localModel ? 'triangle' : 'circle') as string | HTMLImageElement,
           radius: 6,
@@ -177,7 +185,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       }
 
       const {x, y} = this.getXY(m, plotType, metric);
-      return {x, y, label: m.publicName, color, pointStyle, radius, isUseful};
+      return {x: this.transformX(x, plotType), y, label: m.publicName, color, pointStyle, radius, isUseful};
     });
   });
 
@@ -223,8 +231,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       return {min: minX - range * 0.05, max: Date.now()};
     }
 
-    if (this.state.logScaleX() && (plotType === 'cost' || plotType === 'context')) {
-      return {min: minX / 1.4, max: maxX * 1.4};
+    if (this.isLogX(plotType) && minX > 0) {
+      return {
+        min: Math.floor(Math.log2(minX)),
+        max: Math.ceil(Math.log2(maxX)),
+      };
     }
 
     const range = maxX - minX || 1;
@@ -366,7 +377,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
           return String(n);
         };
-        axisType = logScale ? 'logarithmic' : 'linear';
+        axisType = 'linear';
         break;
       case 'speed':
         title = 'Tokens Per Second';
@@ -382,7 +393,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       default: // cost
         title = 'Cost to Run ($/M tokens)';
         tickCallback = (v: any) => `${(+v).toFixed(1)}`;
-        axisType = logScale ? 'logarithmic' : 'linear';
+        axisType = 'linear';
+    }
+
+    let stepSize: number | undefined;
+    if (logScale && (plotType === 'cost' || plotType === 'context')) {
+      const baseCallback = tickCallback;
+      tickCallback = (v: any) => baseCallback(Math.pow(2, +v));
+      stepSize = 1;
     }
 
     return {
@@ -391,7 +409,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       max: xBounds.max,
       reverse: reverseX,
       title: {display: true, text: title, color: '#888', font: {size: 13}},
-      ticks: {color: '#888', font: {size: 10}, callback: tickCallback},
+      ticks: {color: '#888', font: {size: 10}, callback: tickCallback, stepSize},
       grid: {color: 'rgba(128,128,128,0.1)'},
     };
   }
