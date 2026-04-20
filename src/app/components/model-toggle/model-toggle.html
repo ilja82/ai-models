@@ -1,5 +1,13 @@
 <div class="model-toggle-panel">
   <h3 class="panel-title">Models</h3>
+  <label class="show-deprecated">
+    <input
+      type="checkbox"
+      [checked]="state.showDeprecated()"
+      (change)="state.showDeprecated.update(v => !v)"
+    />
+    Show deprecated
+  </label>
   <ul class="model-list">
     @for (model of sortedModels(); track model.id) {
       <li
