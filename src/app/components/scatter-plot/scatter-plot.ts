@@ -397,7 +397,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         axisType = 'linear';
         break;
       default: // cost
-        title = 'Cost to Run ($/M tokens)';
+        title = 'Total Usage Cost ($)';
         tickCallback = (v: any) => `${(+v).toFixed(1)}`;
         axisType = 'linear';
     }

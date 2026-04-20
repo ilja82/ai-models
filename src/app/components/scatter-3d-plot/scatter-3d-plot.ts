@@ -28,7 +28,7 @@ interface AxisDef {
 
 const AXIS_DEFS: AxisDef[] = [
   {
-    key: 'costsToRun', label: 'Cost to Run ($/M)', higherIsBetter: false, logCandidate: true,
+    key: 'costsToRun', label: 'Total Usage Cost ($)', higherIsBetter: false, logCandidate: true,
     get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, format: v => `$${v.toFixed(2)}`
   },
   {
