@@ -145,6 +145,15 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   private readonly defOf = (key: AxisField): AxisDef => AXIS_DEFS.find(a => a.key === key)!;
 
+  private isLogAxis(def: AxisDef): boolean {
+    return this.state.logScale3d() && def.logCandidate;
+  }
+
+  private toPlotVal(v: number, log: boolean): number {
+    if (!log) return v;
+    return v > 0 ? Math.log2(v) : Math.log2(0.001);
+  }
+
   /** Pareto-useful model IDs for the currently selected 3 axes. */
   readonly useful3d = computed<Set<string>>(() => {
     const models = this.state.filteredModels().filter(m => !m.deprecated);
@@ -294,6 +303,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const zDef = this.defOf(this.zAxis());
     const logScale = this.state.logScale3d();
     const {axisBestIds, balancedId} = this.specialMarkers3d();
+    const xLog = this.isLogAxis(xDef);
+    const yLog = this.isLogAxis(yDef);
+    const zLog = this.isLogAxis(zDef);
 
     const groups = {
       deprecated: [] as AiModel[],
@@ -316,9 +328,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       type: 'scatter3d',
       mode: 'markers+text',
       name,
-      x: items.map(m => xDef.get(m, metric)),
-      y: items.map(m => yDef.get(m, metric)),
-      z: items.map(m => zDef.get(m, metric)),
+      x: items.map(m => this.toPlotVal(xDef.get(m, metric), xLog)),
+      y: items.map(m => this.toPlotVal(yDef.get(m, metric), yLog)),
+      z: items.map(m => this.toPlotVal(zDef.get(m, metric), zLog)),
       text: items.map(m => m.publicName),
       textposition: 'top center',
       textfont: {size: 10, color: '#bbb'},
@@ -333,18 +345,19 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const regionTraces: any[] = [];
     if (xExt && yExt && zExt) {
-      const halfRange = (ext: AxisExtent, attractive: boolean, higherIsBetter: boolean): [number, number] => {
+      const halfRange = (ext: AxisExtent, attractive: boolean, higherIsBetter: boolean, log: boolean): [number, number] => {
         const pickUpper = higherIsBetter ? attractive : !attractive;
-        return pickUpper ? [ext.mid, ext.max] : [ext.min, ext.mid];
+        const r: [number, number] = pickUpper ? [ext.mid, ext.max] : [ext.min, ext.mid];
+        return [this.toPlotVal(r[0], log), this.toPlotVal(r[1], log)];
       };
-      const centroid = (r: [number, number], log: boolean) => log ? Math.sqrt(r[0] * r[1]) : (r[0] + r[1]) / 2;
+      const centroid = (r: [number, number]) => (r[0] + r[1]) / 2;
 
-      const attrX = halfRange(xExt, true, xDef.higherIsBetter);
-      const attrY = halfRange(yExt, true, yDef.higherIsBetter);
-      const attrZ = halfRange(zExt, true, zDef.higherIsBetter);
-      const unX = halfRange(xExt, false, xDef.higherIsBetter);
-      const unY = halfRange(yExt, false, yDef.higherIsBetter);
-      const unZ = halfRange(zExt, false, zDef.higherIsBetter);
+      const attrX = halfRange(xExt, true, xDef.higherIsBetter, xLog);
+      const attrY = halfRange(yExt, true, yDef.higherIsBetter, yLog);
+      const attrZ = halfRange(zExt, true, zDef.higherIsBetter, zLog);
+      const unX = halfRange(xExt, false, xDef.higherIsBetter, xLog);
+      const unY = halfRange(yExt, false, yDef.higherIsBetter, yLog);
+      const unZ = halfRange(zExt, false, zDef.higherIsBetter, zLog);
 
       regionTraces.push(
         this.buildCuboid(attrX, attrY, attrZ, COLOR_ATTRACTIVE_FILL, 0.35, 'Most attractive'),
@@ -353,9 +366,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
           type: 'scatter3d',
           mode: 'text',
           name: 'Region labels',
-          x: [centroid(attrX, xExt.log), centroid(unX, xExt.log)],
-          y: [centroid(attrY, yExt.log), centroid(unY, yExt.log)],
-          z: [centroid(attrZ, zExt.log), centroid(unZ, zExt.log)],
+          x: [centroid(attrX), centroid(unX)],
+          y: [centroid(attrY), centroid(unY)],
+          z: [centroid(attrZ), centroid(unZ)],
           text: ['Most attractive', 'Least attractive'],
           textfont: {size: 12, color: [COLOR_ATTRACTIVE_LABEL, COLOR_UNATTRACTIVE_LABEL]},
           hoverinfo: 'skip',
@@ -379,17 +392,44 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xDef = this.defOf(this.xAxis());
     const yDef = this.defOf(this.yAxis());
     const zDef = this.defOf(this.zAxis());
-    const logScale = this.state.logScale3d();
+    const models = this.state.filteredModels();
+    const metric = this.state.intelligenceMetric();
 
-    const axisCfg = (def: AxisDef) => ({
-      title: {text: def.label, font: {color: '#aaa', size: 12}},
-      type: (logScale && def.logCandidate) ? 'log' : 'linear',
-      gridcolor: 'rgba(128,128,128,0.2)',
-      zerolinecolor: 'rgba(128,128,128,0.35)',
-      backgroundcolor: 'rgba(0,0,0,0)',
-      tickfont: {color: '#888', size: 10},
-      autorange: def.higherIsBetter ? true : ('reversed' as any),
-    });
+    const axisCfg = (def: AxisDef): any => {
+      const base: any = {
+        title: {text: def.label, font: {color: '#aaa', size: 12}},
+        type: 'linear',
+        gridcolor: 'rgba(128,128,128,0.2)',
+        zerolinecolor: 'rgba(128,128,128,0.35)',
+        backgroundcolor: 'rgba(0,0,0,0)',
+        tickfont: {color: '#888', size: 10},
+      };
+      if (!this.isLogAxis(def)) {
+        base.autorange = def.higherIsBetter ? true : 'reversed';
+        return base;
+      }
+      const ext = this.computeAxisExtent(models, def, metric, true);
+      if (!ext || ext.min <= 0) {
+        base.autorange = def.higherIsBetter ? true : 'reversed';
+        return base;
+      }
+      const minL = Math.log2(ext.min);
+      const maxL = Math.log2(ext.max);
+      const lo = Math.floor(minL);
+      const hi = Math.ceil(maxL);
+      const tickvals: number[] = [];
+      const ticktext: string[] = [];
+      for (let i = lo; i <= hi; i++) {
+        tickvals.push(i);
+        ticktext.push(def.format(Math.pow(2, i)));
+      }
+      base.tickmode = 'array';
+      base.tickvals = tickvals;
+      base.ticktext = ticktext;
+      base.range = def.higherIsBetter ? [lo, hi] : [hi, lo];
+      base.autorange = false;
+      return base;
+    };
 
     return {
       autosize: true,
