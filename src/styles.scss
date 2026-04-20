@@ -16,8 +16,22 @@
   --color-both: #9370db;
 }
 
+:root[data-theme="light"] {
+  --surface-0: #f0f4f8;
+  --surface-1: #ffffff;
+  --surface-2: #edf2f7;
+  --border: #cbd5e0;
+  --text: #1a202c;
+  --text-muted: #718096;
+  --accent: #2b6cb0;
+  --accent-rgb: 43, 108, 176;
+  --color-litellm: #2b6cb0;
+  --color-local: #2c7a7b;
+  --color-both: #6b46c1;
+}
+
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --surface-0: #f0f4f8;
     --surface-1: #ffffff;
     --surface-2: #edf2f7;

@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { AppState } from '../../state/app.state';
-import { IntelligenceMetric } from '../../models/ai-model.model';
+import {Component, inject} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {AppState} from '../../state/app.state';
+import {ThemeState} from '../../state/theme.state';
+import {IntelligenceMetric} from '../../models/ai-model.model';
 
 @Component({
   selector: 'app-header',
@@ -12,6 +13,7 @@ import { IntelligenceMetric } from '../../models/ai-model.model';
 })
 export class HeaderComponent {
   readonly state = inject(AppState);
+  readonly theme = inject(ThemeState);
 
   setMetric(metric: IntelligenceMetric): void {
     this.state.intelligenceMetric.set(metric);
