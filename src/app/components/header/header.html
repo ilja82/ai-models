@@ -34,6 +34,16 @@
     </div>
 
     <div class="control-group">
+      <label class="group-label">Deprecated</label>
+      <div class="btn-group">
+        <button
+          [class.active]="state.showDeprecated()"
+          (click)="state.showDeprecated.update(v => !v)">Show
+        </button>
+      </div>
+    </div>
+
+    <div class="control-group">
       <label class="group-label" for="vram-input">Local VRAM (GB)</label>
       <input
         id="vram-input"

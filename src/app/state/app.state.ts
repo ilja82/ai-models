@@ -14,6 +14,7 @@ export class AppState {
   readonly showLocal = signal(this.loadBool('showLocal', false));
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showUsefulModels = signal(this.loadBool('showUsefulModels', true));
+  readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
   readonly logScale3d = signal(this.loadBool('logScale3d', false));
 
@@ -33,6 +34,9 @@ export class AppState {
     });
     effect(() => {
       localStorage.setItem(KEY('showUsefulModels'), String(this.showUsefulModels()));
+    });
+    effect(() => {
+      localStorage.setItem(KEY('showDeprecated'), String(this.showDeprecated()));
     });
     effect(() => {
       localStorage.setItem(KEY('logScaleX'), String(this.logScaleX()));
@@ -76,11 +80,13 @@ export class AppState {
     const showAPI = this.showAPI();
     const showLocal = this.showLocal();
     const maxVram = this.maxVram();
+    const showDeprecated = this.showDeprecated();
 
     return this.allModels().filter(m => {
       if (!showAPI && !m.localModel) return false;
       if (!showLocal && m.localModel) return false;
       if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) return false;
+      if (!showDeprecated && m.deprecated) return false;
       return true;
     });
   });
