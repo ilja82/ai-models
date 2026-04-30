@@ -1,10 +1,11 @@
-import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Chart, ChartConfiguration, Legend, LinearScale, LogarithmicScale, Plugin, PointElement, ScatterController, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
+import {PlotType} from '../../models/view-types';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -15,8 +16,6 @@ function makeStarImage(color: string, size: number): HTMLImageElement {
   img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   return img;
 }
-
-export type PlotType = 'cost' | 'release' | 'context' | 'speed' | 'responseVsIntel' | 'responseVsSpeed';
 
 interface PlotTypeDef {
   key: PlotType;
@@ -34,8 +33,6 @@ const PLOT_TYPES: PlotTypeDef[] = [
   {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: false, reverseX: true},
 ];
 
-const PLOT_TYPE_KEY = 'ai-models.plotType';
-
 @Component({
   selector: 'app-scatter-plot',
   standalone: true,
@@ -51,9 +48,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   private readonly starIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22));
 
-  readonly plotType = signal<PlotType>((localStorage.getItem(PLOT_TYPE_KEY) as PlotType) ?? 'cost');
   readonly plotTypes = PLOT_TYPES;
-  readonly currentPlotDef = computed(() => PLOT_TYPES.find(p => p.key === this.plotType())!);
+  readonly currentPlotDef = computed(() => PLOT_TYPES.find(p => p.key === this.state.plotType())!);
 
   private getXY(m: AiModel, plotType: PlotType, metric: IntelligenceMetric): { x: number; y: number } {
     const intel = metric === 'coding' ? m.codingIntelligence
@@ -81,7 +77,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const models = this.state.filteredModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const metric = this.state.intelligenceMetric();
-    const plotType = this.plotType();
+    const plotType = this.state.plotType();
     const plotDef = this.currentPlotDef();
     const higherXIsBetter = !plotDef.reverseX;
     const higherYIsBetter = true;
@@ -156,7 +152,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const metric = this.state.intelligenceMetric();
     const useful = this.state.usefulModelIds();
     const showUseful = this.state.showUsefulModels();
-    const plotType = this.plotType();
+    const plotType = this.state.plotType();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
     const colors = getPlotColors(this.themeState.theme());
     const starIcon = this.starIcon();
@@ -197,12 +193,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private readonly allAxisData = computed(() => {
     const models = this.state.allModels();
     const metric = this.state.intelligenceMetric();
-    const plotType = this.plotType();
+    const plotType = this.state.plotType();
     return models.map(m => this.getXY(m, plotType, metric));
   });
 
   readonly yBounds = computed(() => {
-    const plotType = this.plotType();
+    const plotType = this.state.plotType();
     const models = this.state.allModels();
 
     if (plotType === 'responseVsSpeed') {
@@ -229,7 +225,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (xs.length === 0) return {min: undefined, max: undefined};
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
-    const plotType = this.plotType();
+    const plotType = this.state.plotType();
 
     if (plotType === 'release') {
       const range = maxX - minX || 1;
@@ -249,14 +245,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      localStorage.setItem(PLOT_TYPE_KEY, this.plotType());
-    });
-    effect(() => {
       const data = this.plotData();
       const logScale = this.state.logScaleX();
       const bounds = this.yBounds();
       const xBounds = this.xBounds();
-      const plotType = this.plotType();
+      const plotType = this.state.plotType();
       this.updateChart(data, logScale, bounds, xBounds, plotType);
     });
   }
@@ -430,7 +423,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const logScale = this.state.logScaleX();
     const bounds = this.yBounds();
     const xBounds = this.xBounds();
-    const plotType = this.plotType();
+    const plotType = this.state.plotType();
 
     const config: ChartConfiguration<'scatter'> = {
       type: 'scatter',

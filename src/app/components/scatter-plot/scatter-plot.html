@@ -4,8 +4,8 @@
       @for (p of plotTypes; track p.key) {
         <button
           class="plot-btn"
-          [class.active]="plotType() === p.key"
-          (click)="plotType.set(p.key)">
+          [class.active]="state.plotType() === p.key"
+          (click)="state.plotType.set(p.key)">
           {{ p.label }}
         </button>
       }

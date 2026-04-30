@@ -4,8 +4,8 @@
       @for (m of metrics; track m.key) {
         <button
           class="metric-btn"
-          [class.active]="barMetric() === m.key"
-          (click)="barMetric.set(m.key)">
+          [class.active]="state.barMetric() === m.key"
+          (click)="state.barMetric.set(m.key)">
           {{ m.label }}
         </button>
       }

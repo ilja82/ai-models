@@ -10,46 +10,46 @@
     <main class="view-area">
       <nav class="tab-nav">
         <button
-          [class.active]="activeTab() === 'table'"
-          (click)="activeTab.set('table')">
+          [class.active]="state.activeTab() === 'table'"
+          (click)="state.activeTab.set('table')">
           Table
         </button>
         <button
-          [class.active]="activeTab() === 'bar'"
-          (click)="activeTab.set('bar')">
+          [class.active]="state.activeTab() === 'bar'"
+          (click)="state.activeTab.set('bar')">
           Bar Chart
         </button>
         <button
-          [class.active]="activeTab() === 'scatter'"
-          (click)="activeTab.set('scatter')">
+          [class.active]="state.activeTab() === 'scatter'"
+          (click)="state.activeTab.set('scatter')">
           Scatter Plot
         </button>
         <button
-          [class.active]="activeTab() === 'scatter3d'"
-          (click)="activeTab.set('scatter3d')">
+          [class.active]="state.activeTab() === 'scatter3d'"
+          (click)="state.activeTab.set('scatter3d')">
           3D Scatter
         </button>
         <button
-          [class.active]="activeTab() === 'profiles'"
-          (click)="activeTab.set('profiles')">
+          [class.active]="state.activeTab() === 'profiles'"
+          (click)="state.activeTab.set('profiles')">
           Profiles
         </button>
       </nav>
 
       <div class="view-content">
-        @if (activeTab() === 'table') {
+        @if (state.activeTab() === 'table') {
           <app-data-table />
         }
-        @if (activeTab() === 'bar') {
+        @if (state.activeTab() === 'bar') {
           <app-bar-chart />
         }
-        @if (activeTab() === 'scatter') {
+        @if (state.activeTab() === 'scatter') {
           <app-scatter-plot />
         }
-        @if (activeTab() === 'scatter3d') {
+        @if (state.activeTab() === 'scatter3d') {
           <app-scatter-3d-plot/>
         }
-        @if (activeTab() === 'profiles') {
+        @if (state.activeTab() === 'profiles') {
           <app-model-profiles/>
         }
       </div>

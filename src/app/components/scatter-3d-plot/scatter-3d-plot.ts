@@ -4,14 +4,9 @@ import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
+import {AxisField} from '../../models/view-types';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
-type AxisField =
-  | 'costsToRun' | 'inputCosts' | 'outputCosts'
-  | 'contextWindow' | 'maxInputTokens' | 'maxOutputTokens' | 'minVramRequirement'
-  | 'intelligence' | 'overallIntelligence' | 'codingIntelligence' | 'agenticIntelligence'
-  | 'tokensPerSecond' | 'inputProcessingTime' | 'thinkingTime' | 'outputTime' | 'responseTime'
-  | 'releaseDate';
 
 interface AxisDef {
   key: AxisField;
@@ -99,10 +94,6 @@ const AXIS_DEFS: AxisDef[] = [
   },
 ];
 
-const KEY_X = 'ai-models.scatter3d.x';
-const KEY_Y = 'ai-models.scatter3d.y';
-const KEY_Z = 'ai-models.scatter3d.z';
-
 interface AxisExtent {
   min: number;
   max: number;
@@ -122,10 +113,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   readonly state = inject(AppState);
   readonly themeState = inject(ThemeState);
   readonly axisDefs = AXIS_DEFS;
-
-  readonly xAxis = signal<AxisField>((localStorage.getItem(KEY_X) as AxisField) ?? 'tokensPerSecond');
-  readonly yAxis = signal<AxisField>((localStorage.getItem(KEY_Y) as AxisField) ?? 'costsToRun');
-  readonly zAxis = signal<AxisField>((localStorage.getItem(KEY_Z) as AxisField) ?? 'intelligence');
 
   readonly loading = signal(true);
   readonly errorMsg = signal<string | null>(null);
@@ -148,7 +135,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   readonly useful3d = computed<Set<string>>(() => {
     const models = this.state.filteredModels().filter(m => !m.deprecated);
     const metric = this.state.intelligenceMetric();
-    const axes = [this.defOf(this.xAxis()), this.defOf(this.yAxis()), this.defOf(this.zAxis())];
+    const axes = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
 
     const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m, metric))}));
     const useful = new Set<string>();
@@ -201,7 +188,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const metric = this.state.intelligenceMetric();
     const logScale = this.state.logScale3d();
-    const axes = [this.defOf(this.xAxis()), this.defOf(this.yAxis()), this.defOf(this.zAxis())];
+    const axes = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
 
     const axisBestIds = new Set<string>();
     for (const a of axes) {
@@ -288,9 +275,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const metric = this.state.intelligenceMetric();
     const showUseful = this.state.showUsefulModels();
     const useful = this.useful3d();
-    const xDef = this.defOf(this.xAxis());
-    const yDef = this.defOf(this.yAxis());
-    const zDef = this.defOf(this.zAxis());
+    const xDef = this.defOf(this.state.scatter3dX());
+    const yDef = this.defOf(this.state.scatter3dY());
+    const zDef = this.defOf(this.state.scatter3dZ());
     const logScale = this.state.logScale3d();
     const {axisBestIds, balancedId} = this.specialMarkers3d();
     const xLog = this.isLogAxis(xDef);
@@ -381,9 +368,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   });
 
   readonly layout = computed(() => {
-    const xDef = this.defOf(this.xAxis());
-    const yDef = this.defOf(this.yAxis());
-    const zDef = this.defOf(this.zAxis());
+    const xDef = this.defOf(this.state.scatter3dX());
+    const yDef = this.defOf(this.state.scatter3dY());
+    const zDef = this.defOf(this.state.scatter3dZ());
     const models = this.state.allModels();
     const metric = this.state.intelligenceMetric();
 
@@ -447,16 +434,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      localStorage.setItem(KEY_X, this.xAxis());
-    });
-    effect(() => {
-      localStorage.setItem(KEY_Y, this.yAxis());
-    });
-    effect(() => {
-      localStorage.setItem(KEY_Z, this.zAxis());
-    });
-
-    effect(() => {
       const traces = this.traces();
       const layout = this.layout();
       if (this.plotly) this.render(traces, layout);
@@ -490,9 +467,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   onAxisChange(axis: 'x' | 'y' | 'z', value: string): void {
     const v = value as AxisField;
-    if (axis === 'x') this.xAxis.set(v);
-    else if (axis === 'y') this.yAxis.set(v);
-    else this.zAxis.set(v);
+    if (axis === 'x') this.state.scatter3dX.set(v);
+    else if (axis === 'y') this.state.scatter3dY.set(v);
+    else this.state.scatter3dZ.set(v);
   }
 
   private render(traces: any[], layout: any): void {

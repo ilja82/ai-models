@@ -1,4 +1,5 @@
-import {Component, effect, signal} from '@angular/core';
+import {Component, inject} from '@angular/core';
+import {AppState} from './state/app.state';
 import {HeaderComponent} from './components/header/header';
 import {ModelToggleComponent} from './components/model-toggle/model-toggle';
 import {DataTableComponent} from './components/data-table/data-table';
@@ -7,9 +8,6 @@ import {ScatterPlotComponent} from './components/scatter-plot/scatter-plot';
 import {Scatter3dPlotComponent} from './components/scatter-3d-plot/scatter-3d-plot';
 import {ModelProfilesComponent} from './components/model-profiles/model-profiles';
 import {UpdateBannerComponent} from './components/update-banner/update-banner';
-
-type ViewTab = 'table' | 'bar' | 'scatter' | 'scatter3d' | 'profiles';
-const TAB_KEY = 'ai-models.activeTab';
 
 @Component({
   selector: 'app-root',
@@ -28,11 +26,5 @@ const TAB_KEY = 'ai-models.activeTab';
   styleUrl: './app.scss',
 })
 export class App {
-  readonly activeTab = signal<ViewTab>((localStorage.getItem(TAB_KEY) as ViewTab) ?? 'scatter');
-
-  constructor() {
-    effect(() => {
-      localStorage.setItem(TAB_KEY, this.activeTab());
-    });
-  }
+  readonly state = inject(AppState);
 }

@@ -1,16 +1,11 @@
-import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {BarController, BarElement, CategoryScale, Chart, ChartConfiguration, Legend, LinearScale, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {AiModel} from '../../models/ai-model.model';
 import {COSTS_TO_RUN_SCALE} from '../../models/ai-models.data';
+import {BarMetric} from '../../models/view-types';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
-
-type BarMetric = 'intelligence' | 'costsToRun' | 'inputCosts' | 'outputCosts' | 'contextWindow'
-  | 'maxInputTokens' | 'maxOutputTokens'
-  | 'tokensPerSecond' | 'latency' | 'responseTime';
-
-const BAR_METRIC_KEY = 'ai-models.barMetric';
 
 interface MetricDef {
   key: BarMetric;
@@ -74,10 +69,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   readonly state = inject(AppState);
-  readonly barMetric = signal<BarMetric>((localStorage.getItem(BAR_METRIC_KEY) as BarMetric) ?? 'intelligence');
   readonly metrics = METRICS;
   readonly isStackedMetric = computed(() => {
-    const m = this.barMetric();
+    const m = this.state.barMetric();
     return m === 'latency' || m === 'responseTime' || m === 'costsToRun';
   });
   private chart?: Chart;
@@ -108,7 +102,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
   }
 
   readonly chartData = computed((): ChartDataResult => {
-    const metric = this.barMetric();
+    const metric = this.state.barMetric();
     const metricDef = METRICS.find(x => x.key === metric)!;
 
     const models = [...this.state.filteredModels()].sort((a, b) => {
@@ -252,9 +246,6 @@ export class BarChartComponent implements OnInit, OnDestroy {
   };
 
   constructor() {
-    effect(() => {
-      localStorage.setItem(BAR_METRIC_KEY, this.barMetric());
-    });
     effect(() => {
       const data = this.chartData();
       this.updateChart(data);

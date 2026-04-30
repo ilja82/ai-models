@@ -5,7 +5,7 @@
         <span class="axis-label">X</span>
         <select (change)="onAxisChange('x', $any($event.target).value)">
           @for (a of axisDefs; track a.key) {
-            <option [value]="a.key" [selected]="xAxis() === a.key">{{ a.label }}</option>
+            <option [value]="a.key" [selected]="state.scatter3dX() === a.key">{{ a.label }}</option>
           }
         </select>
       </label>
@@ -13,7 +13,7 @@
         <span class="axis-label">Y</span>
         <select (change)="onAxisChange('y', $any($event.target).value)">
           @for (a of axisDefs; track a.key) {
-            <option [value]="a.key" [selected]="yAxis() === a.key">{{ a.label }}</option>
+            <option [value]="a.key" [selected]="state.scatter3dY() === a.key">{{ a.label }}</option>
           }
         </select>
       </label>
@@ -21,7 +21,7 @@
         <span class="axis-label">Z</span>
         <select (change)="onAxisChange('z', $any($event.target).value)">
           @for (a of axisDefs; track a.key) {
-            <option [value]="a.key" [selected]="zAxis() === a.key">{{ a.label }}</option>
+            <option [value]="a.key" [selected]="state.scatter3dZ() === a.key">{{ a.label }}</option>
           }
         </select>
       </label>
