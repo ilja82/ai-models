@@ -187,7 +187,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const models = this.state.filteredModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const metric = this.state.intelligenceMetric();
-    const logScale = this.state.logScale3d();
     const axes = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
 
     const axisBestIds = new Set<string>();
@@ -205,7 +204,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       if (bestModel) axisBestIds.add(bestModel.id);
     }
 
-    const exts = axes.map(a => this.computeAxisExtent(models, a, metric, logScale && a.logCandidate));
+    const exts = axes.map(a => this.computeAxisExtent(models, a, metric, false));
     let balancedId: string | null = null;
     if (exts.every(e => e !== null)) {
       let bestDist = Infinity;

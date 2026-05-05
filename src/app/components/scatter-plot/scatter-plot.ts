@@ -109,7 +109,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (xs.length === 0 || ys.length === 0) return {axisBestIds, balancedId: null};
     const xMin = Math.min(...xs), xMax = Math.max(...xs);
     const yMin = Math.min(...ys), yMax = Math.max(...ys);
-    const xLog = this.state.logScaleX() && (plotType === 'cost' || plotType === 'context') && xMin > 0;
 
     const norm = (v: number, lo: number, hi: number, log: boolean, higherIsBetter: boolean): number => {
       if (hi === lo) return 0.5;
@@ -127,7 +126,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     let balancedId: string | null = null;
     let bestDist = Infinity;
     for (const p of pts) {
-      const nx = norm(p.x, xMin, xMax, xLog, higherXIsBetter);
+      const nx = norm(p.x, xMin, xMax, false, higherXIsBetter);
       const ny = norm(p.y, yMin, yMax, false, higherYIsBetter);
       const d = (1 - nx) * (1 - nx) + (1 - ny) * (1 - ny);
       if (d < bestDist) {

@@ -27,6 +27,7 @@
           <th (click)="sort('inputCosts')" class="sortable">Input $/M {{ sortIcon('inputCosts') }}</th>
           <th (click)="sort('outputCosts')" class="sortable">Output $/M {{ sortIcon('outputCosts') }}</th>
           <th (click)="sort('costsToRun')" class="sortable">Run Cost {{ sortIcon('costsToRun') }}</th>
+          <th (click)="sort('usesCache')" class="sortable">Cache {{ sortIcon('usesCache') }}</th>
           <th (click)="sort('contextWindow')" class="sortable">Context {{ sortIcon('contextWindow') }}</th>
           <th (click)="sort('maxInputTokens')" class="sortable">Max In {{ sortIcon('maxInputTokens') }}</th>
           <th (click)="sort('maxOutputTokens')" class="sortable">Max Out {{ sortIcon('maxOutputTokens') }}</th>
@@ -62,6 +63,7 @@
             <td class="num hist" [style]="cellStyle(model, 'inputCosts')">{{ formatCost(model.inputCosts) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'outputCosts')">{{ formatCost(model.outputCosts) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'costsToRun')">{{ formatCost(model.costsToRun) }}</td>
+            <td class="center">{{ model.usesCache ? '✅' : '—' }}</td>
             <td class="num hist" [style]="cellStyle(model, 'contextWindow')">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
             <td class="num hist" [style]="cellStyle(model, 'maxInputTokens')">{{ (model.maxInputTokens / 1000).toFixed(0) }}K</td>
             <td class="num hist" [style]="cellStyle(model, 'maxOutputTokens')">{{ (model.maxOutputTokens / 1000).toFixed(0) }}K</td>
@@ -87,7 +89,7 @@
         }
         @empty {
           <tr>
-            <td colspan="22" class="empty">No models match the current filters.</td>
+            <td colspan="23" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>

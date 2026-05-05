@@ -16,9 +16,10 @@ export interface AiModel {
   releaseDate: string;
   cutoffDate: string | null;
   reasoning: boolean;
-  reasoningFactor: number;
-  inputFactor: number;
-  outputFactor: number;
+  totalTokens: number;
+  totalSpend: number;
+  tokensPerRun: number;
+  usesCache: boolean;
   tokensPerSecond: number;
   inputProcessingTime: number;
   thinkingTime: number;
@@ -29,14 +30,9 @@ export interface AiModel {
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';
 
-export function computeCostsToRun(
-  inputCosts: number,
-  outputCosts: number,
-  reasoningFactor: number,
-  inputFactor: number,
-  outputFactor: number,
-): number {
-  return inputFactor * inputCosts + reasoningFactor * outputCosts + outputFactor * outputCosts;
+export function computeCostsToRun(totalSpend: number, totalTokens: number, tokensPerRun: number): number {
+  if (totalTokens <= 0) return 0;
+  return (totalSpend / totalTokens) * tokensPerRun * 1_000_000;
 }
 
 /** Returns the known cutoffDate, or an estimate of releaseDate minus 12 months. */

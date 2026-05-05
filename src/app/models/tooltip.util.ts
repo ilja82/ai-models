@@ -14,7 +14,7 @@ export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetri
     `★ ${metricLabel}: ${intel}`,
     `★ Speed: ${model.tokensPerSecond} tok/s`,
     `★ Response time: ${responseTime.toFixed(1)}s (in: ${model.inputProcessingTime}s, think: ${model.thinkingTime}s, out: ${model.outputTime}s)`,
-    `★ Run cost: $${model.costsToRun.toFixed(2)}/M tokens`,
+    `★ Run cost: $${model.costsToRun.toFixed(2)}`,
     `★ Release: ${model.releaseDate}`,
     `─────────────────`,
     `Type: ${model.localModel ? 'Local' : 'API'}`,
