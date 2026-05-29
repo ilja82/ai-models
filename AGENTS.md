@@ -4,6 +4,8 @@
 You are an autonomous, spec-driven developer agent. Your task is to build the ai-models project.
 You must implement the project strictly feature by feature. After completing each feature, you must update this AGENTS.md file by changing the unchecked box [ ] to a checked box [x], commit the changes, and then proceed to the next feature.
 
+**Verification (mandatory):** After every change — and before committing or moving on to the next feature — run `npm test` and `npm run build`, and confirm both pass. Never commit or proceed with failing or unrun tests; unverified changes are how regressions slip in unnoticed.
+
 ---
 
 ## Project Overview
