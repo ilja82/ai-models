@@ -5,6 +5,7 @@ import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
+import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 
 Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
@@ -104,36 +105,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (bx) axisBestIds.add(bx);
     if (by) axisBestIds.add(by);
 
-    const xs = pts.map(p => p.x).filter(v => Number.isFinite(v));
-    const ys = pts.map(p => p.y).filter(v => Number.isFinite(v));
-    if (xs.length === 0 || ys.length === 0) return {axisBestIds, balancedId: null};
-    const xMin = Math.min(...xs), xMax = Math.max(...xs);
-    const yMin = Math.min(...ys), yMax = Math.max(...ys);
-
-    const norm = (v: number, lo: number, hi: number, log: boolean, higherIsBetter: boolean): number => {
-      if (hi === lo) return 0.5;
-      let t: number;
-      if (log && v > 0 && lo > 0) {
-        const a = Math.log(lo), b = Math.log(hi);
-        t = (Math.log(v) - a) / (b - a);
-      } else {
-        t = (v - lo) / (hi - lo);
-      }
-      t = Math.max(0, Math.min(1, t));
-      return higherIsBetter ? t : 1 - t;
-    };
-
-    let balancedId: string | null = null;
-    let bestDist = Infinity;
-    for (const p of pts) {
-      const nx = norm(p.x, xMin, xMax, false, higherXIsBetter);
-      const ny = norm(p.y, yMin, yMax, false, higherYIsBetter);
-      const d = (1 - nx) * (1 - nx) + (1 - ny) * (1 - ny);
-      if (d < bestDist) {
-        bestDist = d;
-        balancedId = p.id;
-      }
-    }
+    const balancedId = bestBalancedId(models, [
+      {get: m => this.getXY(m, plotType, metric).x, higherIsBetter: higherXIsBetter},
+      {get: m => this.getXY(m, plotType, metric).y, higherIsBetter: higherYIsBetter},
+    ]);
 
     return {axisBestIds, balancedId};
   });

@@ -2,6 +2,13 @@ import {Injectable} from '@angular/core';
 import {AiModel} from '../models/ai-model.model';
 import {Badge, ProfileEntry} from '../models/profile.model';
 
+/** The best-balanced model id per intelligence metric (closest-to-ideal in cost-vs-intelligence space). */
+export interface BalancedIds {
+  overall: string | null;
+  coding: string | null;
+  agentic: string | null;
+}
+
 const CURRENT_DATE = new Date();
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const MS_PER_MONTH = MS_PER_DAY * 30.4375;
@@ -9,6 +16,8 @@ const MS_PER_MONTH = MS_PER_DAY * 30.4375;
 interface Thresholds {
   intelTop: number;
   intelBottom: number;
+  codingTop: number;
+  agenticTop: number;
   speedTop: number;
   speedTopHigh: number;
   speedBottom: number;
@@ -81,6 +90,8 @@ function metricsFor(model: AiModel): ModelMetrics {
 
 function buildThresholds(baseline: AiModel[]): Thresholds {
   const intel = baseline.map(m => m.overallIntelligence);
+  const coding = baseline.map(m => m.codingIntelligence);
+  const agentic = baseline.map(m => m.agenticIntelligence);
   const speed = baseline.map(m => m.tokensPerSecond).filter(v => v > 0);
   const latencies = baseline.map(latency).filter(v => v > 0);
   const contexts = baseline.map(m => m.contextWindow).filter(v => v > 0);
@@ -93,6 +104,8 @@ function buildThresholds(baseline: AiModel[]): Thresholds {
   return {
     intelTop: percentile(intel, 0.8),
     intelBottom: percentile(intel, 0.2),
+    codingTop: percentile(coding, 0.8),
+    agenticTop: percentile(agentic, 0.8),
     speedTop: percentile(speed, 0.8),
     speedTopHigh: percentile(speed, 0.95),
     speedBottom: percentile(speed, 0.2),
@@ -133,7 +146,7 @@ type BadgeRule = {
   badge: Omit<Badge, 'kind'>;
 };
 
-function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: BestSets): BadgeRule[] {
+function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: BestSets, balancedIds: BalancedIds): BadgeRule[] {
   const topBest = best.overall.has(model.id);
   return [
     {
@@ -188,6 +201,51 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
         icon: '🤖',
         label: 'Top-tier agent',
         tooltip: `Top 3 by agentic intelligence (${model.agenticIntelligence})`,
+      },
+    },
+    {
+      when: model.codingIntelligence >= t.codingTop && !best.coding.has(model.id),
+      badge: {
+        id: 'strong-coding',
+        icon: '💻',
+        label: 'Strong at coding',
+        tooltip: `Top 20% coding intelligence (${model.codingIntelligence})`,
+      },
+    },
+    {
+      when: model.agenticIntelligence >= t.agenticTop && !best.agentic.has(model.id),
+      badge: {
+        id: 'strong-agentic',
+        icon: '🤖',
+        label: 'Strong at agents',
+        tooltip: `Top 20% agentic intelligence (${model.agenticIntelligence})`,
+      },
+    },
+    {
+      when: model.id === balancedIds.overall,
+      badge: {
+        id: 'best-balanced-overall',
+        icon: '🎯',
+        label: 'Best balanced at overall',
+        tooltip: 'Closest to the ideal of low cost and high overall intelligence',
+      },
+    },
+    {
+      when: model.id === balancedIds.coding,
+      badge: {
+        id: 'best-balanced-coding',
+        icon: '🎯',
+        label: 'Best balanced at coding',
+        tooltip: 'Closest to the ideal of low cost and high coding intelligence',
+      },
+    },
+    {
+      when: model.id === balancedIds.agentic,
+      badge: {
+        id: 'best-balanced-agentic',
+        icon: '🎯',
+        label: 'Best balanced at agentic',
+        tooltip: 'Closest to the ideal of low cost and high agentic intelligence',
       },
     },
     {
@@ -254,7 +312,7 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
       },
     },
     {
-      when: m.months <= 6,
+      when: m.months <= 3,
       badge: {
         id: 'fresh',
         icon: '🆕',
@@ -378,7 +436,7 @@ function applyRules(rules: BadgeRule[], kind: 'strength' | 'weakness'): Badge[] 
   return rules.filter(r => r.when).map(r => ({...r.badge, kind}));
 }
 
-function computeBadges(model: AiModel, t: Thresholds, best: BestSets): Badge[] {
+function computeBadges(model: AiModel, t: Thresholds, best: BestSets, balancedIds: BalancedIds): Badge[] {
   if (model.deprecated) {
     return [
       {
@@ -394,56 +452,45 @@ function computeBadges(model: AiModel, t: Thresholds, best: BestSets): Badge[] {
 
   const m = metricsFor(model);
   return [
-    ...applyRules(strengthRules(model, m, t, best), 'strength'),
+    ...applyRules(strengthRules(model, m, t, best, balancedIds), 'strength'),
     ...applyRules(weaknessRules(model, m, t), 'weakness'),
     ...neutralBadges(model),
   ];
 }
 
-const HEADLINE_RULES: Array<{
-  match: (ids: Set<string>, s: number, w: number) => boolean;
-  label: string;
-}> = [
-  {match: ids => ids.has('deprecated'), label: 'Deprecated — avoid'},
-  {match: (ids, s) => ids.has('oldest') && s === 0, label: 'Outdated'},
-  {match: ids => ids.has('best-overall') && ids.has('great-value'), label: 'Frontier model'},
-  {
-    match: ids => ids.has('best-coding') && (ids.has('great-value') || ids.has('affordable')),
-    label: 'Budget coder',
-  },
-  {match: ids => ids.has('best-agentic'), label: 'Agent-tuned'},
-  {
-    match: ids => ids.has('great-value') && (ids.has('fastest') || ids.has('very-fast')),
-    label: 'Fast & cheap',
-  },
-  {match: ids => ids.has('best-overall') && ids.has('expensive'), label: 'Premium flagship'},
-  {
-    match: ids => ids.has('low-vram') && (ids.has('great-value') || ids.has('affordable')),
-    label: 'Home-lab pick',
-  },
-  {match: ids => ids.has('fastest') || ids.has('very-fast'), label: 'Speed-focused'},
-  {match: ids => ids.has('huge-context'), label: 'Long-context specialist'},
-  {match: (_ids, s, w) => s >= 3 && w <= 1, label: 'Balanced all-rounder'},
-  {match: (_ids, s, w) => s === 0 && w >= 2, label: 'Niche / limited'},
-];
-
 function computeHeadline(badges: Badge[]): string {
   const ids = new Set(badges.map(b => b.id));
-  const strengths = badges.filter(b => b.kind === 'strength').length;
-  const weaknesses = badges.filter(b => b.kind === 'weakness').length;
-  const hit = HEADLINE_RULES.find(r => r.match(ids, strengths, weaknesses));
-  return hit ? hit.label : 'General-purpose';
+  if (ids.has('deprecated')) return 'Deprecated';
+  const tier =
+    ids.has('best-overall') || ids.has('top-overall') || ids.has('top-intel')
+      ? 'Flagship'
+      : ids.has('weak-intel')
+        ? 'Entry-level'
+        : 'Mid-tier';
+  const posture =
+    ids.has('great-value')
+      ? 'great value'
+      : ids.has('expensive')
+        ? 'premium'
+        : ids.has('affordable')
+          ? 'budget'
+          : '';
+  return posture ? `${tier} · ${posture}` : tier;
 }
 
 @Injectable({providedIn: 'root'})
 export class ModelBadgesService {
-  computeProfiles(displayModels: AiModel[], allModels: AiModel[]): ProfileEntry[] {
+  computeProfiles(
+    displayModels: AiModel[],
+    allModels: AiModel[],
+    balancedIds: BalancedIds,
+  ): ProfileEntry[] {
     const baseline = allModels.filter(m => !m.deprecated);
     const thresholds = buildThresholds(baseline);
     const best = buildBestSets(baseline);
 
     return displayModels.map(model => {
-      const badges = computeBadges(model, thresholds, best);
+      const badges = computeBadges(model, thresholds, best, balancedIds);
       return {
         model,
         headline: computeHeadline(badges),

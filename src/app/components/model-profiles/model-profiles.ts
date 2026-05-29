@@ -4,6 +4,7 @@ import {AppState} from '../../state/app.state';
 import {ModelBadgesService} from '../../services/model-badges.service';
 import {ProfileEntry} from '../../models/profile.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
+import {BalancedAxis, bestBalancedId} from '../../models/balanced.util';
 
 @Component({
   selector: 'app-model-profiles',
@@ -18,6 +19,23 @@ export class ModelProfilesComponent {
   private readonly badges = inject(ModelBadgesService);
   readonly searchText = signal('');
 
+  /**
+   * The "best balanced" model per intelligence — each identical to the 2D scatter's
+   * Cost-vs-Intelligence balanced marker for that metric: closest-to-ideal in (cost ↓, intelligence ↑).
+   * Metric-independent on purpose: the Profile shows all three at once and never reacts to the
+   * active-metric switcher. Computed over the full filtered, non-deprecated set so the text search
+   * doesn't change which models win.
+   */
+  readonly balancedIds = computed(() => {
+    const models = this.state.filteredModels().filter(m => !m.deprecated);
+    const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, higherIsBetter: false};
+    return {
+      overall: bestBalancedId(models, [cost, {get: m => m.overallIntelligence, higherIsBetter: true}]),
+      coding: bestBalancedId(models, [cost, {get: m => m.codingIntelligence, higherIsBetter: true}]),
+      agentic: bestBalancedId(models, [cost, {get: m => m.agenticIntelligence, higherIsBetter: true}]),
+    };
+  });
+
   readonly profiles = computed<ProfileEntry[]>(() => {
     const search = this.searchText().trim().toLowerCase();
     const display = this.state.filteredModels().filter(m => {
@@ -31,7 +49,7 @@ export class ModelProfilesComponent {
       if (intelDiff !== 0) return intelDiff;
       return (b.releaseDate || '').localeCompare(a.releaseDate || '');
     });
-    return this.badges.computeProfiles(sorted, this.state.allModels());
+    return this.badges.computeProfiles(sorted, this.state.allModels(), this.balancedIds());
   });
 
   readonly totalCount = computed(() => this.state.filteredModels().length);

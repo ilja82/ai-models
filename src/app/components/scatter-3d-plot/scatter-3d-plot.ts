@@ -4,6 +4,7 @@ import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
+import {bestBalancedId} from '../../models/balanced.util';
 import {AxisField} from '../../models/view-types';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
@@ -169,20 +170,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return useful;
   });
 
-  /** Returns a value in [0,1] where 1 = best on this axis. */
-  private normalizeToBest(v: number, ext: AxisExtent, higherIsBetter: boolean): number {
-    let t: number;
-    if (ext.log && v > 0 && ext.min > 0 && ext.max > 0) {
-      const lo = Math.log(ext.min);
-      const hi = Math.log(ext.max);
-      t = hi === lo ? 0.5 : (Math.log(v) - lo) / (hi - lo);
-    } else {
-      t = ext.max === ext.min ? 0.5 : (v - ext.min) / (ext.max - ext.min);
-    }
-    t = Math.max(0, Math.min(1, t));
-    return higherIsBetter ? t : 1 - t;
-  }
-
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
     const models = this.state.filteredModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
@@ -204,24 +191,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       if (bestModel) axisBestIds.add(bestModel.id);
     }
 
-    const exts = axes.map(a => this.computeAxisExtent(models, a, metric, false));
-    let balancedId: string | null = null;
-    if (exts.every(e => e !== null)) {
-      let bestDist = Infinity;
-      for (const m of models) {
-        let sumSq = 0;
-        for (let i = 0; i < axes.length; i++) {
-          const v = axes[i].get(m, metric);
-          const n = this.normalizeToBest(v, exts[i]!, axes[i].higherIsBetter);
-          const d = 1 - n;
-          sumSq += d * d;
-        }
-        if (sumSq < bestDist) {
-          bestDist = sumSq;
-          balancedId = m.id;
-        }
-      }
-    }
+    const balancedId = bestBalancedId(
+      models,
+      axes.map(a => ({get: (m: AiModel) => a.get(m, metric), higherIsBetter: a.higherIsBetter})),
+    );
     return {axisBestIds, balancedId};
   });
 
