@@ -27,9 +27,7 @@ export class AppState {
   readonly scatter3dY = signal<AxisField>(this.loadStr('scatter3d.y', 'costsToRun') as AxisField);
   readonly scatter3dZ = signal<AxisField>(this.loadStr('scatter3d.z', 'intelligence') as AxisField);
 
-  // Plain bool — when true, localStorage effects skip writes (prevents URL-derived
-  // values from being persisted). Flipped to false in a macrotask after the initial
-  // microtask round of effects has run.
+  // While true, the localStorage effects skip their writes.
   private hydrating = true;
 
   constructor() {
@@ -109,9 +107,7 @@ export class AppState {
       localStorage.setItem(KEY('scatter3d.z'), v);
     });
 
-    // URL writeback — fires whenever any URL-mirrored signal changes. No hydrating
-    // guard: after applyUrlState, the first run sees URL-matching values and is a no-op;
-    // when no URL was provided, this initial run writes the default-state hash to the bar.
+    // URL writeback. It has no hydrating guard on purpose.
     effect(() => {
       const hash = serializeHash({
         view: this.activeTab(),
@@ -153,9 +149,7 @@ export class AppState {
   private applyUrlState(hash: string): void {
     const parsed = parseHash(hash);
     if (!parsed) return;
-    // A present hash fully describes the view. Missing fields fall back to defaults
-    // (NOT persisted values), so the recipient of a share-link sees exactly what the
-    // sender saw. The `hydrating` guard ensures none of these writes hit localStorage.
+    // Missing fields fall back to defaults, not to persisted values.
     this.activeTab.set(parsed.view);
     this.barMetric.set(parsed.barMetric ?? 'intelligence');
     this.plotType.set(parsed.plotType ?? 'cost');

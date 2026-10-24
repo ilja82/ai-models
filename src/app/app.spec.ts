@@ -1,7 +1,7 @@
-import { TestBed } from '@angular/core/testing';
-import { provideServiceWorker } from '@angular/service-worker';
-import { App } from './app';
-import { AppState } from './state/app.state';
+import {TestBed} from '@angular/core/testing';
+import {provideServiceWorker} from '@angular/service-worker';
+import {App} from './app';
+import {AppState} from './state/app.state';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -18,9 +18,7 @@ describe('App', () => {
   });
 
   it('should render title', async () => {
-    // The chart tabs render to <canvas>, which jsdom cannot lay out. The <h1>
-    // lives in the always-rendered header, so switch to the canvas-free table
-    // view to validate the title without instantiating chart.js.
+    // jsdom cannot lay out the chart canvases, so use the table view.
     TestBed.inject(AppState).activeTab.set('table');
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

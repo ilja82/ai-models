@@ -19,13 +19,7 @@ export class ModelProfilesComponent {
   private readonly badges = inject(ModelBadgesService);
   readonly searchText = signal('');
 
-  /**
-   * The "best balanced" model per intelligence — each identical to the 2D scatter's
-   * Cost-vs-Intelligence balanced marker for that metric: closest-to-ideal in (cost ↓, intelligence ↑).
-   * Metric-independent on purpose: the Profile shows all three at once and never reacts to the
-   * active-metric switcher. Computed over the full filtered, non-deprecated set so the text search
-   * doesn't change which models win.
-   */
+  /** The "best balanced" model id per intelligence metric: closest-to-ideal in (cost ↓, intelligence ↑). */
   readonly balancedIds = computed(() => {
     const models = this.state.filteredModels().filter(m => !m.deprecated);
     const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, higherIsBetter: false};
