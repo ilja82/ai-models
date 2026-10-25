@@ -1,5 +1,17 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {Chart, ChartConfiguration, Legend, LinearScale, LogarithmicScale, Plugin, PointElement, ScatterController, Tooltip} from 'chart.js';
+import {
+  Chart,
+  ChartConfiguration,
+  ChartDataset,
+  Legend,
+  LinearScale,
+  LineElement,
+  LogarithmicScale,
+  Plugin,
+  PointElement,
+  ScatterController,
+  Tooltip
+} from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
 import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
@@ -7,8 +19,15 @@ import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
+import {EffortPoint, effortPoints, effortResponseTime, shortEffortLabel} from '../../models/effort.util';
 
-Chart.register(ScatterController, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend);
+Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
+
+interface EffortCurve {
+  model: AiModel;
+  color: string;
+  points: (EffortPoint & { px: number })[];
+}
 
 function makeStarImage(color: string, size: number): HTMLImageElement {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">` +
@@ -164,11 +183,32 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
+  readonly hasEfforts = computed(() => this.state.allModels().some(m => m.efforts.length > 1));
+
+  readonly effortCurves = computed<EffortCurve[]>(() => {
+    if (!this.state.showEfforts()) return [];
+    const plotType = this.state.plotType();
+    const colors = getPlotColors(this.themeState.theme());
+    const curves: EffortCurve[] = [];
+    for (const m of this.state.filteredModels()) {
+      const points = effortPoints(m, plotType);
+      if (points.length < 2) continue;
+      curves.push({
+        model: m,
+        color: m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api,
+        points: points.map(p => ({...p, px: this.transformX(p.x, plotType)})),
+      });
+    }
+    return curves;
+  });
+
   private readonly allAxisData = computed(() => {
     const models = this.state.allModels();
     const metric = this.state.intelligenceMetric();
     const plotType = this.state.plotType();
-    return models.map(m => this.getXY(m, plotType, metric));
+    const main = models.map(m => this.getXY(m, plotType, metric));
+    if (!this.state.showEfforts()) return main;
+    return main.concat(models.flatMap(m => effortPoints(m, plotType).map(p => ({x: p.x, y: p.y}))));
   });
 
   readonly yBounds = computed(() => {
@@ -176,7 +216,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const models = this.state.allModels();
 
     if (plotType === 'responseVsSpeed') {
-      const ys = models.map(m => m.tokensPerSecond);
+      const ys = this.allAxisData().map(d => d.y);
       if (ys.length === 0) return {min: 0, max: 150};
       const range = Math.max(...ys) - Math.min(...ys) || 1;
       return {
@@ -220,11 +260,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const data = this.plotData();
+      const curves = this.effortCurves();
       const logScale = this.state.logScaleX();
       const bounds = this.yBounds();
       const xBounds = this.xBounds();
       const plotType = this.state.plotType();
-      this.updateChart(data, logScale, bounds, xBounds, plotType);
+      this.updateChart(data, curves, logScale, bounds, xBounds, plotType);
     });
   }
 
@@ -328,6 +369,46 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     };
   }
 
+  private effortLabelPlugin(): Plugin {
+    return {
+      id: 'effortLabels',
+      afterDatasetsDraw: (chart: Chart) => {
+        const xAxis = chart.scales['x'];
+        const yAxis = chart.scales['y'];
+        if (!xAxis || !yAxis) return;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.font = '10px system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        for (const curve of this.effortCurves()) {
+          ctx.fillStyle = curve.color;
+          for (const p of curve.points) {
+            // The current level sits under the model point, which has its own label.
+            if (p.current) continue;
+            ctx.fillText(shortEffortLabel(p.effort), xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.y) + 8);
+          }
+        }
+        ctx.restore();
+      },
+    };
+  }
+
+  private effortDatasets(curves: EffortCurve[]): ChartDataset<'scatter'>[] {
+    return curves.map(c => ({
+      label: c.model.publicName,
+      data: c.points.map(p => ({x: p.px, y: p.y})),
+      showLine: true,
+      borderColor: c.color,
+      backgroundColor: c.color,
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      order: 1,
+    }));
+  }
+
   private xAxisConfig(plotType: PlotType, logScale: boolean, xBounds: {
     min: number | undefined;
     max: number | undefined
@@ -401,7 +482,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     const config: ChartConfiguration<'scatter'> = {
       type: 'scatter',
-      plugins: [this.quadrantPlugin(), this.labelPlugin()],
+      plugins: [this.quadrantPlugin(), this.effortLabelPlugin(), this.labelPlugin()],
       data: {
         datasets: [{
           label: 'Models',
@@ -411,7 +492,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           pointStyle: data.map(d => d.pointStyle) as any,
           pointRadius: data.map(d => d.radius),
           pointHoverRadius: data.map(d => d.radius + 3),
-        }],
+          order: 0,
+        }, ...this.effortDatasets(this.effortCurves())],
       },
       options: {
         responsive: true,
@@ -423,7 +505,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           tooltip: {
             backgroundColor: 'rgba(30, 30, 40, 0.97)',
             callbacks: {
-              label: (ctx) => this.buildTooltipLines(ctx.dataIndex, plotType),
+              label: (ctx) => this.buildTooltipLines(ctx.datasetIndex, ctx.dataIndex, plotType),
             },
           },
         },
@@ -443,14 +525,34 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     this.chart = new Chart(ctx, config);
   }
 
-  private buildTooltipLines(dataIndex: number, _plotType: PlotType): string[] {
+  private buildTooltipLines(datasetIndex: number, dataIndex: number, _plotType: PlotType): string[] {
+    if (datasetIndex > 0) return this.buildEffortTooltipLines(datasetIndex - 1, dataIndex);
     const model = this.state.filteredModels()[dataIndex];
     if (!model) return [];
     return buildModelTooltipLines(model, this.state.intelligenceMetric());
   }
 
+  private buildEffortTooltipLines(curveIndex: number, pointIndex: number): string[] {
+    const curve = this.effortCurves()[curveIndex];
+    const point = curve?.points[pointIndex];
+    if (!point) return [];
+    const l = point.level;
+    const responseTime = effortResponseTime(l);
+    return [
+      `${curve.model.publicName} (effort: ${point.effort}${point.current ? ', shown' : ''})`,
+      `★ Overall Intelligence: ${l.overallIntelligence}`,
+      l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
+      responseTime !== null
+        ? `★ Response time: ${responseTime.toFixed(1)}s (in: ${l.inputProcessingTime}s, think: ${l.thinkingTime}s, out: ${l.outputTime}s)`
+        : '',
+      l.costsToRun !== null ? `★ Run cost: $${l.costsToRun.toFixed(2)}` : '',
+      l.tokensPerRun !== null ? `Tokens per run: ${l.tokensPerRun}M` : '',
+    ].filter(Boolean);
+  }
+
   private updateChart(
     data: { x: number; y: number; label: string; color: string; pointStyle: string | HTMLImageElement; radius: number; isUseful: boolean }[],
+    curves: EffortCurve[],
     logScale: boolean,
     bounds: { min: number; max: number },
     xBounds: { min: number | undefined; max: number | undefined },
@@ -464,6 +566,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
     (this.chart.data.datasets[0] as any).pointRadius = data.map(d => d.radius);
     (this.chart.data.datasets[0] as any).pointHoverRadius = data.map(d => d.radius + 3);
+    this.chart.data.datasets.splice(1, this.chart.data.datasets.length - 1, ...this.effortDatasets(curves));
 
     const xConf = this.xAxisConfig(plotType, logScale, xBounds, this.currentPlotDef().reverseX);
     const xScale = this.chart.options.scales!['x'] as any;
@@ -480,7 +583,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     yScale.title.text = this.yAxisLabel(plotType);
 
     (this.chart.options.plugins!.tooltip as any).callbacks = {
-      label: (ctx: any) => this.buildTooltipLines(ctx.dataIndex, plotType),
+      label: (ctx: any) => this.buildTooltipLines(ctx.datasetIndex, ctx.dataIndex, plotType),
     };
 
     this.chart.update('none');

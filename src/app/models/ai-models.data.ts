@@ -1,7 +1,8 @@
 import {AiModel, computeCostsToRun} from './ai-model.model';
+import {AI_MODEL_EFFORTS} from './ai-model-efforts.data';
 
 type MInput = Omit<AiModel,
-    'costsToRun' | 'deprecated' | 'deprecationInfo' | 'totalTokens' | 'totalSpend' | 'usesCache'>
+    'costsToRun' | 'deprecated' | 'deprecationInfo' | 'totalTokens' | 'totalSpend' | 'usesCache' | 'effort' | 'efforts'>
   & {
   deprecated?: boolean;
   deprecationInfo?: string;
@@ -13,6 +14,7 @@ type MInput = Omit<AiModel,
 function m(base: MInput): AiModel {
   const totalTokens = base.totalTokens ?? 1;
   const totalSpend = base.totalSpend ?? 0;
+  const efforts = AI_MODEL_EFFORTS[base.id];
   return {
     ...base,
     deprecated: base.deprecated ?? false,
@@ -21,6 +23,11 @@ function m(base: MInput): AiModel {
     totalSpend,
     usesCache: base.usesCache ?? false,
     costsToRun: computeCostsToRun(totalSpend, totalTokens, base.tokensPerRun),
+    effort: efforts?.effort ?? null,
+    efforts: (efforts?.levels ?? []).map(level => ({
+      ...level,
+      costsToRun: level.tokensPerRun === null ? null : computeCostsToRun(totalSpend, totalTokens, level.tokensPerRun),
+    })),
   };
 }
 
@@ -673,4 +680,9 @@ export const AI_MODELS: AiModel[] = [
 
 const maxCostsToRun = Math.max(...AI_MODELS.map(mm => mm.costsToRun));
 export const COSTS_TO_RUN_SCALE = maxCostsToRun > 0 ? 100 / maxCostsToRun : 1;
-for (const mm of AI_MODELS) mm.costsToRun *= COSTS_TO_RUN_SCALE;
+for (const mm of AI_MODELS) {
+  mm.costsToRun *= COSTS_TO_RUN_SCALE;
+  for (const level of mm.efforts) {
+    if (level.costsToRun !== null) level.costsToRun *= COSTS_TO_RUN_SCALE;
+  }
+}

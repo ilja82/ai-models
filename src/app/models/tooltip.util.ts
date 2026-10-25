@@ -12,6 +12,7 @@ export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetri
     `${model.publicName}`,
     model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
     `★ ${metricLabel}: ${intel}`,
+    model.effort ? `★ Effort: ${model.effort}${model.efforts.length > 1 ? ` (${model.efforts.length} levels measured)` : ''}` : '',
     `★ Speed: ${model.tokensPerSecond} tok/s`,
     `★ Response time: ${responseTime.toFixed(1)}s (in: ${model.inputProcessingTime}s, think: ${model.thinkingTime}s, out: ${model.outputTime}s)`,
     `★ Run cost: $${model.costsToRun.toFixed(2)}`,

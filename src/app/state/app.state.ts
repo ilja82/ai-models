@@ -17,6 +17,7 @@ export class AppState {
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showUsefulModels = signal(this.loadBool('showUsefulModels', true));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
+  readonly showEfforts = signal(this.loadBool('showEfforts', false));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
   readonly logScale3d = signal(this.loadBool('logScale3d', false));
 
@@ -60,6 +61,11 @@ export class AppState {
       const v = this.showDeprecated();
       if (this.hydrating) return;
       localStorage.setItem(KEY('showDeprecated'), String(v));
+    });
+    effect(() => {
+      const v = this.showEfforts();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('showEfforts'), String(v));
     });
     effect(() => {
       const v = this.logScaleX();
@@ -120,6 +126,7 @@ export class AppState {
         showAPI: this.showAPI(),
         showLocal: this.showLocal(),
         showDeprecated: this.showDeprecated(),
+        showEfforts: this.showEfforts(),
         logScaleX: this.logScaleX(),
         logScale3d: this.logScale3d(),
         showUseful: this.showUsefulModels(),
@@ -160,6 +167,7 @@ export class AppState {
     this.showAPI.set(parsed.showAPI ?? true);
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
+    this.showEfforts.set(parsed.showEfforts ?? false);
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? false);
     this.showUsefulModels.set(parsed.showUseful ?? true);

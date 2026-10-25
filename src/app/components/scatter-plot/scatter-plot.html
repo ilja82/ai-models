@@ -18,12 +18,21 @@
       }
       <span class="legend-item"><span class="shape star"></span>Best per axis</span>
       <span class="legend-item"><span class="shape rect-rot"></span>Best balanced</span>
+      @if (state.showEfforts() && hasEfforts()) {
+        <span class="legend-item"><span class="shape effort-line"></span>Effort levels</span>
+      }
     </div>
     <div class="toolbar-right">
       @if (currentPlotDef().supportsLogX) {
         <label class="toggle-label">
           <input type="checkbox" [checked]="state.logScaleX()" (change)="state.logScaleX.update(v => !v)"/>
           Log X
+        </label>
+      }
+      @if (hasEfforts()) {
+        <label class="toggle-label">
+          <input type="checkbox" [checked]="state.showEfforts()" (change)="state.showEfforts.update(v => !v)"/>
+          Effort levels
         </label>
       }
       <label class="toggle-label">

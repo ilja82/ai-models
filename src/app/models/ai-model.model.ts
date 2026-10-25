@@ -26,6 +26,30 @@ export interface AiModel {
   outputTime: number;
   deprecated: boolean;
   deprecationInfo: string;
+  /** Effort level of the values above, or null if the source names none. */
+  effort: string | null;
+  /** All measured effort levels of the model, from lowest to highest effort. */
+  efforts: EffortLevel[];
+}
+
+/** Measured values of one effort level. A value is null if the source does not publish it. */
+export interface EffortLevelInput {
+  effort: string;
+  overallIntelligence: number;
+  tokensPerRun: number | null;
+  tokensPerSecond: number | null;
+  inputProcessingTime: number | null;
+  thinkingTime: number | null;
+  outputTime: number | null;
+}
+
+export interface EffortLevel extends EffortLevelInput {
+  costsToRun: number | null;
+}
+
+export interface ModelEfforts {
+  effort: string | null;
+  levels: EffortLevelInput[];
 }
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';

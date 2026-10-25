@@ -12,6 +12,7 @@ export interface UrlState {
   showAPI?: boolean;
   showLocal?: boolean;
   showDeprecated?: boolean;
+  showEfforts?: boolean;
   logScaleX?: boolean;
   logScale3d?: boolean;
   showUseful?: boolean;
@@ -28,6 +29,7 @@ export interface UrlSnapshot {
   showAPI: boolean;
   showLocal: boolean;
   showDeprecated: boolean;
+  showEfforts: boolean;
   logScaleX: boolean;
   logScale3d: boolean;
   showUseful: boolean;
@@ -92,6 +94,10 @@ export function parseHash(hash: string): UrlState | null {
   if (deprecated === '1') out.showDeprecated = true;
   else if (deprecated === '0') out.showDeprecated = false;
 
+  const efforts = params.get('efforts');
+  if (efforts === '1') out.showEfforts = true;
+  else if (efforts === '0') out.showEfforts = false;
+
   const log = params.get('log');
   if (log === '1' || log === '0') {
     const v = log === '1';
@@ -128,6 +134,7 @@ export function serializeHash(s: UrlSnapshot): string {
   }
 
   if (s.showDeprecated) params.set('deprecated', '1');
+  if (s.showEfforts) params.set('efforts', '1');
 
   // log default: scatter true, scatter3d false
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');
