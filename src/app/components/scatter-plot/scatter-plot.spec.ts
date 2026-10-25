@@ -55,7 +55,7 @@ describe('ScatterPlotComponent plot types', () => {
     expect(c.xBounds()).toEqual({min: 1, max: 8});
   });
 
-  it('splits the zones at the median of all models, also when the filter hides models', () => {
+  it('splits the zones at the median x and the top quarter of intelligence, also when the filter hides models', () => {
     state.allModels.set([
       testModel({id: 'a', costsToRun: 1, overallIntelligence: 20}),
       testModel({id: 'b', costsToRun: 4, overallIntelligence: 40}),
@@ -65,10 +65,22 @@ describe('ScatterPlotComponent plot types', () => {
     ]);
     state.showEfforts.set(false);
     state.plotType.set('cost');
-    expect(c.zoneSplit()).toEqual({x: 6.5, y: 45});
+    expect(c.zoneSplit()).toEqual({x: 6.5, y: 60});
     state.toggleModel('outlier');
     state.showOnlyPareto.set(true);
-    expect(c.zoneSplit()).toEqual({x: 6.5, y: 45});
+    expect(c.zoneSplit()).toEqual({x: 6.5, y: 60});
+  });
+
+  it('splits the zones at the median y when the y axis is not intelligence', () => {
+    state.allModels.set([
+      testModel({id: 'a', costsToRun: 1, outputTime: 1}),
+      testModel({id: 'b', costsToRun: 4, outputTime: 3}),
+      testModel({id: 'c', costsToRun: 9, outputTime: 5}),
+      testModel({id: 'd', costsToRun: 16, outputTime: 7}),
+    ]);
+    state.showEfforts.set(false);
+    state.plotType.set('costVsResponse');
+    expect(c.zoneSplit()).toEqual({x: 6.5, y: 7});
   });
 
   it('keeps the best balanced model when the filter hides an extreme model', () => {

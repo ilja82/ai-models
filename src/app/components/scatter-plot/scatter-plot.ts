@@ -22,7 +22,7 @@ import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {paretoIds} from '../../models/pareto.util';
-import {median} from '../../models/median.util';
+import {median, percentile} from '../../models/median.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
@@ -74,14 +74,43 @@ interface PlotTypeDef {
   reverseY: boolean;
   logY: boolean;
   showsEfforts: boolean;
+  /** The percentile (0 to 1) of all y values where the zones split. */
+  ySplit: number;
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true},
-  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true},
-  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false, reverseY: false, logY: false, showsEfforts: false},
-  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false, reverseY: false, logY: false, showsEfforts: false},
-  {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false, reverseY: false, logY: false, showsEfforts: true},
+  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true, ySplit: 0.75},
+  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true, ySplit: 0.75},
+  {
+    key: 'release',
+    label: 'Release vs Intelligence',
+    supportsLogX: false,
+    reverseX: false,
+    reverseY: false,
+    logY: false,
+    showsEfforts: false,
+    ySplit: 0.75
+  },
+  {
+    key: 'context',
+    label: 'Context vs Intelligence',
+    supportsLogX: true,
+    reverseX: false,
+    reverseY: false,
+    logY: false,
+    showsEfforts: false,
+    ySplit: 0.75
+  },
+  {
+    key: 'speed',
+    label: 'Tokens/s vs Intelligence',
+    supportsLogX: false,
+    reverseX: false,
+    reverseY: false,
+    logY: false,
+    showsEfforts: true,
+    ySplit: 0.75
+  },
   {
     key: 'responseVsIntel',
     label: 'Response Time vs Intelligence',
@@ -89,10 +118,29 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseX: true,
     reverseY: false,
     logY: false,
-    showsEfforts: true
+    showsEfforts: true,
+    ySplit: 0.75
   },
-  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true},
-  {key: 'costVsResponse', label: 'Cost vs Response Time', supportsLogX: true, reverseX: true, reverseY: true, logY: true, showsEfforts: true},
+  {
+    key: 'responseVsSpeed',
+    label: 'Response Time vs Speed',
+    supportsLogX: true,
+    reverseX: true,
+    reverseY: false,
+    logY: false,
+    showsEfforts: true,
+    ySplit: 0.5
+  },
+  {
+    key: 'costVsResponse',
+    label: 'Cost vs Response Time',
+    supportsLogX: true,
+    reverseX: true,
+    reverseY: true,
+    logY: true,
+    showsEfforts: true,
+    ySplit: 0.5
+  },
 ];
 
 function plotTypeDef(plotType: PlotType): PlotTypeDef {
@@ -172,7 +220,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
-  /** The median x and y of all models with both values of the current plot type, before any filter. */
+  /** The median x and the `ySplit` percentile y of all models with both values of the current plot type, before any filter. */
   readonly zoneSplit = computed<{ x: number; y: number } | null>(() => {
     const plotType = this.state.plotType();
     const points = this.state.allModels().flatMap(m => {
@@ -180,7 +228,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       return xy ? [xy] : [];
     });
     const x = median(points.map(p => p.x));
-    const y = median(points.map(p => p.y));
+    const y = percentile(points.map(p => p.y), plotTypeDef(plotType).ySplit);
     return x === null || y === null ? null : {x, y};
   });
 
