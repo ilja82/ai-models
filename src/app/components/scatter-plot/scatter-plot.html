@@ -27,12 +27,6 @@
           Log X
         </label>
       }
-      @if (hasEfforts() && currentPlotDef().showsEfforts) {
-        <label class="toggle-label">
-          <input type="checkbox" [checked]="state.showEfforts()" (change)="state.showEfforts.update(v => !v)"/>
-          Effort levels
-        </label>
-      }
       <label class="toggle-label">
         <input type="checkbox" [checked]="state.showOnlyPareto()" (change)="state.showOnlyPareto.update(v => !v)"/>
         Pareto only

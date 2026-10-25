@@ -82,7 +82,6 @@ describe('run cost with estimated tokens and cost per request', () => {
       efforts: [level('low', 5, 30), level('medium', null, 35), level('high', null, 40)],
     });
     state.allModels.set([m]);
-    state.showEfforts.set(true);
     state.logScaleX.set(false);
     const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
     state.plotType.set('cost');

@@ -24,7 +24,6 @@ describe('special marker sizes', () => {
     localStorage.clear();
     state = TestBed.inject(AppState);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(true);
     state.plotType.set('cost');
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
@@ -100,10 +99,9 @@ describe('special marker sizes', () => {
   });
 
   it('draws a ring and a bold label in its own color beside the marker', () => {
-    state.allModels.set([cheap, pricey, withLevel]);
+    state.allModels.set([cheap, pricey]);
     const colors = getPlotColors(TestBed.inject(ThemeState).theme());
     const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance as any;
-    c2.state.showEfforts.set(false);
     const data = c2.plotData();
     const balanced = data.find((d: any) => d.pointStyle === 'rectRot');
     expect(balanced.color).toBe(colors.balanced);
@@ -111,7 +109,7 @@ describe('special marker sizes', () => {
     const others = data.filter((d: any) => d !== balanced).map((d: any) => c2.borderWidthOf(d));
     expect(Math.max(...others)).toBeLessThan(c2.borderWidthOf(balanced));
 
-    c2.state.showEfforts.set(true);
+    state.allModels.set([cheap, pricey, withLevel]);
     const points = c2.effortCurves().flatMap((c: any) => c.points);
     const datasets = c2.effortDatasets(c2.effortCurves());
     const index = points.findIndex((p: any) => p.balanced);
@@ -120,7 +118,7 @@ describe('special marker sizes', () => {
     const widths = datasets.flatMap((d: any) => d.pointBorderWidth) as number[];
     expect(Math.max(...widths.filter((_, i) => i !== index))).toBeLessThan(widths[index]);
 
-    state.showEfforts.set(false);
+    state.allModels.set([cheap, pricey]);
     const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
     const trace = c3.traces().find(t => t.name === 'Best balanced') as any;
     expect(trace.marker.line.color).toBe(colors.balancedRing);
@@ -137,7 +135,6 @@ describe('best balanced effort level label in 3D', () => {
     localStorage.clear();
     const state = TestBed.inject(AppState);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(true);
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');

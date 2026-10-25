@@ -54,7 +54,6 @@ describe('3D label spreading', () => {
       testModel({id: 'b', costsToRun: 100, overallIntelligence: 50, contextWindow: 1_000_000}),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
     expect((c.layout() as any).uirevision).toBeTruthy();
     const annotation = () => (c.layout() as any).scene.annotations.find((a: any) => a.text === c.labels3d()[0].text);

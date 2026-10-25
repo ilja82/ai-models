@@ -14,14 +14,24 @@ describe('AppState stored 3D axes', () => {
     expect(state.scatter3dX()).toBe('contextWindow');
   });
 
-  it('restores a stored cost plot', () => {
-    localStorage.setItem('ai-models.plotType', 'cost');
+  it('restores a stored price plot', () => {
+    localStorage.setItem('ai-models.plotType', 'price');
+    expect(TestBed.inject(AppState).plotType()).toBe('price');
+  });
+
+  it('falls back to the cost plot for an unknown plot', () => {
+    localStorage.setItem('ai-models.plotType', 'lorem');
     expect(TestBed.inject(AppState).plotType()).toBe('cost');
   });
 
-  it('falls back to the price plot for an unknown plot', () => {
-    localStorage.setItem('ai-models.plotType', 'lorem');
-    expect(TestBed.inject(AppState).plotType()).toBe('price');
+  it('opens the cost plot for a scatter link without a plot', () => {
+    localStorage.setItem('ai-models.plotType', 'price');
+    history.replaceState(null, '', '#/scatter');
+    try {
+      expect(TestBed.inject(AppState).plotType()).toBe('cost');
+    } finally {
+      history.replaceState(null, '', window.location.pathname);
+    }
   });
 });
 
@@ -49,15 +59,9 @@ describe('AppState effort levels', () => {
     return state;
   }
 
-  it('shows the effort levels by default', () => {
-    expect(TestBed.inject(AppState).showEfforts()).toBe(true);
-  });
-
-  it('puts the effort levels into the Pareto set while they are shown', () => {
+  it('puts the effort levels into the Pareto set', () => {
     const state = setUp();
     expect([...state.usefulModelIds()].sort()).toEqual(['a', 'a@low']);
-    state.showEfforts.set(false);
-    expect([...state.usefulModelIds()].sort()).toEqual(['a', 'b']);
   });
 });
 

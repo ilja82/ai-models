@@ -22,7 +22,6 @@ describe('3D label color in the "Most attractive" box', () => {
     state = TestBed.inject(AppState);
     theme = TestBed.inject(ThemeState);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');
@@ -56,7 +55,6 @@ describe('3D zone split', () => {
     localStorage.clear();
     state = TestBed.inject(AppState);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');
@@ -99,7 +97,6 @@ describe('3D effort label color', () => {
     TestBed.inject(ThemeState).override.set(theme);
     const state = TestBed.inject(AppState);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(true);
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');

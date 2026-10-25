@@ -33,7 +33,7 @@
       <span class="legend-item"><span class="shape circle useful"></span>Pareto efficient</span>
       <span class="legend-item"><span class="shape diamond-open axis-best"></span>Best per axis</span>
       <span class="legend-item"><span class="shape square balanced"></span>Best balanced</span>
-      @if (state.showEfforts() && hasEfforts()) {
+      @if (hasEfforts()) {
         <span class="legend-item"><span class="shape effort-line"></span>Effort levels</span>
       }
     </div>
@@ -43,12 +43,6 @@
         <input type="checkbox" [checked]="state.logScale3d()" (change)="state.logScale3d.update(v => !v)"/>
         Log scale (where applicable)
       </label>
-      @if (hasEfforts()) {
-        <label class="toggle-label">
-          <input type="checkbox" [checked]="state.showEfforts()" (change)="state.showEfforts.update(v => !v)"/>
-          Effort levels
-        </label>
-      }
       <label class="toggle-label">
         <input type="checkbox" [checked]="state.showOnlyPareto()" (change)="state.showOnlyPareto.update(v => !v)"/>
         Pareto only

@@ -18,7 +18,6 @@ describe('BarChartComponent Pareto only', () => {
       testModel({id: 'unpriced', overallIntelligence: 90, costsToRun: null}),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     state.showOnlyPareto.set(false);
     c = TestBed.createComponent(BarChartComponent).componentInstance;
   });
@@ -90,7 +89,6 @@ describe('BarChartComponent effort levels', () => {
       testModel({id: 'ipsum', publicName: 'Ipsum', overallIntelligence: 50, costsToRun: 8}),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(true);
     state.showOnlyPareto.set(false);
     state.barGroupByModel.set(false);
     c = TestBed.createComponent(BarChartComponent).componentInstance;
@@ -104,11 +102,8 @@ describe('BarChartComponent effort levels', () => {
     expect(c.legendItems().map(i => i.label)).toContain('Other effort level');
   });
 
-  it('shows no effort bars for a metric without level values or while the levels are hidden', () => {
+  it('shows no effort bars for a metric without level values', () => {
     state.barMetric.set('inputCosts');
-    expect(c.chartData().labels).toEqual(['Lorem', 'Ipsum']);
-    state.barMetric.set('intelligence');
-    state.showEfforts.set(false);
     expect(c.chartData().labels).toEqual(['Lorem', 'Ipsum']);
     expect(c.legendItems().map(i => i.label)).not.toContain('Other effort level');
   });

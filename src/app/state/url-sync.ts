@@ -5,6 +5,8 @@ export const SCATTER3D_DEFAULTS: { x: AxisField; y: AxisField; z: AxisField; log
   x: 'responseTime', y: 'costsToRun', z: 'intelligence', log: true,
 };
 
+export const DEFAULT_PLOT_TYPE: PlotType = 'cost';
+
 export interface UrlState {
   view: ViewTab;
   barMetric?: BarMetric;
@@ -16,7 +18,6 @@ export interface UrlState {
   showLocal?: boolean;
   showDeprecated?: boolean;
   hiddenProviders?: Provider[];
-  showEfforts?: boolean;
   groupByModel?: boolean;
   logScaleX?: boolean;
   logScale3d?: boolean;
@@ -36,7 +37,6 @@ export interface UrlSnapshot {
   showLocal: boolean;
   showDeprecated: boolean;
   hiddenProviders: readonly Provider[];
-  showEfforts: boolean;
   groupByModel: boolean;
   logScaleX: boolean;
   logScale3d: boolean;
@@ -100,10 +100,6 @@ export function parseHash(hash: string): UrlState | null {
   const hidden = parseList(params.getAll('hide'), PROVIDERS);
   if (hidden.length) out.hiddenProviders = hidden;
 
-  const efforts = params.get('efforts');
-  if (efforts === '1') out.showEfforts = true;
-  else if (efforts === '0') out.showEfforts = false;
-
   const group = params.get('group');
   if (view === 'bar' && (group === '1' || group === '0')) out.groupByModel = group === '1';
 
@@ -134,7 +130,7 @@ export function serializeHash(s: UrlSnapshot): string {
   const params = new URLSearchParams();
 
   if (s.view === 'bar' && s.barMetric !== 'intelligence') params.set('metric', s.barMetric);
-  if (s.view === 'scatter' && s.plotType !== 'price') params.set('metric', s.plotType);
+  if (s.view === 'scatter' && s.plotType !== DEFAULT_PLOT_TYPE) params.set('metric', s.plotType);
   if (s.view === 'scatter3d') {
     if (s.scatter3dX !== SCATTER3D_DEFAULTS.x) params.set('x', s.scatter3dX);
     if (s.scatter3dY !== SCATTER3D_DEFAULTS.y) params.set('y', s.scatter3dY);
@@ -151,7 +147,6 @@ export function serializeHash(s: UrlSnapshot): string {
 
   if (s.showDeprecated) params.set('deprecated', '1');
   s.hiddenProviders.forEach(p => params.append('hide', p));
-  if (!s.showEfforts) params.set('efforts', '0');
   if (s.view === 'bar' && !s.groupByModel) params.set('group', '0');
 
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');

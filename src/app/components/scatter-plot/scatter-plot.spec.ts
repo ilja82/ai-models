@@ -23,7 +23,6 @@ describe('ScatterPlotComponent plot types', () => {
     state = TestBed.inject(AppState);
     state.allModels.set([fast, slow]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(true);
     state.logScaleX.set(true);
     c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
   });
@@ -33,7 +32,6 @@ describe('ScatterPlotComponent plot types', () => {
     const cheap = testModel({id: 'cheap', costsToRun: 4, overallIntelligence: 40});
     const dear = testModel({id: 'dear', costsToRun: 64, overallIntelligence: 60});
     state.allModels.set([wide, cheap, dear]);
-    state.showEfforts.set(false);
     state.plotType.set('cost');
     expect(c.xBounds()).toEqual({min: 0, max: 6});
     expect(c.yBounds()).toEqual({min: 17, max: 63});
@@ -47,7 +45,6 @@ describe('ScatterPlotComponent plot types', () => {
       testModel({id: 'best', costsToRun: 2, overallIntelligence: 60}),
       testModel({id: 'worse', costsToRun: 256, overallIntelligence: 30}),
     ]);
-    state.showEfforts.set(false);
     state.plotType.set('cost');
     expect(c.xBounds()).toEqual({min: 1, max: 8});
     state.showOnlyPareto.set(true);
@@ -63,7 +60,6 @@ describe('ScatterPlotComponent plot types', () => {
       testModel({id: 'outlier', costsToRun: 10000, overallIntelligence: 90}),
       testModel({id: 'no-cost', costsToRun: null, overallIntelligence: 10}),
     ]);
-    state.showEfforts.set(false);
     state.plotType.set('cost');
     expect(c.zoneSplit()).toEqual({x: 6.5, y: 60});
     state.toggleModel('outlier');
@@ -78,7 +74,6 @@ describe('ScatterPlotComponent plot types', () => {
       testModel({id: 'c', costsToRun: 9, outputTime: 5}),
       testModel({id: 'd', costsToRun: 16, outputTime: 7}),
     ]);
-    state.showEfforts.set(false);
     state.plotType.set('costVsResponse');
     expect(c.zoneSplit()).toEqual({x: 6.5, y: 7});
   });
@@ -89,7 +84,6 @@ describe('ScatterPlotComponent plot types', () => {
       testModel({id: 'mid', costsToRun: 10, overallIntelligence: 50}),
       testModel({id: 'pricey', costsToRun: 1000, overallIntelligence: 0}),
     ]);
-    state.showEfforts.set(false);
     state.logScaleX.set(false);
     state.plotType.set('cost');
     expect(c.specialMarkers2d().balancedId).toBe('mid');
@@ -99,7 +93,6 @@ describe('ScatterPlotComponent plot types', () => {
 
   it('gives a single model at a power of two a log axis one step wide', () => {
     state.allModels.set([testModel({id: 'one', costsToRun: 8})]);
-    state.showEfforts.set(false);
     state.plotType.set('cost');
     expect(c.xBounds()).toEqual({min: 3, max: 4});
   });

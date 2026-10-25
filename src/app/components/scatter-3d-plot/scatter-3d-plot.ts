@@ -31,36 +31,16 @@ interface AxisDef {
 
 export const AXIS_DEFS: AxisDef[] = [
   {
+    key: 'intelligence', label: 'Overall Intelligence', higherIsBetter: true, logCandidate: false,
+    get: m => m.overallIntelligence, format: v => `${v}`, zoneSplit: 0.75
+  },
+  {
     key: 'costsToRun', label: 'Cost per Index Run (USD)', higherIsBetter: false, logCandidate: true,
     get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, format: v => `$${v.toFixed(2)}`
   },
   {
-    key: 'inputCosts', label: 'Input Cost ($/M)', higherIsBetter: false, logCandidate: true,
-    get: m => m.inputCosts === 0 ? 0.001 : m.inputCosts, format: v => `$${v.toFixed(3)}`
-  },
-  {
-    key: 'outputCosts', label: 'Output Cost ($/M)', higherIsBetter: false, logCandidate: true,
-    get: m => m.outputCosts === 0 ? 0.001 : m.outputCosts, format: v => `$${v.toFixed(3)}`
-  },
-  {
-    key: 'contextWindow', label: 'Context Window (tokens)', higherIsBetter: true, logCandidate: true,
-    get: m => m.contextWindow, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
-  },
-  {
-    key: 'maxInputTokens', label: 'Max Input Tokens', higherIsBetter: true, logCandidate: true,
-    get: m => m.maxInputTokens, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
-  },
-  {
-    key: 'maxOutputTokens', label: 'Max Output Tokens', higherIsBetter: true, logCandidate: true,
-    get: m => m.maxOutputTokens, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
-  },
-  {
-    key: 'minVramRequirement', label: 'Min VRAM (GB)', higherIsBetter: false, logCandidate: false,
-    get: m => m.minVramRequirement, format: v => `${v}GB`
-  },
-  {
-    key: 'intelligence', label: 'Overall Intelligence', higherIsBetter: true, logCandidate: false,
-    get: m => m.overallIntelligence, format: v => `${v}`, zoneSplit: 0.75
+    key: 'responseTime', label: 'Response Time (s)', higherIsBetter: false, logCandidate: true,
+    get: m => responseTimeOf(m), format: v => `${v.toFixed(1)}s`
   },
   {
     key: 'tokensPerSecond', label: 'Speed (tok/s)', higherIsBetter: true, logCandidate: false,
@@ -79,8 +59,28 @@ export const AXIS_DEFS: AxisDef[] = [
     get: m => m.outputTime, format: v => `${v.toFixed(1)}s`
   },
   {
-    key: 'responseTime', label: 'Response Time (s)', higherIsBetter: false, logCandidate: true,
-    get: m => responseTimeOf(m), format: v => `${v.toFixed(1)}s`
+    key: 'inputCosts', label: 'Input Cost ($/M)', higherIsBetter: false, logCandidate: true,
+    get: m => m.inputCosts === 0 ? 0.001 : m.inputCosts, format: v => `$${v.toFixed(3)}`
+  },
+  {
+    key: 'outputCosts', label: 'Output Cost ($/M)', higherIsBetter: false, logCandidate: true,
+    get: m => m.outputCosts === 0 ? 0.001 : m.outputCosts, format: v => `$${v.toFixed(3)}`
+  },
+  {
+    key: 'contextWindow', label: 'Context Window (tokens)', higherIsBetter: true, logCandidate: true,
+    get: m => m.contextWindow, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
+  },
+  {
+    key: 'maxOutputTokens', label: 'Max Output Tokens', higherIsBetter: true, logCandidate: true,
+    get: m => m.maxOutputTokens, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
+  },
+  {
+    key: 'maxInputTokens', label: 'Max Input Tokens', higherIsBetter: true, logCandidate: true,
+    get: m => m.maxInputTokens, format: v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
+  },
+  {
+    key: 'minVramRequirement', label: 'Min VRAM (GB)', higherIsBetter: false, logCandidate: false,
+    get: m => m.minVramRequirement, format: v => `${v}GB`
   },
   {
     key: 'releaseDate', label: 'Release Date', higherIsBetter: true, logCandidate: false,
@@ -229,7 +229,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   /** The effort levels of each plotted model that have a value on all three axes, for models with two or more. */
   readonly effortCurves = computed<{ model: AiModel; points: AiModel[] }[]>(() => {
-    if (!this.state.showEfforts()) return [];
     const axes = this.axes();
     return this.plotModels().flatMap(model => {
       const points = effortSeries(model).filter(p => axes.every(a => a.get(p) !== null));

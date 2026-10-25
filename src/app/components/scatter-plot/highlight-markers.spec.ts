@@ -43,7 +43,6 @@ describe('highlighted 2D markers', () => {
       testModel({id: 'smart', publicName: 'Smart', costsToRun: 64, overallIntelligence: 70}),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     state.plotType.set('cost');
     const c = TestBed.createComponent(ScatterPlotComponent).componentInstance as any;
     expect(c.plotData()[0].radius).toBe(modelPointRadius(plain));

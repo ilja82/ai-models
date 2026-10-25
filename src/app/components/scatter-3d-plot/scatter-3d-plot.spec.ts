@@ -45,7 +45,6 @@ describe('Scatter3dPlot axis ranges', () => {
       testModel({id: 'c', costsToRun: 50, overallIntelligence: 90, contextWindow: 500_000}),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     state.logScale3d.set(false);
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
@@ -65,7 +64,6 @@ describe('Scatter3dPlot axis ranges', () => {
       testModel({id: 'worse', costsToRun: 100, overallIntelligence: 40, contextWindow: 100_000}),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(false);
     state.logScale3d.set(false);
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');

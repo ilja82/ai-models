@@ -38,7 +38,6 @@ describe('show only Pareto best', () => {
       }),
     ]);
     state.disabledModelIds.set(new Set());
-    state.showEfforts.set(true);
   });
 
   const ids = (models: { id: string }[]) => models.map(m => m.id);
@@ -165,7 +164,6 @@ describe('Pareto set per plot type', () => {
     ]);
     const plot = TestBed.createComponent(ScatterPlotComponent).componentInstance;
     state.plotType.set('price');
-    expect(state.showEfforts()).toBe(true);
     expect([...plot.usefulIds()].sort()).toEqual(['a', 'c']);
   });
 

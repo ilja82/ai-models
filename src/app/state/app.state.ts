@@ -11,7 +11,7 @@ import {
 } from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
-import {parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
+import {DEFAULT_PLOT_TYPE, parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
 import {otherEffortVariants} from '../models/effort.util';
 import {paretoIds} from '../models/pareto.util';
 
@@ -28,7 +28,6 @@ export class AppState {
   readonly showOnlyPareto = signal(this.loadBool('showOnlyPareto', false));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
   readonly hiddenProviders = signal<Provider[]>(this.loadList('hiddenProviders', PROVIDERS));
-  readonly showEfforts = signal(this.loadBool('showEfforts', true));
   readonly barGroupByModel = signal(this.loadBool('barGroupByModel', true));
   readonly inputModalities = signal<InputModality[]>(this.loadList('inputModalities', INPUT_MODALITIES));
   readonly outputModalities = signal<OutputModality[]>(this.loadList('outputModalities', OUTPUT_MODALITIES));
@@ -75,11 +74,6 @@ export class AppState {
       const v = this.hiddenProviders();
       if (this.hydrating) return;
       localStorage.setItem(KEY('hiddenProviders'), JSON.stringify(v));
-    });
-    effect(() => {
-      const v = this.showEfforts();
-      if (this.hydrating) return;
-      localStorage.setItem(KEY('showEfforts'), String(v));
     });
     effect(() => {
       const v = this.barGroupByModel();
@@ -155,7 +149,6 @@ export class AppState {
         showLocal: this.showLocal(),
         showDeprecated: this.showDeprecated(),
         hiddenProviders: this.hiddenProviders(),
-        showEfforts: this.showEfforts(),
         groupByModel: this.barGroupByModel(),
         logScaleX: this.logScaleX(),
         logScale3d: this.logScale3d(),
@@ -191,7 +184,7 @@ export class AppState {
     // Missing fields fall back to defaults, not to persisted values.
     this.activeTab.set(parsed.view);
     this.barMetric.set(parsed.barMetric ?? 'intelligence');
-    this.plotType.set(parsed.plotType ?? 'price');
+    this.plotType.set(parsed.plotType ?? DEFAULT_PLOT_TYPE);
     this.scatter3dX.set(parsed.scatter3dX ?? SCATTER3D_DEFAULTS.x);
     this.scatter3dY.set(parsed.scatter3dY ?? SCATTER3D_DEFAULTS.y);
     this.scatter3dZ.set(parsed.scatter3dZ ?? SCATTER3D_DEFAULTS.z);
@@ -199,7 +192,6 @@ export class AppState {
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
     this.hiddenProviders.set(parsed.hiddenProviders ?? []);
-    this.showEfforts.set(parsed.showEfforts ?? true);
     this.barGroupByModel.set(parsed.groupByModel ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? SCATTER3D_DEFAULTS.log);
@@ -214,7 +206,7 @@ export class AppState {
 
   private loadPlotType(): PlotType {
     const v = localStorage.getItem(KEY('plotType'));
-    return (PLOT_TYPE_KEYS as readonly string[]).includes(v ?? '') ? v as PlotType : 'price';
+    return (PLOT_TYPE_KEYS as readonly string[]).includes(v ?? '') ? v as PlotType : DEFAULT_PLOT_TYPE;
   }
 
   private loadAxis(key: string, fallback: AxisField): AxisField {
@@ -283,10 +275,10 @@ export class AppState {
     return this.availableModels().filter(m => !disabled.has(m.id));
   });
 
-  /** The models that compete for the run-cost Pareto set and the profile badges, plus their other effort levels while those are shown. */
+  /** The models that compete for the run-cost Pareto set and the profile badges, plus their other effort levels. */
   readonly paretoCandidates = computed(() => {
     const models = this.filteredModels().filter(m => !m.deprecated);
-    return this.showEfforts() ? models.concat(models.flatMap(otherEffortVariants)) : models;
+    return models.concat(models.flatMap(otherEffortVariants));
   });
 
   /** Pareto set on the run cost, for the table. Effort levels have the id `<model id>@<effort>`. */

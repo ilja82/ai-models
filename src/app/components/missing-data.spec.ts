@@ -95,9 +95,6 @@ describe('charts with missing measurements', () => {
     state.scatter3dZ.set('intelligence');
     expect(c3.effortCurves().map(c => c.points.map(p => p.id))).toEqual([['e@low', 'e']]);
     expect([...c3.useful3d()].sort()).toEqual(['e', 'e@low']);
-    state.showEfforts.set(false);
-    expect(c3.effortCurves()).toEqual([]);
-    expect([...c3.useful3d()].sort()).toEqual(['e', 'mid']);
   });
 
   it('marks an effort level as best balanced and best per axis in the scatter plots, and as best balanced in the profiles', () => {
@@ -134,13 +131,6 @@ describe('charts with missing measurements', () => {
     expect(profiles.balancedIds().overall).toBe('e@low');
     const badge = profiles.profiles().find(p => p.model.id === 'e')!.badges.find(b => b.id === 'best-balanced-overall');
     expect(badge?.label).toBe('Best balanced at overall (effort: low)');
-
-    state.showEfforts.set(false);
-    expect([...c2.specialMarkers2d().axisBestIds]).not.toContain('e@low');
-    expect([...c3.specialMarkers3d().axisBestIds]).not.toContain('e@low');
-    expect(c2.specialMarkers2d().balancedId).not.toContain('@');
-    expect(c3.specialMarkers3d().balancedId).not.toContain('@');
-    expect(profiles.balancedIds().overall).not.toContain('@');
   });
 
   it('table sorts missing values last in both directions', () => {

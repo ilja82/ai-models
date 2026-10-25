@@ -23,7 +23,6 @@ describe('highlighted 3D markers', () => {
   });
 
   it('draws the Pareto and best per axis models larger than the others, with bold larger labels', () => {
-    state.showEfforts.set(false);
     state.allModels.set([
       testModel({id: 'plain', costsToRun: 100, overallIntelligence: 10, contextWindow: 1000}),
       ...[1, 2, 4, 8, 16, 32].map((cost, i) => testModel({id: `m${i}`, costsToRun: cost, overallIntelligence: 20 + i * 10})),
@@ -52,7 +51,6 @@ describe('highlighted 3D markers', () => {
   });
 
   it('writes the labels of Pareto effort levels larger', () => {
-    state.showEfforts.set(true);
     state.allModels.set([
       testModel({id: 'a', costsToRun: 1, overallIntelligence: 20}),
       testModel({id: 'b', costsToRun: 100, overallIntelligence: 90}),

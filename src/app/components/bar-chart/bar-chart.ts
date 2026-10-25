@@ -73,13 +73,6 @@ const METRICS: MetricDef[] = [
     higherIsBetter: false,
     stacked: false
   },
-  {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', higherIsBetter: false, stacked: false},
-  {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', higherIsBetter: false, stacked: false},
-  {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', higherIsBetter: true, stacked: false},
-  {key: 'maxInputTokens', label: 'Max Input', unit: 'K tokens', axisLabel: 'Max Input Tokens (K)', higherIsBetter: true, stacked: false},
-  {key: 'maxOutputTokens', label: 'Max Output', unit: 'K tokens', axisLabel: 'Max Output Tokens (K)', higherIsBetter: true, stacked: false},
-  {key: 'tokensPerSecond', label: 'Tokens/sec', unit: 'tok/s', axisLabel: 'Tokens Per Second', higherIsBetter: true, stacked: false},
-  {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s) - Time until first token', higherIsBetter: false, stacked: true},
   {
     key: 'responseTime',
     label: 'Response Time',
@@ -88,6 +81,13 @@ const METRICS: MetricDef[] = [
     higherIsBetter: false,
     stacked: true
   },
+  {key: 'tokensPerSecond', label: 'Tokens/sec', unit: 'tok/s', axisLabel: 'Tokens Per Second', higherIsBetter: true, stacked: false},
+  {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s) - Time until first token', higherIsBetter: false, stacked: true},
+  {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', higherIsBetter: false, stacked: false},
+  {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', higherIsBetter: false, stacked: false},
+  {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', higherIsBetter: true, stacked: false},
+  {key: 'maxOutputTokens', label: 'Max Output', unit: 'K tokens', axisLabel: 'Max Output Tokens (K)', higherIsBetter: true, stacked: false},
+  {key: 'maxInputTokens', label: 'Max Input', unit: 'K tokens', axisLabel: 'Max Input Tokens (K)', higherIsBetter: true, stacked: false},
 ];
 
 function isEffortLevel(m: AiModel): boolean {
@@ -170,7 +170,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const all = this.state.filteredModels();
     const missing = all.filter(m => this.getTotalValue(m, metric) === null);
     const withValue = all.filter(m => this.getTotalValue(m, metric) !== null);
-    const levels = this.state.showEfforts() ? withValue.flatMap(m => this.differingLevels(m, metric)) : [];
+    const levels = withValue.flatMap(m => this.differingLevels(m, metric));
     const leveled = new Set(levels.map(v => parseEffortVariantId(v.id).modelId));
     const bars = withValue.concat(levels);
     const allValues = bars.map(m => this.getTotalValue(m, metric)!);

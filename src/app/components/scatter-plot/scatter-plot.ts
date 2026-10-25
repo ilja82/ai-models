@@ -105,43 +105,33 @@ interface PlotTypeDef {
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: false, ySplit: 0.75},
   {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true, ySplit: 0.75},
+  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: false, ySplit: 0.75},
   {
-    key: 'release',
-    label: 'Release vs Intelligence',
-    supportsLogX: false,
-    reverseX: false,
-    reverseY: false,
-    logY: false,
-    showsEfforts: false,
-    ySplit: 0.75
-  },
-  {
-    key: 'context',
-    label: 'Context vs Intelligence',
+    key: 'responseVsIntel',
+    label: 'Response Time vs Intelligence',
     supportsLogX: true,
-    reverseX: false,
-    reverseY: false,
-    logY: false,
-    showsEfforts: false,
-    ySplit: 0.75
-  },
-  {
-    key: 'speed',
-    label: 'Tokens/s vs Intelligence',
-    supportsLogX: false,
-    reverseX: false,
+    reverseX: true,
     reverseY: false,
     logY: false,
     showsEfforts: true,
     ySplit: 0.75
   },
   {
-    key: 'responseVsIntel',
-    label: 'Response Time vs Intelligence',
+    key: 'costVsResponse',
+    label: 'Cost vs Response Time',
     supportsLogX: true,
     reverseX: true,
+    reverseY: true,
+    logY: true,
+    showsEfforts: true,
+    ySplit: 0.5
+  },
+  {
+    key: 'speed',
+    label: 'Tokens/s vs Intelligence',
+    supportsLogX: false,
+    reverseX: false,
     reverseY: false,
     logY: false,
     showsEfforts: true,
@@ -158,14 +148,24 @@ const PLOT_TYPES: PlotTypeDef[] = [
     ySplit: 0.5
   },
   {
-    key: 'costVsResponse',
-    label: 'Cost vs Response Time',
+    key: 'context',
+    label: 'Context vs Intelligence',
     supportsLogX: true,
-    reverseX: true,
-    reverseY: true,
-    logY: true,
-    showsEfforts: true,
-    ySplit: 0.5
+    reverseX: false,
+    reverseY: false,
+    logY: false,
+    showsEfforts: false,
+    ySplit: 0.75
+  },
+  {
+    key: 'release',
+    label: 'Release vs Intelligence',
+    supportsLogX: false,
+    reverseX: false,
+    reverseY: false,
+    logY: false,
+    showsEfforts: false,
+    ySplit: 0.75
   },
 ];
 
@@ -203,8 +203,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => plotTypeDef(this.state.plotType()));
 
-  /** True while the effort levels are on and the current plot type shows them. */
-  readonly effortsShown = computed(() => this.state.showEfforts() && this.currentPlotDef().showsEfforts);
+  /** True while the current plot type shows the effort levels. */
+  readonly effortsShown = computed(() => this.currentPlotDef().showsEfforts);
 
   private getXY(m: AiModel, plotType: PlotType): { x: number | null; y: number | null } {
     const intel = m.overallIntelligence;
@@ -270,7 +270,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** The effort points of each plottable model with two or more, while the effort levels are shown. */
+  /** The effort points of each plottable model with two or more, while the plot type shows effort levels. */
   private readonly allEffortPoints = computed(() => this.effortPointsOf(this.plottable().map(p => p.model)));
 
   private effortPointsOf(models: AiModel[]): { model: AiModel; points: EffortPoint[] }[] {

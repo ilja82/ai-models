@@ -1,32 +1,18 @@
 import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 
 const DEFAULTS: UrlSnapshot = {
-  view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'responseTime',
+  view: 'scatter', barMetric: 'intelligence', plotType: 'cost', scatter3dX: 'responseTime',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
-  showDeprecated: false, hiddenProviders: [], showEfforts: true, groupByModel: true, logScaleX: true, logScale3d: true, onlyPareto: false,
+  showDeprecated: false, hiddenProviders: [], groupByModel: true, logScaleX: true, logScale3d: true, onlyPareto: false,
   inputModalities: [], outputModalities: [],
 };
 
-describe('url-sync effort levels', () => {
-  it('omits the parameter by default', () => {
-    expect(serializeHash(DEFAULTS)).toBe('#/scatter');
-    expect(parseHash('#/scatter')?.showEfforts).toBeUndefined();
-  });
-
-  it('round-trips showEfforts', () => {
-    const hash = serializeHash({...DEFAULTS, showEfforts: false});
-    expect(hash).toBe('#/scatter?efforts=0');
-    expect(parseHash(hash)?.showEfforts).toBe(false);
-    expect(parseHash('#/scatter?efforts=1')?.showEfforts).toBe(true);
-  });
-});
-
 describe('url-sync plot types', () => {
-  it('omits the default price plot and round-trips the cost plot', () => {
+  it('omits the default cost plot and round-trips the price plot', () => {
     expect(serializeHash(DEFAULTS)).toBe('#/scatter');
     expect(serializeHash({...DEFAULTS, plotType: 'speed'})).toBe('#/scatter?metric=speed');
-    expect(serializeHash({...DEFAULTS, plotType: 'cost'})).toBe('#/scatter?metric=cost');
-    expect(parseHash('#/scatter?metric=cost')).toEqual({view: 'scatter', plotType: 'cost'});
+    expect(serializeHash({...DEFAULTS, plotType: 'price'})).toBe('#/scatter?metric=price');
+    expect(parseHash('#/scatter?metric=price')).toEqual({view: 'scatter', plotType: 'price'});
   });
 });
 
