@@ -1,4 +1,49 @@
 <div class="model-toggle-panel">
+  <section class="modality-filter" aria-labelledby="modality-title">
+    <div class="filter-head">
+      <h3 class="panel-title" id="modality-title">Modalities</h3>
+      @if (hasModalityFilter()) {
+        <button type="button" class="clear" (click)="state.clearModalities()">Clear</button>
+      }
+    </div>
+    <div class="chip-group" role="group" aria-label="Input modalities">
+      <span class="group-label">Input</span>
+      <div class="chips">
+        @for (chip of inputChips(); track chip.modality) {
+          <button
+            type="button"
+            class="chip"
+            [class.active]="chip.active"
+            [attr.aria-pressed]="chip.active"
+            [disabled]="!chip.active && chip.count === 0"
+            [title]="'Show only models that accept ' + chip.label.toLowerCase() + ' input'"
+            (click)="state.toggleInputModality(chip.modality)">
+            <span class="icon" aria-hidden="true">{{ chip.icon }}</span>{{ chip.label }}
+            <span class="count">{{ chip.count }}</span>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="chip-group" role="group" aria-label="Output modalities">
+      <span class="group-label">Output</span>
+      <div class="chips">
+        @for (chip of outputChips(); track chip.modality) {
+          <button
+            type="button"
+            class="chip"
+            [class.active]="chip.active"
+            [attr.aria-pressed]="chip.active"
+            [disabled]="!chip.active && chip.count === 0"
+            [title]="'Show only models that return ' + chip.label.toLowerCase() + ' output'"
+            (click)="state.toggleOutputModality(chip.modality)">
+            <span class="icon" aria-hidden="true">{{ chip.icon }}</span>{{ chip.label }}
+            <span class="count">{{ chip.count }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
   <h3 class="panel-title">Models</h3>
   <label class="show-deprecated">
     <input
@@ -19,6 +64,8 @@
         <span class="dot" [class.local]="model.localModel" [class.litellm]="!model.localModel"></span>
         <span class="name">{{ model.publicName }}</span>
       </li>
+    } @empty {
+      <li class="model-item empty">No model matches the filters.</li>
     }
   </ul>
 </div>

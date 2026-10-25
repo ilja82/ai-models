@@ -5,6 +5,7 @@ import {ModelBadgesService} from '../../services/model-badges.service';
 import {ProfileEntry} from '../../models/profile.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {BalancedAxis, bestBalancedId} from '../../models/balanced.util';
+import {MODALITY_ICONS, MODALITY_LABELS} from '../../models/ai-model.model';
 
 @Component({
   selector: 'app-model-profiles',
@@ -18,6 +19,8 @@ export class ModelProfilesComponent {
   readonly state = inject(AppState);
   private readonly badges = inject(ModelBadgesService);
   readonly searchText = signal('');
+  readonly icons = MODALITY_ICONS;
+  readonly labels = MODALITY_LABELS;
 
   /** The "best balanced" model or effort level id: closest-to-ideal in (cost ↓, intelligence ↑). */
   readonly balancedIds = computed(() => {

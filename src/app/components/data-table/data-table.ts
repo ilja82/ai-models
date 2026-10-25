@@ -1,8 +1,8 @@
 import {Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AppState} from '../../state/app.state';
-import {AiModel, costPerRequestOf, latencyOf, responseTimeOf} from '../../models/ai-model.model';
-import {formatUsd} from '../../models/tooltip.util';
+import {AiModel, costPerRequestOf, latencyOf, Modality, MODALITY_ICONS, responseTimeOf} from '../../models/ai-model.model';
+import {formatUsd, modalityNames} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime' | 'costPerRequest';
@@ -226,6 +226,14 @@ export class DataTableComponent {
 
   responseTime(model: AiModel): number | null {
     return responseTimeOf(model);
+  }
+
+  icons(list: readonly Modality[]): string {
+    return list.map(m => MODALITY_ICONS[m]).join('');
+  }
+
+  modalitiesTitle(model: AiModel): string {
+    return `Input: ${modalityNames(model.inputModalities)}. Output: ${modalityNames(model.outputModalities)}.`;
   }
 
   formatCost(value: number | null): string {

@@ -60,3 +60,62 @@ describe('AppState effort levels', () => {
     expect([...state.usefulModelIds()].sort()).toEqual(['a', 'b']);
   });
 });
+
+describe('AppState modality filter', () => {
+  afterEach(() => localStorage.clear());
+
+  function setUp(): AppState {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'text'}),
+      testModel({id: 'vision', inputModalities: ['text', 'image']}),
+      testModel({id: 'omni', inputModalities: ['text', 'image', 'audio', 'video']}),
+      testModel({id: 'embed', outputModalities: ['embedding']}),
+    ]);
+    state.disabledModelIds.set(new Set());
+    state.clearModalities();
+    return state;
+  }
+
+  const ids = (state: AppState) => state.availableModels().map(m => m.id);
+
+  it('shows all models without a filter', () => {
+    expect(ids(setUp())).toEqual(['text', 'vision', 'omni', 'embed']);
+  });
+
+  it('keeps the models with every selected modality', () => {
+    const state = setUp();
+    state.toggleInputModality('image');
+    expect(ids(state)).toEqual(['vision', 'omni']);
+    state.toggleInputModality('audio');
+    expect(ids(state)).toEqual(['omni']);
+    expect(state.modalityPool().length).toBe(4);
+  });
+
+  it('filters by output and clears both lists', () => {
+    const state = setUp();
+    state.toggleOutputModality('embedding');
+    expect(ids(state)).toEqual(['embed']);
+    state.toggleInputModality('image');
+    expect(ids(state)).toEqual([]);
+    state.clearModalities();
+    expect(ids(state).length).toBe(4);
+  });
+
+  it('keeps the selection in filter order and toggles a modality off', () => {
+    const state = setUp();
+    state.toggleInputModality('video');
+    state.toggleInputModality('image');
+    expect(state.inputModalities()).toEqual(['image', 'video']);
+    state.toggleInputModality('video');
+    expect(state.inputModalities()).toEqual(['image']);
+  });
+
+  it('ignores unknown stored modalities and broken JSON', () => {
+    localStorage.setItem('ai-models.inputModalities', JSON.stringify(['lorem', 'video', 'image']));
+    localStorage.setItem('ai-models.outputModalities', '{');
+    const state = TestBed.inject(AppState);
+    expect(state.inputModalities()).toEqual(['image', 'video']);
+    expect(state.outputModalities()).toEqual([]);
+  });
+});

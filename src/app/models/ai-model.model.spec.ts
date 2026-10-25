@@ -1,4 +1,15 @@
-import {blendedPriceOf, costPerRequestOf, latencyOf, PRICE_BLEND, priceBlendLabel, responseTimeOf, runCostOf} from './ai-model.model';
+import {
+  blendedPriceOf,
+  costPerRequestOf,
+  hasModalities,
+  INPUT_MODALITIES,
+  latencyOf,
+  OUTPUT_MODALITIES,
+  PRICE_BLEND,
+  priceBlendLabel,
+  responseTimeOf,
+  runCostOf,
+} from './ai-model.model';
 import {testModel} from '../../testing/model-fixture';
 import {buildModelTooltipLines, formatUsd} from './tooltip.util';
 import {AI_MODELS} from './ai-models.data';
@@ -106,5 +117,38 @@ describe('blendedPriceOf', () => {
   it('gives a non-reasoning model the same price, because the reasoning weight is 0', () => {
     const m = testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3});
     expect(blendedPriceOf({...m, reasoning: false})).toBeCloseTo(blendedPriceOf(m));
+  });
+});
+
+describe('hasModalities', () => {
+  const vision = testModel({inputModalities: ['text', 'image'], outputModalities: ['text']});
+
+  it('needs every asked input and output modality', () => {
+    expect(hasModalities(vision, ['image'], [])).toBe(true);
+    expect(hasModalities(vision, ['image', 'audio'], [])).toBe(false);
+    expect(hasModalities(vision, [], ['text'])).toBe(true);
+    expect(hasModalities(vision, ['text'], ['embedding'])).toBe(false);
+  });
+
+  it('matches every model without a filter', () => {
+    expect(hasModalities(vision, [], [])).toBe(true);
+  });
+});
+
+describe('modalities of the data entries', () => {
+  it('gives each entry known input and output modalities in filter order', () => {
+    for (const m of AI_MODELS) {
+      expect(m.inputModalities.length, m.id).toBeGreaterThan(0);
+      expect(m.outputModalities.length, m.id).toBeGreaterThan(0);
+      expect(m.inputModalities, m.id).toEqual(INPUT_MODALITIES.filter(x => m.inputModalities.includes(x)));
+      expect(m.outputModalities, m.id).toEqual(OUTPUT_MODALITIES.filter(x => m.outputModalities.includes(x)));
+    }
+  });
+});
+
+describe('tooltip modalities', () => {
+  it('names the input and output modalities', () => {
+    const lines = buildModelTooltipLines(testModel({inputModalities: ['text', 'image'], outputModalities: ['text']}));
+    expect(lines).toContain('Modalities: Text, Image → Text');
   });
 });

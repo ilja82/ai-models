@@ -1,3 +1,4 @@
+import {INPUT_MODALITIES, InputModality, OUTPUT_MODALITIES, OutputModality} from '../models/ai-model.model';
 import {AXIS_FIELD_KEYS, AxisField, BAR_METRIC_KEYS, BarMetric, PLOT_TYPE_KEYS, PlotType, VIEW_TABS, ViewTab,} from '../models/view-types';
 
 export const SCATTER3D_DEFAULTS: { x: AxisField; y: AxisField; z: AxisField; log: boolean } = {
@@ -18,6 +19,8 @@ export interface UrlState {
   logScaleX?: boolean;
   logScale3d?: boolean;
   onlyPareto?: boolean;
+  inputModalities?: InputModality[];
+  outputModalities?: OutputModality[];
 }
 
 export interface UrlSnapshot {
@@ -34,6 +37,8 @@ export interface UrlSnapshot {
   logScaleX: boolean;
   logScale3d: boolean;
   onlyPareto: boolean;
+  inputModalities: readonly InputModality[];
+  outputModalities: readonly OutputModality[];
 }
 
 export function parseHash(hash: string): UrlState | null {
@@ -103,7 +108,16 @@ export function parseHash(hash: string): UrlState | null {
   if (pareto === '1') out.onlyPareto = true;
   else if (pareto === '0') out.onlyPareto = false;
 
+  const inputs = parseModalities(params.getAll('in'), INPUT_MODALITIES);
+  if (inputs.length) out.inputModalities = inputs;
+  const outputs = parseModalities(params.getAll('out'), OUTPUT_MODALITIES);
+  if (outputs.length) out.outputModalities = outputs;
+
   return out;
+}
+
+function parseModalities<T extends string>(names: string[], known: readonly T[]): T[] {
+  return known.filter(m => names.includes(m));
 }
 
 export function serializeHash(s: UrlSnapshot): string {
@@ -132,6 +146,8 @@ export function serializeHash(s: UrlSnapshot): string {
   if (s.view === 'scatter3d' && s.logScale3d !== SCATTER3D_DEFAULTS.log) params.set('log', s.logScale3d ? '1' : '0');
 
   if (s.onlyPareto) params.set('pareto', '1');
+  s.inputModalities.forEach(m => params.append('in', m));
+  s.outputModalities.forEach(m => params.append('out', m));
 
   const q = params.toString();
   return q ? `#/${s.view}?${q}` : `#/${s.view}`;

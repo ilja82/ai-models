@@ -42,6 +42,7 @@
           <th (click)="sort('cutoffDate')" class="sortable">Cutoff {{ sortIcon('cutoffDate') }}</th>
           <th (click)="sort('overallIntelligence')" class="sortable">Overall {{ sortIcon('overallIntelligence') }}</th>
           <th (click)="sort('reasoning')" class="sortable">Reasoning {{ sortIcon('reasoning') }}</th>
+          <th title="Input → output modalities">Modalities</th>
           <th (click)="sort('tokensPerSecond')" class="sortable">Tok/s {{ sortIcon('tokensPerSecond') }}</th>
           <th (click)="sort('inputProcessingTime')" class="sortable">Input Time {{ sortIcon('inputProcessingTime') }}</th>
           <th (click)="sort('thinkingTime')" class="sortable">Think Time {{ sortIcon('thinkingTime') }}</th>
@@ -81,6 +82,9 @@
             <td class="center">{{ model.cutoffDate ?? '—' }}</td>
             <td class="num intel hist" [style]="cellStyle(model, 'overallIntelligence')">{{ model.overallIntelligence }}</td>
             <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
+            <td class="modalities" [title]="modalitiesTitle(model)" [attr.aria-label]="modalitiesTitle(model)">
+              <span aria-hidden="true">{{ icons(model.inputModalities) }} → {{ icons(model.outputModalities) }}</span>
+            </td>
             <td class="num hist" [style]="cellStyle(model, 'tokensPerSecond')">{{ formatSpeed(model.tokensPerSecond) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'inputProcessingTime')">{{ formatTime(model.inputProcessingTime) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'thinkingTime')">{{ formatTime(model.thinkingTime) }}</td>
@@ -93,7 +97,7 @@
         }
         @empty {
           <tr>
-            <td colspan="24" class="empty">No models match the current filters.</td>
+            <td colspan="25" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>

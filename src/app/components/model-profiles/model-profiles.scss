@@ -176,6 +176,34 @@
   }
 }
 
+.modalities {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+  margin: 0;
+  font-size: 0.72rem;
+
+  dt {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0;
+  }
+
+  .modality {
+    padding: 0.1rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+}
+
 .card-foot {
   display: flex;
   justify-content: space-between;

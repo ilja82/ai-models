@@ -25,6 +25,21 @@
 
           <p class="headline">{{ entry.headline }}</p>
 
+          <dl class="modalities">
+            <dt>In</dt>
+            <dd>
+              @for (m of entry.model.inputModalities; track m) {
+                <span class="modality">{{ icons[m] }} {{ labels[m] }}</span>
+              }
+            </dd>
+            <dt>Out</dt>
+            <dd>
+              @for (m of entry.model.outputModalities; track m) {
+                <span class="modality">{{ icons[m] }} {{ labels[m] }}</span>
+              }
+            </dd>
+          </dl>
+
           @if (strengths(entry).length > 0) {
             <div class="badge-group">
               @for (b of strengths(entry); track b.id) {

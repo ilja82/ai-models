@@ -2,6 +2,20 @@ import {PRICE_BLEND} from './price-blend.data';
 
 export {PRICE_BLEND};
 
+export const INPUT_MODALITIES = ['text', 'image', 'audio', 'video'] as const;
+export const OUTPUT_MODALITIES = ['text', 'image', 'audio', 'video', 'embedding'] as const;
+export type InputModality = typeof INPUT_MODALITIES[number];
+export type OutputModality = typeof OUTPUT_MODALITIES[number];
+export type Modality = OutputModality;
+
+export const MODALITY_LABELS: Record<Modality, string> = {
+  text: 'Text', image: 'Image', audio: 'Audio', video: 'Video', embedding: 'Embedding',
+};
+
+export const MODALITY_ICONS: Record<Modality, string> = {
+  text: '🔤', image: '🖼️', audio: '🔊', video: '🎬', embedding: '🔢',
+};
+
 export interface AiModel {
   id: string;
   publicName: string;
@@ -21,6 +35,10 @@ export interface AiModel {
   releaseDate: string;
   cutoffDate: string | null;
   reasoning: boolean;
+  /** What the model accepts, in the order of INPUT_MODALITIES. */
+  inputModalities: InputModality[];
+  /** What the model returns, in the order of OUTPUT_MODALITIES. */
+  outputModalities: OutputModality[];
   totalTokens: number;
   totalSpend: number;
   totalRequests: number;
@@ -104,6 +122,15 @@ export function blendedPriceOf(
   const sum = blend.cache * (m.cacheCosts ?? m.inputCosts) + blend.input * m.inputCosts
     + reasoning * m.outputCosts + blend.output * m.outputCosts;
   return sum / (blend.cache + blend.input + reasoning + blend.output);
+}
+
+/** True if the model accepts every input and returns every output modality asked for. Empty lists ask for nothing. */
+export function hasModalities(
+  m: Pick<AiModel, 'inputModalities' | 'outputModalities'>,
+  inputs: readonly InputModality[],
+  outputs: readonly OutputModality[],
+): boolean {
+  return inputs.every(x => m.inputModalities.includes(x)) && outputs.every(x => m.outputModalities.includes(x));
 }
 
 /** Input processing plus thinking time, or null if one of them is not measured. */

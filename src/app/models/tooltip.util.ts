@@ -1,4 +1,13 @@
-import {AiModel, blendedPriceOf, costPerRequestOf, effectiveCutoffDate, priceBlendLabel, responseTimeOf} from './ai-model.model';
+import {
+  AiModel,
+  blendedPriceOf,
+  costPerRequestOf,
+  effectiveCutoffDate,
+  Modality,
+  MODALITY_LABELS,
+  priceBlendLabel,
+  responseTimeOf,
+} from './ai-model.model';
 
 const MISSING = 'no data';
 
@@ -14,6 +23,11 @@ function tokensPerRunLine(model: AiModel): string {
     : ` (in: ${model.inputTokensPerRun}M, out: ${model.outputTokensPerRun}M`
     + `${model.cacheHitRate === null ? '' : `, ${Math.round(model.cacheHitRate * 100)}% cache hits`})`;
   return `Tokens per run: ${model.tokensPerRun}M${split}${model.tokensPerRunEstimated ? ' estimated' : ''}`;
+}
+
+/** Modality names for a sentence, e.g. "Text, Image". */
+export function modalityNames(list: readonly Modality[]): string {
+  return list.map(m => MODALITY_LABELS[m]).join(', ');
 }
 
 export function runCostText(model: Pick<AiModel, 'costsToRun' | 'tokensPerRunEstimated'>): string {
@@ -38,6 +52,7 @@ export function buildModelTooltipLines(model: AiModel): string[] {
     `★ Release: ${model.releaseDate}`,
     `─────────────────`,
     `Type: ${model.localModel ? 'Local' : 'API'}`,
+    `Modalities: ${modalityNames(model.inputModalities)} → ${modalityNames(model.outputModalities)}`,
     `Input: $${model.inputCosts.toFixed(3)}/M tokens`,
     `Output: $${model.outputCosts.toFixed(3)}/M tokens`,
     `Cache: ${model.cacheCosts === null ? 'no cache, input price' : `$${model.cacheCosts.toFixed(3)}/M tokens`}`,

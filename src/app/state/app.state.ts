@@ -1,5 +1,5 @@
 import {computed, effect, Injectable, signal} from '@angular/core';
-import {AiModel} from '../models/ai-model.model';
+import {AiModel, hasModalities, INPUT_MODALITIES, InputModality, OUTPUT_MODALITIES, OutputModality} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
@@ -20,6 +20,8 @@ export class AppState {
   readonly showOnlyPareto = signal(this.loadBool('showOnlyPareto', false));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
   readonly showEfforts = signal(this.loadBool('showEfforts', true));
+  readonly inputModalities = signal<InputModality[]>(this.loadModalities('inputModalities', INPUT_MODALITIES));
+  readonly outputModalities = signal<OutputModality[]>(this.loadModalities('outputModalities', OUTPUT_MODALITIES));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
   readonly logScale3d = signal(this.loadBool('logScale3d', SCATTER3D_DEFAULTS.log));
 
@@ -63,6 +65,16 @@ export class AppState {
       const v = this.showEfforts();
       if (this.hydrating) return;
       localStorage.setItem(KEY('showEfforts'), String(v));
+    });
+    effect(() => {
+      const v = this.inputModalities();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('inputModalities'), JSON.stringify(v));
+    });
+    effect(() => {
+      const v = this.outputModalities();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('outputModalities'), JSON.stringify(v));
     });
     effect(() => {
       const v = this.logScaleX();
@@ -126,6 +138,8 @@ export class AppState {
         logScaleX: this.logScaleX(),
         logScale3d: this.logScale3d(),
         onlyPareto: this.showOnlyPareto(),
+        inputModalities: this.inputModalities(),
+        outputModalities: this.outputModalities(),
       });
       if (typeof window === 'undefined') return;
       if (window.location.hash !== hash) {
@@ -166,6 +180,8 @@ export class AppState {
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? SCATTER3D_DEFAULTS.log);
     this.showOnlyPareto.set(parsed.onlyPareto ?? false);
+    this.inputModalities.set(parsed.inputModalities ?? []);
+    this.outputModalities.set(parsed.outputModalities ?? []);
   }
 
   private loadStr(key: string, fallback: string): string {
@@ -180,6 +196,15 @@ export class AppState {
   private loadAxis(key: string, fallback: AxisField): AxisField {
     const v = localStorage.getItem(KEY(key));
     return (AXIS_FIELD_KEYS as readonly string[]).includes(v ?? '') ? v as AxisField : fallback;
+  }
+
+  private loadModalities<T extends string>(key: string, known: readonly T[]): T[] {
+    try {
+      const stored = JSON.parse(localStorage.getItem(KEY(key)) ?? '[]') as unknown;
+      return Array.isArray(stored) ? known.filter(m => stored.includes(m)) : [];
+    } catch {
+      return [];
+    }
   }
 
   private loadBool(key: string, fallback: boolean): boolean {
@@ -205,7 +230,8 @@ export class AppState {
     }
   }
 
-  readonly availableModels = computed(() => {
+  /** The models that pass every filter except the modality filter, so the filter chips can count their matches. */
+  readonly modalityPool = computed(() => {
     const showAPI = this.showAPI();
     const showLocal = this.showLocal();
     const maxVram = this.maxVram();
@@ -218,6 +244,12 @@ export class AppState {
       if (!showDeprecated && m.deprecated) return false;
       return true;
     });
+  });
+
+  readonly availableModels = computed(() => {
+    const inputs = this.inputModalities();
+    const outputs = this.outputModalities();
+    return this.modalityPool().filter(m => hasModalities(m, inputs, outputs));
   });
 
   readonly filteredModels = computed(() => {
@@ -240,6 +272,19 @@ export class AppState {
   /** Token factors of the effort names, fitted over all models, for the estimated effort prices. */
   readonly tokenFactors = computed(() => fitTokenFactors(this.allModels()));
 
+  toggleInputModality(modality: InputModality): void {
+    this.inputModalities.update(list => toggled(INPUT_MODALITIES, list, modality));
+  }
+
+  toggleOutputModality(modality: OutputModality): void {
+    this.outputModalities.update(list => toggled(OUTPUT_MODALITIES, list, modality));
+  }
+
+  clearModalities(): void {
+    this.inputModalities.set([]);
+    this.outputModalities.set([]);
+  }
+
   toggleModel(id: string): void {
     this.disabledModelIds.update(set => {
       const next = new Set(set);
@@ -251,4 +296,8 @@ export class AppState {
       return next;
     });
   }
+}
+
+function toggled<T extends string>(order: readonly T[], list: readonly T[], item: T): T[] {
+  return list.includes(item) ? list.filter(x => x !== item) : order.filter(x => x === item || list.includes(x));
 }
