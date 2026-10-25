@@ -11,7 +11,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -25,7 +25,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 84,
         inputProcessingTime: 0.5,
         thinkingTime: 0.0,
-        outputTime: 6.0
+        outputTime: 6.0,
       },
       {
         effort: 'reasoning',
@@ -34,7 +34,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 94,
         inputProcessingTime: 19.5,
         thinkingTime: 0.0,
-        outputTime: 5.3
+        outputTime: 5.3,
       },
     ],
   },
@@ -48,7 +48,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 176,
         inputProcessingTime: 6.7,
         thinkingTime: 0.0,
-        outputTime: 2.8
+        outputTime: 2.8,
       },
       {
         effort: 'medium',
@@ -57,7 +57,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 180,
         inputProcessingTime: 7.7,
         thinkingTime: 0.0,
-        outputTime: 2.8
+        outputTime: 2.8,
       },
       {
         effort: 'high',
@@ -66,7 +66,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 189,
         inputProcessingTime: 17.8,
         thinkingTime: 0.0,
-        outputTime: 2.6
+        outputTime: 2.6,
       },
       {
         effort: 'xhigh',
@@ -75,7 +75,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 190,
         inputProcessingTime: 55.5,
         thinkingTime: 0.0,
-        outputTime: 2.6
+        outputTime: 2.6,
       },
       {
         effort: 'max',
@@ -84,7 +84,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 236,
         inputProcessingTime: 301.6,
         thinkingTime: 0.0,
-        outputTime: 2.1
+        outputTime: 2.1,
       },
     ],
   },
@@ -98,7 +98,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 48,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 10.4
+        outputTime: 10.4,
       },
       {
         effort: 'reasoning',
@@ -107,7 +107,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 60,
         inputProcessingTime: 18.8,
         thinkingTime: 0.0,
-        outputTime: 8.4
+        outputTime: 8.4,
       },
     ],
   },
@@ -121,7 +121,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 39,
         inputProcessingTime: 2.2,
         thinkingTime: 0.0,
-        outputTime: 12.8
+        outputTime: 12.8,
       },
       {
         effort: 'max',
@@ -130,7 +130,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 45,
         inputProcessingTime: 16.4,
         thinkingTime: 0.0,
-        outputTime: 11.1
+        outputTime: 11.1,
       },
     ],
   },
@@ -144,7 +144,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 50,
         inputProcessingTime: 1.3,
         thinkingTime: 0.0,
-        outputTime: 10.1
+        outputTime: 10.1,
       },
       {
         effort: 'max',
@@ -153,7 +153,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 54,
         inputProcessingTime: 22.7,
         thinkingTime: 0.0,
-        outputTime: 9.2
+        outputTime: 9.2,
       },
     ],
   },
@@ -167,7 +167,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 63,
         inputProcessingTime: 29.2,
         thinkingTime: 0.0,
-        outputTime: 7.9
+        outputTime: 7.9,
       },
     ],
   },
@@ -181,7 +181,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 54,
         inputProcessingTime: 2.7,
         thinkingTime: 0.0,
-        outputTime: 9.2
+        outputTime: 9.2,
       },
       {
         effort: 'medium',
@@ -190,7 +190,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 53,
         inputProcessingTime: 3.2,
         thinkingTime: 0.0,
-        outputTime: 9.5
+        outputTime: 9.5,
       },
       {
         effort: 'high',
@@ -199,7 +199,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 54,
         inputProcessingTime: 10.4,
         thinkingTime: 0.0,
-        outputTime: 9.2
+        outputTime: 9.2,
       },
       {
         effort: 'xhigh',
@@ -208,7 +208,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 56,
         inputProcessingTime: 25.1,
         thinkingTime: 0.0,
-        outputTime: 9.0
+        outputTime: 9.0,
       },
       {
         effort: 'max',
@@ -217,7 +217,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 57,
         inputProcessingTime: 24.1,
         thinkingTime: 0.0,
-        outputTime: 8.8
+        outputTime: 8.8,
       },
     ],
   },
@@ -231,7 +231,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 81,
         inputProcessingTime: 6.1,
         thinkingTime: 0.0,
-        outputTime: 6.2
+        outputTime: 6.2,
       },
       {
         effort: 'medium',
@@ -240,7 +240,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 84,
         inputProcessingTime: 10.4,
         thinkingTime: 0.0,
-        outputTime: 6.0
+        outputTime: 6.0,
       },
       {
         effort: 'high',
@@ -249,7 +249,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 81,
         inputProcessingTime: 21.5,
         thinkingTime: 0.0,
-        outputTime: 6.2
+        outputTime: 6.2,
       },
       {
         effort: 'xhigh',
@@ -258,7 +258,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 85,
         inputProcessingTime: 97.9,
         thinkingTime: 0.0,
-        outputTime: 5.9
+        outputTime: 5.9,
       },
       {
         effort: 'max',
@@ -267,7 +267,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 96,
         inputProcessingTime: 562.5,
         thinkingTime: 0.0,
-        outputTime: 5.2
+        outputTime: 5.2,
       },
     ],
   },
@@ -281,7 +281,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 47,
         inputProcessingTime: 1.0,
         thinkingTime: 0.0,
-        outputTime: 10.6
+        outputTime: 10.6,
       },
       {
         effort: 'low',
@@ -290,7 +290,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 46,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 10.9
+        outputTime: 10.9,
       },
       {
         effort: 'max',
@@ -299,7 +299,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 56,
         inputProcessingTime: 64.0,
         thinkingTime: 0.0,
-        outputTime: 8.9
+        outputTime: 8.9,
       },
     ],
   },
@@ -313,7 +313,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 69,
         inputProcessingTime: 0.8,
         thinkingTime: 0.0,
-        outputTime: 7.3
+        outputTime: 7.3,
       },
       {
         effort: 'low',
@@ -322,7 +322,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 67,
         inputProcessingTime: 1.0,
         thinkingTime: 0.0,
-        outputTime: 7.4
+        outputTime: 7.4,
       },
       {
         effort: 'medium',
@@ -331,7 +331,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 70,
         inputProcessingTime: 1.7,
         thinkingTime: 0.0,
-        outputTime: 7.2
+        outputTime: 7.2,
       },
       {
         effort: 'high',
@@ -340,7 +340,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 70,
         inputProcessingTime: 7.2,
         thinkingTime: 0.0,
-        outputTime: 7.2
+        outputTime: 7.2,
       },
       {
         effort: 'xhigh',
@@ -349,7 +349,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 71,
         inputProcessingTime: 13.6,
         thinkingTime: 0.0,
-        outputTime: 7.0
+        outputTime: 7.0,
       },
       {
         effort: 'max',
@@ -358,7 +358,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 83,
         inputProcessingTime: 147.9,
         thinkingTime: 0.0,
-        outputTime: 6.0
+        outputTime: 6.0,
       },
     ],
   },
@@ -372,7 +372,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 104,
         inputProcessingTime: 1.4,
         thinkingTime: 0.0,
-        outputTime: 4.8
+        outputTime: 4.8,
       },
       {
         effort: 'medium',
@@ -381,7 +381,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 104,
         inputProcessingTime: 1.4,
         thinkingTime: 0.0,
-        outputTime: 4.8
+        outputTime: 4.8,
       },
       {
         effort: 'high',
@@ -390,7 +390,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 108,
         inputProcessingTime: 10.3,
         thinkingTime: 0.0,
-        outputTime: 4.6
+        outputTime: 4.6,
       },
       {
         effort: 'xhigh',
@@ -399,7 +399,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 111,
         inputProcessingTime: 26.1,
         thinkingTime: 0.0,
-        outputTime: 4.5
+        outputTime: 4.5,
       },
       {
         effort: 'max',
@@ -408,7 +408,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 133,
         inputProcessingTime: 343.1,
         thinkingTime: 0.0,
-        outputTime: 3.8
+        outputTime: 3.8,
       },
     ],
   },
@@ -422,7 +422,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 96,
         inputProcessingTime: 1.4,
         thinkingTime: 0.0,
-        outputTime: 5.2
+        outputTime: 5.2,
       },
       {
         effort: 'reasoning',
@@ -431,7 +431,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 120,
         inputProcessingTime: 2.7,
         thinkingTime: 16.6,
-        outputTime: 4.2
+        outputTime: 4.2,
       },
     ],
   },
@@ -445,7 +445,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
       {
         effort: 'reasoning',
@@ -454,7 +454,67 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
+      },
+    ],
+  },
+  'deepseek-v4-flash-0731': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'max',
+        overallIntelligence: 34.3,
+        tokensPerRun: 4_560,
+        tokensPerSecond: 149,
+        inputProcessingTime: 1.3,
+        thinkingTime: 13.4,
+        outputTime: 3.4,
+      },
+    ],
+  },
+  'deepseek-v4-pro-0813': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 20.4,
+        tokensPerRun: 3_070,
+        tokensPerSecond: 96,
+        inputProcessingTime: 1.7,
+        thinkingTime: 0.0,
+        outputTime: 5.2,
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 36.0,
+        tokensPerRun: 5_601,
+        tokensPerSecond: 97,
+        inputProcessingTime: 1.7,
+        thinkingTime: 20.6,
+        outputTime: 5.2,
+      },
+    ],
+  },
+  'deepseek-v4.1-flash': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 24.7,
+        tokensPerRun: 5_900,
+        tokensPerSecond: 295,
+        inputProcessingTime: 0.9,
+        thinkingTime: 0.0,
+        outputTime: 1.7,
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 39.5,
+        tokensPerRun: 9_509,
+        tokensPerSecond: 181,
+        inputProcessingTime: 0.9,
+        thinkingTime: 11.0,
+        outputTime: 2.8,
       },
     ],
   },
@@ -468,7 +528,21 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 195,
         inputProcessingTime: 1.1,
         thinkingTime: 10.2,
-        outputTime: 2.6
+        outputTime: 2.6,
+      },
+    ],
+  },
+  'devstral-2': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 8.6,
+        tokensPerRun: 944,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null,
       },
     ],
   },
@@ -482,7 +556,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -496,7 +570,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -510,7 +584,30 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
+      },
+    ],
+  },
+  'gemma-4-26B-a4B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 13.1,
+        tokensPerRun: null,
+        tokensPerSecond: 96,
+        inputProcessingTime: 1.0,
+        thinkingTime: 0.0,
+        outputTime: 5.2,
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 16.7,
+        tokensPerRun: null,
+        tokensPerSecond: 81,
+        inputProcessingTime: 1.0,
+        thinkingTime: 24.5,
+        outputTime: 6.1,
       },
     ],
   },
@@ -524,7 +621,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 52,
         inputProcessingTime: 1.7,
         thinkingTime: 0.0,
-        outputTime: 9.7
+        outputTime: 9.7,
       },
       {
         effort: 'reasoning',
@@ -533,7 +630,30 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 36,
         inputProcessingTime: 1.1,
         thinkingTime: 48.3,
-        outputTime: 13.9
+        outputTime: 13.9,
+      },
+    ],
+  },
+  'gemma-4-e2B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 6.5,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null,
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 7.8,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null,
       },
     ],
   },
@@ -547,7 +667,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 36,
         inputProcessingTime: 1.7,
         thinkingTime: 0.0,
-        outputTime: 13.7
+        outputTime: 13.7,
       },
       {
         effort: 'reasoning',
@@ -556,7 +676,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 36,
         inputProcessingTime: 2.2,
         thinkingTime: 55.9,
-        outputTime: 14.0
+        outputTime: 14.0,
       },
     ],
   },
@@ -570,7 +690,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 99,
         inputProcessingTime: 1.7,
         thinkingTime: 0.0,
-        outputTime: 5.0
+        outputTime: 5.0,
       },
       {
         effort: 'reasoning',
@@ -579,7 +699,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 85,
         inputProcessingTime: 1.2,
         thinkingTime: 23.5,
-        outputTime: 5.9
+        outputTime: 5.9,
       },
     ],
   },
@@ -593,7 +713,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 99,
         inputProcessingTime: 1.7,
         thinkingTime: 0.0,
-        outputTime: 5.0
+        outputTime: 5.0,
       },
       {
         effort: 'reasoning',
@@ -602,7 +722,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 85,
         inputProcessingTime: 1.2,
         thinkingTime: 23.5,
-        outputTime: 5.9
+        outputTime: 5.9,
       },
     ],
   },
@@ -616,7 +736,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 68,
         inputProcessingTime: 1.9,
         thinkingTime: 0.0,
-        outputTime: 7.3
+        outputTime: 7.3,
       },
       {
         effort: 'reasoning',
@@ -625,7 +745,67 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 68,
         inputProcessingTime: 1.7,
         thinkingTime: 45.7,
-        outputTime: 7.4
+        outputTime: 7.4,
+      },
+    ],
+  },
+  'glm-5.2': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 22.4,
+        tokensPerRun: null,
+        tokensPerSecond: 176,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 2.8,
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 33.7,
+        tokensPerRun: 2_226,
+        tokensPerSecond: 94,
+        inputProcessingTime: 3.1,
+        thinkingTime: 21.3,
+        outputTime: 5.3,
+      },
+    ],
+  },
+  'glm-5.3': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'low',
+        overallIntelligence: 34.3,
+        tokensPerRun: 2_165,
+        tokensPerSecond: 89,
+        inputProcessingTime: 3.1,
+        thinkingTime: 22.4,
+        outputTime: 5.6,
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 44.8,
+        tokensPerRun: 5_615,
+        tokensPerSecond: 85,
+        inputProcessingTime: 2.9,
+        thinkingTime: 23.5,
+        outputTime: 5.9,
+      },
+    ],
+  },
+  'glm-5.3-flash': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'max',
+        overallIntelligence: 41.8,
+        tokensPerRun: 6_662,
+        tokensPerSecond: 69,
+        inputProcessingTime: 3.3,
+        thinkingTime: 29.0,
+        outputTime: 7.3,
       },
     ],
   },
@@ -639,7 +819,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 263,
         inputProcessingTime: 0.8,
         thinkingTime: 7.6,
-        outputTime: 1.9
+        outputTime: 1.9,
       },
       {
         effort: 'high',
@@ -648,7 +828,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 208,
         inputProcessingTime: 0.8,
         thinkingTime: 9.6,
-        outputTime: 2.4
+        outputTime: 2.4,
       },
     ],
   },
@@ -662,7 +842,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 263,
         inputProcessingTime: 0.8,
         thinkingTime: 7.6,
-        outputTime: 1.9
+        outputTime: 1.9,
       },
       {
         effort: 'high',
@@ -671,7 +851,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 208,
         inputProcessingTime: 0.8,
         thinkingTime: 9.6,
-        outputTime: 2.4
+        outputTime: 2.4,
       },
     ],
   },
@@ -685,7 +865,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 175,
         inputProcessingTime: 0.9,
         thinkingTime: 11.4,
-        outputTime: 2.9
+        outputTime: 2.9,
       },
       {
         effort: 'high',
@@ -694,7 +874,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 152,
         inputProcessingTime: 0.8,
         thinkingTime: 13.2,
-        outputTime: 3.3
+        outputTime: 3.3,
       },
     ],
   },
@@ -708,7 +888,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 175,
         inputProcessingTime: 0.9,
         thinkingTime: 11.4,
-        outputTime: 2.9
+        outputTime: 2.9,
       },
       {
         effort: 'high',
@@ -717,7 +897,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 152,
         inputProcessingTime: 0.8,
         thinkingTime: 13.2,
-        outputTime: 3.3
+        outputTime: 3.3,
       },
     ],
   },
@@ -731,7 +911,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 52,
         inputProcessingTime: 2.4,
         thinkingTime: 0.0,
-        outputTime: 9.6
+        outputTime: 9.6,
       },
       {
         effort: 'reasoning',
@@ -740,7 +920,21 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 68,
         inputProcessingTime: 1.8,
         thinkingTime: 43.4,
-        outputTime: 7.3
+        outputTime: 7.3,
+      },
+    ],
+  },
+  'kimi-k2.7-code': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 25.8,
+        tokensPerRun: 2_252,
+        tokensPerSecond: 60,
+        inputProcessingTime: 2.8,
+        thinkingTime: 37.2,
+        outputTime: 8.3,
       },
     ],
   },
@@ -754,7 +948,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 38,
         inputProcessingTime: 3.8,
         thinkingTime: 53.3,
-        outputTime: 13.3
+        outputTime: 13.3,
       },
       {
         effort: 'max',
@@ -763,7 +957,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 41,
         inputProcessingTime: 3.4,
         thinkingTime: 49.3,
-        outputTime: 12.3
+        outputTime: 12.3,
       },
     ],
   },
@@ -777,7 +971,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -791,7 +985,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -805,7 +999,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 78,
         inputProcessingTime: 1.5,
         thinkingTime: 25.6,
-        outputTime: 6.4
+        outputTime: 6.4,
       },
     ],
   },
@@ -819,7 +1013,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 99,
         inputProcessingTime: 1.4,
         thinkingTime: 20.1,
-        outputTime: 5.0
+        outputTime: 5.0,
       },
     ],
   },
@@ -833,7 +1027,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 68,
         inputProcessingTime: 1.6,
         thinkingTime: 29.6,
-        outputTime: 7.4
+        outputTime: 7.4,
       },
     ],
   },
@@ -847,7 +1041,35 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 65,
         inputProcessingTime: 1.7,
         thinkingTime: 30.6,
-        outputTime: 7.6
+        outputTime: 7.6,
+      },
+    ],
+  },
+  'minimax-m3': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 29.2,
+        tokensPerRun: 5_390,
+        tokensPerSecond: 89,
+        inputProcessingTime: 1.3,
+        thinkingTime: 22.5,
+        outputTime: 5.6,
+      },
+    ],
+  },
+  'minimax-m3.1-flash': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 42.7,
+        tokensPerRun: 8_186,
+        tokensPerSecond: 96,
+        inputProcessingTime: 1.3,
+        thinkingTime: 20.9,
+        outputTime: 5.2,
       },
     ],
   },
@@ -861,7 +1083,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 83,
         inputProcessingTime: 1.0,
         thinkingTime: 0.0,
-        outputTime: 6.0
+        outputTime: 6.0,
       },
     ],
   },
@@ -875,7 +1097,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 207,
         inputProcessingTime: 0.7,
         thinkingTime: 0.0,
-        outputTime: 2.4
+        outputTime: 2.4,
       },
     ],
   },
@@ -889,7 +1111,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 113,
         inputProcessingTime: 0.9,
         thinkingTime: 0.0,
-        outputTime: 4.4
+        outputTime: 4.4,
       },
     ],
   },
@@ -903,7 +1125,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -917,7 +1139,21 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
+      },
+    ],
+  },
+  'mistral-medium-3.5-local': {
+    effort: 'high',
+    levels: [
+      {
+        effort: 'high',
+        overallIntelligence: 12.2,
+        tokensPerRun: 1_571,
+        tokensPerSecond: 159,
+        inputProcessingTime: 2.2,
+        thinkingTime: 12.6,
+        outputTime: 3.1,
       },
     ],
   },
@@ -931,7 +1167,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 25,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 20.0
+        outputTime: 20.0,
       },
     ],
   },
@@ -945,7 +1181,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 155,
         inputProcessingTime: 1.4,
         thinkingTime: 12.9,
-        outputTime: 3.2
+        outputTime: 3.2,
       },
     ],
   },
@@ -959,7 +1195,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 176,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 2.8
+        outputTime: 2.8,
       },
       {
         effort: 'low',
@@ -968,7 +1204,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 175,
         inputProcessingTime: 8.9,
         thinkingTime: 11.4,
-        outputTime: 2.9
+        outputTime: 2.9,
       },
       {
         effort: 'medium',
@@ -977,7 +1213,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 177,
         inputProcessingTime: 11.9,
         thinkingTime: 11.3,
-        outputTime: 2.8
+        outputTime: 2.8,
       },
       {
         effort: 'high',
@@ -986,7 +1222,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 182,
         inputProcessingTime: 16.1,
         thinkingTime: 11.0,
-        outputTime: 2.7
+        outputTime: 2.7,
       },
     ],
   },
@@ -1000,7 +1236,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 171,
         inputProcessingTime: 0.9,
         thinkingTime: 0.0,
-        outputTime: 2.9
+        outputTime: 2.9,
       },
     ],
   },
@@ -1014,7 +1250,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 280,
         inputProcessingTime: 0.9,
         thinkingTime: 0.0,
-        outputTime: 1.8
+        outputTime: 1.8,
       },
     ],
   },
@@ -1028,7 +1264,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 129,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 3.9
+        outputTime: 3.9,
       },
     ],
   },
@@ -1042,7 +1278,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 268,
         inputProcessingTime: 0.8,
         thinkingTime: 0.0,
-        outputTime: 1.9
+        outputTime: 1.9,
       },
       {
         effort: 'reasoning',
@@ -1051,7 +1287,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 235,
         inputProcessingTime: 0.9,
         thinkingTime: 8.5,
-        outputTime: 2.1
+        outputTime: 2.1,
       },
     ],
   },
@@ -1065,7 +1301,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 202,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 2.5
+        outputTime: 2.5,
       },
       {
         effort: 'reasoning',
@@ -1074,7 +1310,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -1088,7 +1324,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 165,
         inputProcessingTime: 1.0,
         thinkingTime: 0.0,
-        outputTime: 3.0
+        outputTime: 3.0,
       },
       {
         effort: 'reasoning',
@@ -1097,7 +1333,21 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 95,
         inputProcessingTime: 0.8,
         thinkingTime: 21.0,
-        outputTime: 5.3
+        outputTime: 5.3,
+      },
+    ],
+  },
+  'pixtral-large': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 7.1,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null,
       },
     ],
   },
@@ -1111,7 +1361,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
       {
         effort: 'reasoning',
@@ -1120,7 +1370,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: null,
         inputProcessingTime: null,
         thinkingTime: null,
-        outputTime: null
+        outputTime: null,
       },
     ],
   },
@@ -1134,7 +1384,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 58,
         inputProcessingTime: 1.4,
         thinkingTime: 0.0,
-        outputTime: 8.6
+        outputTime: 8.6,
       },
       {
         effort: 'reasoning',
@@ -1143,7 +1393,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 22,
         inputProcessingTime: 1.8,
         thinkingTime: 90.1,
-        outputTime: 22.5
+        outputTime: 22.5,
       },
     ],
   },
@@ -1157,7 +1407,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 244,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 2.1
+        outputTime: 2.1,
       },
     ],
   },
@@ -1171,7 +1421,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 244,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 2.1
+        outputTime: 2.1,
       },
     ],
   },
@@ -1185,7 +1435,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 82,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 6.1
+        outputTime: 6.1,
       },
     ],
   },
@@ -1199,7 +1449,58 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 88,
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
-        outputTime: 5.7
+        outputTime: 5.7,
+      },
+    ],
+  },
+  'qwen3-next-80B-a3B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 11.2,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null,
+      },
+    ],
+  },
+  'qwen3-vl-235B-a22B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 13.4,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null,
+      },
+    ],
+  },
+  'qwen3.5-122B-a10B-local': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 15.7,
+        tokensPerRun: null,
+        tokensPerSecond: 142,
+        inputProcessingTime: 2.2,
+        thinkingTime: 0.0,
+        outputTime: 3.5,
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 13.6,
+        tokensPerRun: 948,
+        tokensPerSecond: 131,
+        inputProcessingTime: 2.2,
+        thinkingTime: 15.3,
+        outputTime: 3.8,
       },
     ],
   },
@@ -1213,7 +1514,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 81,
         inputProcessingTime: 5.5,
         thinkingTime: 0.0,
-        outputTime: 6.1
+        outputTime: 6.1,
       },
       {
         effort: 'reasoning',
@@ -1222,7 +1523,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 78,
         inputProcessingTime: 5.5,
         thinkingTime: 25.7,
-        outputTime: 6.4
+        outputTime: 6.4,
       },
     ],
   },
@@ -1236,7 +1537,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 169,
         inputProcessingTime: 2.0,
         thinkingTime: 0.0,
-        outputTime: 3.0
+        outputTime: 3.0,
       },
       {
         effort: 'reasoning',
@@ -1245,7 +1546,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 148,
         inputProcessingTime: 2.0,
         thinkingTime: 13.5,
-        outputTime: 3.4
+        outputTime: 3.4,
       },
     ],
   },
@@ -1259,7 +1560,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 78,
         inputProcessingTime: 0.8,
         thinkingTime: 0.0,
-        outputTime: 6.4
+        outputTime: 6.4,
       },
       {
         effort: 'reasoning',
@@ -1268,7 +1569,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 59,
         inputProcessingTime: 1.9,
         thinkingTime: 34.0,
-        outputTime: 8.5
+        outputTime: 8.5,
       },
     ],
   },
@@ -1282,7 +1583,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 58,
         inputProcessingTime: 3.6,
         thinkingTime: 0.0,
-        outputTime: 8.6
+        outputTime: 8.6,
       },
       {
         effort: 'reasoning',
@@ -1291,7 +1592,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 58,
         inputProcessingTime: 3.6,
         thinkingTime: 98.6,
-        outputTime: 8.7
+        outputTime: 8.7,
       },
     ],
   },
@@ -1305,7 +1606,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 156,
         inputProcessingTime: 2.0,
         thinkingTime: 0.0,
-        outputTime: 3.2
+        outputTime: 3.2,
       },
       {
         effort: 'reasoning',
@@ -1314,7 +1615,117 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         tokensPerSecond: 136,
         inputProcessingTime: 2.0,
         thinkingTime: 39.5,
-        outputTime: 3.7
+        outputTime: 3.7,
+      },
+    ],
+  },
+  'qwen3.8-2.4T-a95B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 39.9,
+        tokensPerRun: 4_705,
+        tokensPerSecond: 43,
+        inputProcessingTime: 2.9,
+        thinkingTime: 46.5,
+        outputTime: 11.6,
+      },
+    ],
+  },
+  'qwen3.8-27B': {
+    effort: 'xhigh',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 20.2,
+        tokensPerRun: 11_066,
+        tokensPerSecond: 48,
+        inputProcessingTime: 3.8,
+        thinkingTime: 0.0,
+        outputTime: 10.5,
+      },
+      {
+        effort: 'low',
+        overallIntelligence: 26.2,
+        tokensPerRun: 4_655,
+        tokensPerSecond: 51,
+        inputProcessingTime: 4.0,
+        thinkingTime: 39.0,
+        outputTime: 9.8,
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 27.6,
+        tokensPerRun: 4_767,
+        tokensPerSecond: 50,
+        inputProcessingTime: 3.9,
+        thinkingTime: 40.2,
+        outputTime: 10.0,
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 33.7,
+        tokensPerRun: 4_331,
+        tokensPerSecond: 44,
+        inputProcessingTime: 3.9,
+        thinkingTime: 45.9,
+        outputTime: 11.5,
+      },
+    ],
+  },
+  'qwen3.8-27B-local': {
+    effort: 'xhigh',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 18.2,
+        tokensPerRun: 11_066,
+        tokensPerSecond: 48,
+        inputProcessingTime: 3.8,
+        thinkingTime: 0.0,
+        outputTime: 10.5,
+      },
+      {
+        effort: 'low',
+        overallIntelligence: 24.2,
+        tokensPerRun: 4_655,
+        tokensPerSecond: 51,
+        inputProcessingTime: 4.0,
+        thinkingTime: 39.0,
+        outputTime: 9.8,
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 25.6,
+        tokensPerRun: 4_767,
+        tokensPerSecond: 50,
+        inputProcessingTime: 3.9,
+        thinkingTime: 40.2,
+        outputTime: 10.0,
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 31.7,
+        tokensPerRun: 4_331,
+        tokensPerSecond: 44,
+        inputProcessingTime: 3.9,
+        thinkingTime: 45.9,
+        outputTime: 11.5,
+      },
+    ],
+  },
+  'qwen3.8-flash-next': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 39.8,
+        tokensPerRun: 13_093,
+        tokensPerSecond: 52,
+        inputProcessingTime: 2.2,
+        thinkingTime: 38.8,
+        outputTime: 9.7,
       },
     ],
   },
