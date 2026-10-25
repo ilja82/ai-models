@@ -111,6 +111,73 @@ describe('show only Pareto best', () => {
   });
 });
 
+describe('Pareto set per plot type', () => {
+  const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
+    effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
+    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+  });
+
+  let state: AppState;
+  beforeEach(() => {
+    localStorage.clear();
+    state = TestBed.inject(AppState);
+    state.disabledModelIds.set(new Set());
+  });
+
+  it('ranks the two axes of the current plot type', () => {
+    state.allModels.set([
+      testModel({id: 'smart', overallIntelligence: 50, costsToRun: 10, tokensPerSecond: 40, contextWindow: 100_000}),
+      testModel({id: 'fast', overallIntelligence: 30, costsToRun: 20, tokensPerSecond: 200, contextWindow: 50_000}),
+      testModel({id: 'long', overallIntelligence: 20, costsToRun: 30, tokensPerSecond: 30, contextWindow: 1_000_000}),
+    ]);
+    const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
+    const useful = () => [...c.usefulIds()].sort();
+    state.plotType.set('cost');
+    expect(useful()).toEqual(['smart']);
+    state.plotType.set('speed');
+    expect(useful()).toEqual(['fast', 'smart']);
+    state.plotType.set('context');
+    expect(useful()).toEqual(['long', 'smart']);
+    expect(c.plotData().map(d => d.isUseful)).toEqual([true, false, true]);
+    state.showOnlyPareto.set(true);
+    expect(ids(c.plotted().map(p => p.model))).toEqual(['smart', 'long']);
+  });
+
+  it('ranks lower values as better on a reversed y axis', () => {
+    state.allModels.set([
+      testModel({id: 'quick', costsToRun: 10, inputProcessingTime: 0, thinkingTime: 0, outputTime: 1}),
+      testModel({id: 'slow', costsToRun: 10, inputProcessingTime: 0, thinkingTime: 9, outputTime: 1}),
+      testModel({id: 'cheap', costsToRun: 1, inputProcessingTime: 0, thinkingTime: 20, outputTime: 1}),
+    ]);
+    const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
+    state.plotType.set('costVsResponse');
+    expect([...c.usefulIds()].sort()).toEqual(['cheap', 'quick']);
+  });
+
+  it('ranks each level on the price plot by the model price scaled by its tokens per run', () => {
+    state.allModels.set([
+      testModel({
+        id: 'a', overallIntelligence: 50, tokensPerRun: 100, effort: 'high',
+        efforts: [{...level('low', 35, 2), tokensPerRun: 10}, {...level('medium', 45, 5), tokensPerRun: null}, level('high', 50, 10)],
+      }),
+      testModel({id: 'b', overallIntelligence: 30, inputCosts: 0.5, outputCosts: 0.5}),
+      testModel({id: 'c', overallIntelligence: 40, inputCosts: 0.2, outputCosts: 0.2}),
+    ]);
+    const plot = TestBed.createComponent(ScatterPlotComponent).componentInstance;
+    state.plotType.set('price');
+    expect([...plot.usefulIds()].sort()).toEqual(['a', 'a@low', 'c']);
+    state.allModels.update(models => [...models, testModel({
+      id: 'd', overallIntelligence: 20, effort: 'high', deprecated: true,
+      efforts: [{...level('medium', 15, 5), tokensPerRun: 0.5}, level('high', 20, 1)],
+    })]);
+    expect([...plot.usefulIds()].sort()).toEqual(['a', 'a@low', 'a@medium', 'c']);
+    state.showEfforts.set(false);
+    expect([...plot.usefulIds()].sort()).toEqual(['a', 'c']);
+  });
+
+  const ids = (models: { id: string }[]) => models.map(m => m.id);
+});
+
 describe('show only Pareto best persistence', () => {
   afterEach(() => localStorage.clear());
 

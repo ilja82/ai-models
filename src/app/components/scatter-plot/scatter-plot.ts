@@ -21,6 +21,7 @@ import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEffortLabel} from '../../models/effort.util';
+import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
@@ -129,9 +130,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return x === null || y === null ? null : {x, y};
   }
 
-  private readonly usefulIds = computed(() =>
-    this.state.plotType() === 'price' ? this.state.usefulPriceModelIds() : this.state.usefulModelIds());
-
   /** The filtered models that have both values of the current plot type, in chart order. */
   private readonly plottable = computed(() => {
     const plotType = this.state.plotType();
@@ -175,18 +173,31 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
-  readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const active = this.plottable().filter(p => !p.model.deprecated);
-    if (active.length === 0) return {axisBestIds: new Set(), balancedId: null};
-    const pts = active.map(p => ({id: p.model.id, x: p.x, y: p.y}));
+  /** The non-deprecated model points and their other effort points, which compete for the Pareto set and the markers. */
+  private readonly rankedPoints = computed<{ id: string; x: number; y: number }[]>(() => {
+    const pts = this.plottable().filter(p => !p.model.deprecated).map(p => ({id: p.model.id, x: p.x, y: p.y}));
     const levelPts = this.allEffortPoints()
       .filter(c => !c.model.deprecated)
       .flatMap(c => c.points.filter(p => !p.current).map(p => ({id: effortVariantId(c.model.id, p.effort), x: p.x, y: p.y})));
+    return pts.concat(levelPts);
+  });
+
+  /** Pareto set on the two axes of the current plot type. Effort levels have the id `<model id>@<effort>`. */
+  readonly usefulIds = computed(() => {
+    const plotDef = this.currentPlotDef();
+    return paretoIds(this.rankedPoints(), [
+      {get: p => p.x, higherIsBetter: !plotDef.reverseX},
+      {get: p => p.y, higherIsBetter: !plotDef.reverseY},
+    ]);
+  });
+
+  readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
+    const candidates = this.rankedPoints();
+    if (candidates.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const plotDef = this.currentPlotDef();
     const higherXIsBetter = !plotDef.reverseX;
     const higherYIsBetter = !plotDef.reverseY;
 
-    const candidates = pts.concat(levelPts);
     const bestOn = (key: 'x' | 'y', higherIsBetter: boolean): string | null => {
       let bestId: string | null = null;
       let bestVal = higherIsBetter ? -Infinity : Infinity;

@@ -61,7 +61,9 @@ describe('charts with missing measurements', () => {
       id: 'cheap', overallIntelligence: 30, inputCosts: 0.1, outputCosts: 0.2,
       tokensPerRun: null, costsToRun: null
     }), testModel({id: 'worse', overallIntelligence: 20})]);
-    expect([...state.usefulPriceModelIds()]).toEqual(['full', 'cheap']);
+    const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
+    state.plotType.set('price');
+    expect([...c.usefulIds()]).toEqual(['full', 'cheap']);
   });
 
   it('marks Pareto-efficient effort levels in the 2D and the 3D scatter plot', () => {
@@ -82,8 +84,10 @@ describe('charts with missing measurements', () => {
     state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
 
     const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance;
-    state.plotType.set('speed');
+    state.plotType.set('cost');
     expect(c2.effortCurves()[0].points.map(p => [p.effort, p.useful])).toEqual([['low', true], ['high', false]]);
+    state.plotType.set('speed');
+    expect(c2.effortCurves()[0].points.map(p => [p.effort, p.useful])).toEqual([['low', false], ['high', false]]);
 
     const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
     state.scatter3dX.set('tokensPerSecond');

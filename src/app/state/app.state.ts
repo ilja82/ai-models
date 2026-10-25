@@ -1,32 +1,13 @@
 import {computed, effect, Injectable, signal} from '@angular/core';
-import {AiModel, blendedPriceOf} from '../models/ai-model.model';
+import {AiModel} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
-import {effortPrice, effortVariantId, otherEffortVariants} from '../models/effort.util';
+import {otherEffortVariants} from '../models/effort.util';
+import {paretoIds} from '../models/pareto.util';
 import {fitTokenFactors} from '../models/token-factors.util';
 
 const KEY = (k: string) => `ai-models.${k}`;
-
-/** Ids of the models that no other model beats on both intelligence and cost. Models without a cost are left out. */
-function paretoIds(models: AiModel[], cost: (m: AiModel) => number | null): Set<string> {
-  const priced = models.flatMap(m => {
-    const c = cost(m);
-    return c === null ? [] : [{model: m, cost: c}];
-  });
-  // Sort by intelligence descending, then by cost ascending for tiebreaking
-  priced.sort((a, b) => b.model.overallIntelligence - a.model.overallIntelligence || a.cost - b.cost);
-
-  const useful = new Set<string>();
-  let minCostSoFar = Infinity;
-  for (const {model, cost: c} of priced) {
-    if (c < minCostSoFar) {
-      useful.add(model.id);
-      minCostSoFar = c;
-    }
-  }
-  return useful;
-}
 
 @Injectable({ providedIn: 'root' })
 export class AppState {
@@ -244,30 +225,20 @@ export class AppState {
     return this.availableModels().filter(m => !disabled.has(m.id));
   });
 
-  /** The models that compete for the Pareto sets, plus their other effort levels while those are shown. */
+  /** The models that compete for the run-cost Pareto set and the profile badges, plus their other effort levels while those are shown. */
   readonly paretoCandidates = computed(() => {
     const models = this.filteredModels().filter(m => !m.deprecated);
     return this.showEfforts() ? models.concat(models.flatMap(otherEffortVariants)) : models;
   });
 
-  /** Pareto set on the run cost. Effort levels have the id `<model id>@<effort>`. */
-  readonly usefulModelIds = computed(() => paretoIds(this.paretoCandidates(), m => m.costsToRun));
+  /** Pareto set on the run cost, for the table. Effort levels have the id `<model id>@<effort>`. */
+  readonly usefulModelIds = computed(() => paretoIds(this.paretoCandidates(), [
+    {get: m => m.overallIntelligence, higherIsBetter: true},
+    {get: m => m.costsToRun, higherIsBetter: false},
+  ]));
 
   /** Token factors of the effort names, fitted over all models, for the estimated effort prices. */
   readonly tokenFactors = computed(() => fitTokenFactors(this.allModels()));
-
-  /** Pareto set on the blended price, for the price plot. An effort level has the price of `effortPrice`. */
-  readonly usefulPriceModelIds = computed(() => {
-    const factors = this.tokenFactors();
-    const prices = new Map<string, number | null>();
-    for (const m of this.filteredModels()) {
-      prices.set(m.id, blendedPriceOf(m));
-      for (const l of m.efforts) {
-        if (l.effort !== m.effort) prices.set(effortVariantId(m.id, l.effort), effortPrice(m, l, factors)?.price ?? null);
-      }
-    }
-    return paretoIds(this.paretoCandidates(), m => prices.get(m.id) ?? null);
-  });
 
   toggleModel(id: string): void {
     this.disabledModelIds.update(set => {

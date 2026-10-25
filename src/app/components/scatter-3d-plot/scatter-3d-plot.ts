@@ -6,6 +6,7 @@ import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {AxisField} from '../../models/view-types';
+import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 import {effortSeries, otherEffortVariants, shortEffortLabel} from '../../models/effort.util';
 
@@ -159,37 +160,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const axes = this.axes();
     const levels = this.effortCurves().flatMap(c => c.points.filter(p => p !== c.model));
     const models = this.plotModels().concat(levels).filter(m => !m.deprecated);
-
-    const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m)!)}));
-    const useful = new Set<string>();
-
-    for (const p of points) {
-      let dominated = false;
-      for (const q of points) {
-        if (q.id === p.id) continue;
-        let allAtLeast = true;
-        let strictlyBetter = false;
-        for (let i = 0; i < axes.length; i++) {
-          const better = axes[i].higherIsBetter
-            ? q.vals[i] >= p.vals[i]
-            : q.vals[i] <= p.vals[i];
-          const strict = axes[i].higherIsBetter
-            ? q.vals[i] > p.vals[i]
-            : q.vals[i] < p.vals[i];
-          if (!better) {
-            allAtLeast = false;
-            break;
-          }
-          if (strict) strictlyBetter = true;
-        }
-        if (allAtLeast && strictlyBetter) {
-          dominated = true;
-          break;
-        }
-      }
-      if (!dominated) useful.add(p.id);
-    }
-    return useful;
+    return paretoIds(models, axes);
   });
 
   /** The plotted models, only the Pareto set of the three axes while the Pareto filter is on. */
