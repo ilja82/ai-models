@@ -16,7 +16,7 @@
       <span class="legend-item"><span class="shape useful"></span>Pareto efficient</span>
       <span class="legend-item"><span class="shape star"></span>Best per axis</span>
       <span class="legend-item"><span class="shape rect-rot"></span>Best balanced</span>
-      @if (state.showEfforts() && hasEfforts()) {
+      @if (effortsShown() && hasEfforts()) {
         <span class="legend-item"><span class="shape effort-line"></span>Effort levels</span>
       }
     </div>
@@ -27,7 +27,7 @@
           Log X
         </label>
       }
-      @if (hasEfforts()) {
+      @if (hasEfforts() && currentPlotDef().showsEfforts) {
         <label class="toggle-label">
           <input type="checkbox" [checked]="state.showEfforts()" (change)="state.showEfforts.update(v => !v)"/>
           Effort levels

@@ -43,19 +43,22 @@ interface PlotTypeDef {
   label: string;
   supportsLogX: boolean;
   reverseX: boolean;
+  showsEfforts: boolean;
 }
 
-const LOG_X_PLOTS: ReadonlySet<PlotType> = new Set<PlotType>(['price', 'cost', 'context']);
-
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true},
-  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true},
-  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false},
-  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false},
-  {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false},
-  {key: 'responseVsIntel', label: 'Response Time vs Intelligence', supportsLogX: false, reverseX: true},
-  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: false, reverseX: true},
+  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, showsEfforts: true},
+  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, showsEfforts: true},
+  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false, showsEfforts: false},
+  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false, showsEfforts: false},
+  {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false, showsEfforts: true},
+  {key: 'responseVsIntel', label: 'Response Time vs Intelligence', supportsLogX: true, reverseX: true, showsEfforts: true},
+  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: true, reverseX: true, showsEfforts: true},
 ];
+
+function plotTypeDef(plotType: PlotType): PlotTypeDef {
+  return PLOT_TYPES.find(p => p.key === plotType)!;
+}
 
 @Component({
   selector: 'app-scatter-plot',
@@ -75,7 +78,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private readonly effortStarIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 18));
 
   readonly plotTypes = PLOT_TYPES;
-  readonly currentPlotDef = computed(() => PLOT_TYPES.find(p => p.key === this.state.plotType())!);
+  readonly currentPlotDef = computed(() => plotTypeDef(this.state.plotType()));
+
+  /** True while the effort levels are on and the current plot type shows them. */
+  readonly effortsShown = computed(() => this.state.showEfforts() && this.currentPlotDef().showsEfforts);
 
   private getXY(m: AiModel, plotType: PlotType): { x: number | null; y: number | null } {
     const intel = m.overallIntelligence;
@@ -132,7 +138,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   /** The effort points of each plottable model with two or more, while the effort levels are shown. */
   private readonly allEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
-    if (!this.state.showEfforts()) return [];
+    if (!this.effortsShown()) return [];
     const plotType = this.state.plotType();
     const factors = this.state.tokenFactors();
     return this.plottable().flatMap(({model}) => {
@@ -193,7 +199,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   private isLogX(plotType: PlotType): boolean {
-    return this.state.logScaleX() && LOG_X_PLOTS.has(plotType);
+    return this.state.logScaleX() && plotTypeDef(plotType).supportsLogX;
   }
 
   private transformX(x: number, plotType: PlotType): number {
@@ -270,7 +276,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const models = this.state.allModels();
     const plotType = this.state.plotType();
     const main = models.flatMap(m => this.plotXY(m, plotType) ?? []);
-    if (!this.state.showEfforts()) return main;
+    if (!this.effortsShown()) return main;
     const factors = this.state.tokenFactors();
     return main.concat(models.flatMap(m => effortPoints(m, plotType, factors).map(p => ({x: p.x, y: p.y}))));
   });
@@ -530,7 +536,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     }
 
     let stepSize: number | undefined;
-    if (logScale && LOG_X_PLOTS.has(plotType)) {
+    if (logScale && plotTypeDef(plotType).supportsLogX) {
       const baseCallback = tickCallback;
       tickCallback = (v: any) => baseCallback(Math.pow(2, +v));
       stepSize = 1;
