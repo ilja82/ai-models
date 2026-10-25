@@ -3,6 +3,7 @@ import {AiModel, blendedPriceOf} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, serializeHash} from './url-sync';
+import {otherEffortVariants} from '../models/effort.util';
 
 const KEY = (k: string) => `ai-models.${k}`;
 
@@ -36,7 +37,7 @@ export class AppState {
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showUsefulModels = signal(this.loadBool('showUsefulModels', true));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
-  readonly showEfforts = signal(this.loadBool('showEfforts', false));
+  readonly showEfforts = signal(this.loadBool('showEfforts', true));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
   readonly logScale3d = signal(this.loadBool('logScale3d', false));
 
@@ -179,7 +180,7 @@ export class AppState {
     this.showAPI.set(parsed.showAPI ?? true);
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
-    this.showEfforts.set(parsed.showEfforts ?? false);
+    this.showEfforts.set(parsed.showEfforts ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? false);
     this.showUsefulModels.set(parsed.showUseful ?? true);
@@ -242,12 +243,17 @@ export class AppState {
     return this.availableModels().filter(m => !disabled.has(m.id));
   });
 
-  readonly usefulModelIds = computed(() =>
-    paretoIds(this.filteredModels().filter(m => !m.deprecated), m => m.costsToRun));
+  /** The models that compete for the Pareto sets, plus their other effort levels while those are shown. */
+  readonly paretoCandidates = computed(() => {
+    const models = this.filteredModels().filter(m => !m.deprecated);
+    return this.showEfforts() ? models.concat(models.flatMap(otherEffortVariants)) : models;
+  });
+
+  /** Pareto set on the run cost. Effort levels have the id `<model id>@<effort>`. */
+  readonly usefulModelIds = computed(() => paretoIds(this.paretoCandidates(), m => m.costsToRun));
 
   /** Pareto set on the blended price, for the price plot. */
-  readonly usefulPriceModelIds = computed(() =>
-    paretoIds(this.filteredModels().filter(m => !m.deprecated), blendedPriceOf));
+  readonly usefulPriceModelIds = computed(() => paretoIds(this.paretoCandidates(), blendedPriceOf));
 
   toggleModel(id: string): void {
     this.disabledModelIds.update(set => {

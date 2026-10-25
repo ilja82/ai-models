@@ -122,7 +122,7 @@ export function serializeHash(s: UrlSnapshot): string {
   }
 
   if (s.showDeprecated) params.set('deprecated', '1');
-  if (s.showEfforts) params.set('efforts', '1');
+  if (!s.showEfforts) params.set('efforts', '0');
 
   // log default: scatter true, scatter3d false
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');

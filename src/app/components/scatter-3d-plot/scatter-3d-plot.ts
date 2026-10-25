@@ -7,6 +7,7 @@ import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {AxisField} from '../../models/view-types';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
+import {effortSeries, otherEffortVariants, shortEffortLabel} from '../../models/effort.util';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
 
@@ -135,10 +136,29 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** Pareto-useful model IDs for the currently selected 3 axes. */
-  readonly useful3d = computed<Set<string>>(() => {
-    const models = this.plotModels().filter(m => !m.deprecated);
+  readonly hasEfforts = computed(() => this.state.allModels().some(m => m.efforts.length > 1));
+
+  /** The effort levels of each plotted model that have a value on all three axes, for models with two or more. */
+  readonly effortCurves = computed<{ model: AiModel; points: AiModel[] }[]>(() => {
+    if (!this.state.showEfforts()) return [];
     const axes = this.axes();
+    return this.plotModels().flatMap(model => {
+      const points = effortSeries(model).filter(p => axes.every(a => a.get(p) !== null));
+      return points.length < 2 ? [] : [{model, points}];
+    });
+  });
+
+  /** All models, plus their other effort levels while those are shown. The axis ranges use them. */
+  private readonly axisModels = computed(() => {
+    const models = this.state.allModels();
+    return this.state.showEfforts() ? models.concat(models.flatMap(otherEffortVariants)) : models;
+  });
+
+  /** Pareto-useful IDs for the currently selected 3 axes. Effort levels have the id `<model id>@<effort>`. */
+  readonly useful3d = computed<Set<string>>(() => {
+    const axes = this.axes();
+    const levels = this.effortCurves().flatMap(c => c.points.filter(p => p !== c.model));
+    const models = this.plotModels().concat(levels).filter(m => !m.deprecated);
 
     const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m)!)}));
     const useful = new Set<string>();
@@ -289,7 +309,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       marker: {color, size, symbol, line: {color: 'rgba(0,0,0,0.4)', width: 0.5}, opacity: 0.95},
     });
 
-    const allModels = this.state.allModels();
+    const allModels = this.axisModels();
     const xExt = this.computeAxisExtent(allModels, xDef, logScale && xDef.logCandidate);
     const yExt = this.computeAxisExtent(allModels, yDef, logScale && yDef.logCandidate);
     const zExt = this.computeAxisExtent(allModels, zDef, logScale && zDef.logCandidate);
@@ -328,8 +348,33 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       );
     }
 
+    const effortTraces = this.effortCurves().map(({model, points}) => {
+      const lineColor = model.deprecated ? colors.deprecated : model.localModel ? colors.local : colors.api;
+      const isUseful = (p: AiModel) => p !== model && showUseful && useful.has(p.id);
+      return {
+        type: 'scatter3d',
+        mode: 'lines+markers+text',
+        name: `${model.publicName} effort levels`,
+        showlegend: false,
+        x: points.map(p => this.toPlotVal(xDef.get(p)!, xLog)),
+        y: points.map(p => this.toPlotVal(yDef.get(p)!, yLog)),
+        z: points.map(p => this.toPlotVal(zDef.get(p)!, zLog)),
+        text: points.map(p => p === model ? '' : shortEffortLabel(p.effort!)),
+        textposition: 'middle right',
+        textfont: {size: 9, color: lineColor},
+        hovertext: points.map(p => buildModelTooltipLines(p).join('<br>')),
+        hoverinfo: 'text',
+        line: {color: lineColor, width: 2, dash: 'dash'},
+        marker: {
+          size: points.map(p => isUseful(p) ? 6 : 3),
+          color: points.map(p => isUseful(p) ? colors.useful : lineColor),
+        },
+      };
+    });
+
     return [
       ...regionTraces,
+      ...effortTraces,
       buildTrace(groups.deprecated, 'Deprecated', colors.deprecated, 'circle', 4),
       buildTrace(groups.api, 'API', colors.api, 'circle', 5),
       buildTrace(groups.local, 'Local', colors.local, 'diamond', 5),
@@ -343,7 +388,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const xDef = this.defOf(this.state.scatter3dX());
     const yDef = this.defOf(this.state.scatter3dY());
     const zDef = this.defOf(this.state.scatter3dZ());
-    const models = this.state.allModels();
+    const models = this.axisModels();
 
     const axisCfg = (def: AxisDef): any => {
       const base: any = {

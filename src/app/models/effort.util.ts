@@ -52,3 +52,33 @@ export function effortPoints(model: AiModel, plotType: PlotType): EffortPoint[] 
   }
   return points;
 }
+
+export function effortVariantId(modelId: string, effort: string): string {
+  return `${modelId}@${effort}`;
+}
+
+/** The model with the measured values of one effort level and the id `<model id>@<effort>`. */
+export function effortVariant(model: AiModel, level: EffortLevel): AiModel {
+  return {
+    ...model,
+    id: effortVariantId(model.id, level.effort),
+    effort: level.effort,
+    overallIntelligence: level.overallIntelligence,
+    tokensPerRun: level.tokensPerRun,
+    tokensPerSecond: level.tokensPerSecond,
+    inputProcessingTime: level.inputProcessingTime,
+    thinkingTime: level.thinkingTime,
+    outputTime: level.outputTime,
+    costsToRun: level.costsToRun,
+  };
+}
+
+/** The effort levels of a model other than the level of its main values, as models. */
+export function otherEffortVariants(model: AiModel): AiModel[] {
+  return model.efforts.filter(l => l.effort !== model.effort).map(l => effortVariant(model, l));
+}
+
+/** All effort levels of a model in effort order. The current level is the model itself. */
+export function effortSeries(model: AiModel): AiModel[] {
+  return model.efforts.map(l => l.effort === model.effort ? model : effortVariant(model, l));
+}

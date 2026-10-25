@@ -63,6 +63,28 @@ describe('charts with missing measurements', () => {
     expect([...state.usefulPriceModelIds()]).toEqual(['full', 'cheap']);
   });
 
+  it('marks Pareto-efficient effort levels in the 2D and the 3D scatter plot', () => {
+    const levels = [
+      {effort: 'low', overallIntelligence: 35, costsToRun: 2},
+      {effort: 'high', overallIntelligence: 40, costsToRun: 10},
+    ].map(l => ({...l, tokensPerRun: 1, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3}));
+    state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
+
+    const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance;
+    state.plotType.set('speed');
+    expect(c2.effortCurves()[0].points.map(p => [p.effort, p.useful])).toEqual([['low', true], ['high', false]]);
+
+    const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    state.scatter3dX.set('tokensPerSecond');
+    state.scatter3dY.set('costsToRun');
+    state.scatter3dZ.set('intelligence');
+    expect(c3.effortCurves().map(c => c.points.map(p => p.id))).toEqual([['e@low', 'e']]);
+    expect([...c3.useful3d()].sort()).toEqual(['e', 'e@low']);
+    state.showEfforts.set(false);
+    expect(c3.effortCurves()).toEqual([]);
+    expect([...c3.useful3d()].sort()).toEqual(['e', 'mid']);
+  });
+
   it('table sorts missing values last in both directions', () => {
     const c = TestBed.createComponent(DataTableComponent).componentInstance;
     c.sort('costsToRun');

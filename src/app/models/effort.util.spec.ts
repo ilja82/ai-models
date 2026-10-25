@@ -1,5 +1,5 @@
 import {AiModel, EffortLevel} from './ai-model.model';
-import {effortPoints, effortResponseTime, shortEffortLabel} from './effort.util';
+import {effortPoints, effortResponseTime, effortSeries, effortVariant, otherEffortVariants, shortEffortLabel} from './effort.util';
 import {testModel} from '../../testing/model-fixture';
 
 function level(effort: string, overrides: Partial<EffortLevel> = {}): EffortLevel {
@@ -53,6 +53,23 @@ describe('effortPoints', () => {
 
   it('returns nothing for a model without effort levels', () => {
     expect(effortPoints(model([], null), 'price')).toEqual([]);
+  });
+});
+
+describe('effort variants', () => {
+  it('takes the level values and keeps the model values', () => {
+    const v = effortVariant(model([]), level('low', {overallIntelligence: 30, tokensPerSecond: 80, costsToRun: 4}));
+    expect(v).toMatchObject({
+      id: 'lorem-1@low', effort: 'low', overallIntelligence: 30, tokensPerSecond: 80, costsToRun: 4, inputCosts: 1,
+    });
+  });
+
+  it('leaves out the current level, which the model itself shows', () => {
+    const m = model([level('low'), level('high'), level('max')]);
+    expect(otherEffortVariants(m).map(v => v.id)).toEqual(['lorem-1@low', 'lorem-1@max']);
+    const series = effortSeries(m);
+    expect(series.map(v => v.id)).toEqual(['lorem-1@low', 'lorem-1', 'lorem-1@max']);
+    expect(series[1]).toBe(m);
   });
 });
 

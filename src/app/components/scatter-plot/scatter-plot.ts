@@ -19,7 +19,7 @@ import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
-import {EffortPoint, effortPoints, effortResponseTime, shortEffortLabel} from '../../models/effort.util';
+import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
@@ -27,7 +27,7 @@ Chart.register(ScatterController, PointElement, LineElement, LinearScale, Logari
 interface EffortCurve {
   model: AiModel;
   color: string;
-  points: (EffortPoint & { px: number })[];
+  points: (EffortPoint & { px: number; useful: boolean })[];
 }
 
 function makeStarImage(color: string, size: number): HTMLImageElement {
@@ -160,11 +160,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.isLogX(plotType) && x > 0 ? Math.log2(x) : x;
   }
 
+  private readonly usefulIds = computed(() =>
+    this.state.plotType() === 'price' ? this.state.usefulPriceModelIds() : this.state.usefulModelIds());
+
   readonly plotData = computed(() => {
     const plotted = this.plotted();
     const showUseful = this.state.showUsefulModels();
     const plotType = this.state.plotType();
-    const useful = plotType === 'price' ? this.state.usefulPriceModelIds() : this.state.usefulModelIds();
+    const useful = this.usefulIds();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
     const colors = getPlotColors(this.themeState.theme());
     const starIcon = this.starIcon();
@@ -206,6 +209,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (!this.state.showEfforts()) return [];
     const plotType = this.state.plotType();
     const colors = getPlotColors(this.themeState.theme());
+    const useful = this.state.showUsefulModels() ? this.usefulIds() : new Set<string>();
     const curves: EffortCurve[] = [];
     for (const {model: m} of this.plotted()) {
       const points = effortPoints(m, plotType);
@@ -213,7 +217,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       curves.push({
         model: m,
         color: m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api,
-        points: points.map(p => ({...p, px: this.transformX(p.x, plotType)})),
+        points: points.map(p => ({
+          ...p,
+          px: this.transformX(p.x, plotType),
+          useful: !p.current && useful.has(effortVariantId(m.id, p.effort)),
+        })),
       });
     }
     return curves;
@@ -397,11 +405,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         ctx.font = '10px system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
+        const colors = getPlotColors(this.themeState.theme());
         for (const curve of this.effortCurves()) {
-          ctx.fillStyle = curve.color;
           for (const p of curve.points) {
             // The current level sits under the model point, which has its own label.
             if (p.current) continue;
+            ctx.fillStyle = p.useful ? colors.useful : curve.color;
             ctx.fillText(shortEffortLabel(p.effort), xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.y) + 8);
           }
         }
@@ -411,16 +420,18 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   private effortDatasets(curves: EffortCurve[]): ChartDataset<'scatter'>[] {
+    const useful = getPlotColors(this.themeState.theme()).useful;
     return curves.map(c => ({
       label: c.model.publicName,
       data: c.points.map(p => ({x: p.px, y: p.y})),
       showLine: true,
       borderColor: c.color,
-      backgroundColor: c.color,
+      backgroundColor: c.points.map(p => p.useful ? useful : c.color),
+      pointBorderColor: c.points.map(p => p.useful ? useful : c.color),
       borderWidth: 1.5,
       borderDash: [4, 3],
-      pointRadius: 3,
-      pointHoverRadius: 5,
+      pointRadius: c.points.map(p => p.useful ? 5 : 3),
+      pointHoverRadius: c.points.map(p => p.useful ? 7 : 5),
       order: 1,
     }));
   }
@@ -556,6 +567,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const responseTime = effortResponseTime(l);
     return [
       `${curve.model.publicName} (effort: ${point.effort}${point.current ? ', shown' : ''})`,
+      point.useful ? '★ Pareto efficient' : '',
       `★ Overall Intelligence: ${l.overallIntelligence}`,
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
       responseTime !== null

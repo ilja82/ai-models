@@ -3,7 +3,7 @@ import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 const DEFAULTS: UrlSnapshot = {
   view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'tokensPerSecond',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
-  showDeprecated: false, showEfforts: false, logScaleX: true, logScale3d: false, showUseful: true,
+  showDeprecated: false, showEfforts: true, logScaleX: true, logScale3d: false, showUseful: true,
 };
 
 describe('url-sync effort levels', () => {
@@ -13,10 +13,10 @@ describe('url-sync effort levels', () => {
   });
 
   it('round-trips showEfforts', () => {
-    const hash = serializeHash({...DEFAULTS, showEfforts: true});
-    expect(hash).toBe('#/scatter?efforts=1');
-    expect(parseHash(hash)?.showEfforts).toBe(true);
-    expect(parseHash('#/scatter?efforts=0')?.showEfforts).toBe(false);
+    const hash = serializeHash({...DEFAULTS, showEfforts: false});
+    expect(hash).toBe('#/scatter?efforts=0');
+    expect(parseHash(hash)?.showEfforts).toBe(false);
+    expect(parseHash('#/scatter?efforts=1')?.showEfforts).toBe(true);
   });
 });
 
