@@ -10,6 +10,8 @@ describe('3D label color in the "Most attractive" box', () => {
   const nearGood = testModel({id: 'nearGood', publicName: 'Near good', costsToRun: 2, overallIntelligence: 58, contextWindow: 900_000});
   const mid = testModel({id: 'mid', publicName: 'Mid', costsToRun: 50, overallIntelligence: 45, contextWindow: 200_000});
   const bad = testModel({id: 'bad', publicName: 'Bad', costsToRun: 100, overallIntelligence: 30, contextWindow: 8_000});
+  const old = testModel({id: 'old', publicName: 'Old', costsToRun: 80, overallIntelligence: 20, contextWindow: 4_000});
+  const tiny = testModel({id: 'tiny', publicName: 'Tiny', costsToRun: 90, overallIntelligence: 10, contextWindow: 2_000});
 
   const labelColors = (c: Scatter3dPlotComponent) => new Map(c.labels3d().map(l => [l.text, l.color] as const));
 
@@ -24,7 +26,7 @@ describe('3D label color in the "Most attractive" box', () => {
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');
-    state.allModels.set([good, nearGood, mid, bad]);
+    state.allModels.set([good, nearGood, mid, bad, old, tiny]);
   });
 
   it('darkens the names inside the box in the light theme and keeps the others', () => {
@@ -40,6 +42,49 @@ describe('3D label color in the "Most attractive" box', () => {
     const colors = labelColors(TestBed.createComponent(Scatter3dPlotComponent).componentInstance);
     expect(colors.get('Near good')).toBe(getPlotColors('dark').pointLabel3d);
     expect(colors.get('Bad')).toBe(getPlotColors('dark').pointLabel3d);
+  });
+});
+
+describe('3D zone split', () => {
+  const at = (id: string, costsToRun: number, overallIntelligence: number, contextWindow: number) =>
+    testModel({id, publicName: id, costsToRun, overallIntelligence, contextWindow});
+  const models = [at('a', 1, 60, 1_000_000), at('b', 2, 58, 900_000), at('c', 50, 45, 200_000),
+    at('d', 100, 30, 8_000), at('e', 80, 20, 4_000), at('f', 90, 10, 2_000)];
+
+  let state: AppState;
+  beforeEach(() => {
+    localStorage.clear();
+    state = TestBed.inject(AppState);
+    state.disabledModelIds.set(new Set());
+    state.showEfforts.set(false);
+    state.scatter3dX.set('costsToRun');
+    state.scatter3dY.set('intelligence');
+    state.scatter3dZ.set('contextWindow');
+    state.allModels.set(models);
+  });
+
+  const regionNames = (c: Scatter3dPlotComponent) =>
+    (c.traces() as { mode?: string; name: string }[]).filter(t => t.mode === 'lines' && t.name.endsWith('attractive')).map(t => t.name);
+
+  it('splits at the median and at the top quarter of intelligence', () => {
+    const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    expect(c.zoneSplit3d()).toEqual([65, 54.75, 104_000]);
+  });
+
+  it('keeps the split when the filter hides models', () => {
+    state.disabledModelIds.set(new Set(['a', 'b']));
+    const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    expect(c.zoneSplit3d()).toEqual([65, 54.75, 104_000]);
+  });
+
+  it('draws both cuboids when the split lies inside the axis ranges', () => {
+    expect(regionNames(TestBed.createComponent(Scatter3dPlotComponent).componentInstance))
+      .toEqual(['Most attractive', 'Least attractive']);
+  });
+
+  it('drops the "Most attractive" cuboid when the shown models all lie below the split', () => {
+    state.disabledModelIds.set(new Set(['a', 'b']));
+    expect(regionNames(TestBed.createComponent(Scatter3dPlotComponent).componentInstance)).toEqual(['Least attractive']);
   });
 });
 

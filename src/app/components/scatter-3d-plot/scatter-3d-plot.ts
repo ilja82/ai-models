@@ -10,6 +10,7 @@ import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 import {effortSeries, shortEffortLabel} from '../../models/effort.util';
 import {Rect, Shift, spreadLabels} from '../../models/label-layout.util';
+import {percentile} from '../../models/median.util';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
 
@@ -24,6 +25,8 @@ interface AxisDef {
   get: (m: AiModel) => number | null;
   /** axis tick formatter */
   format: (v: number) => string;
+  /** The percentile (0 to 1) of all values where the zones split; the median when not set. */
+  zoneSplit?: number;
 }
 
 export const AXIS_DEFS: AxisDef[] = [
@@ -57,7 +60,7 @@ export const AXIS_DEFS: AxisDef[] = [
   },
   {
     key: 'intelligence', label: 'Overall Intelligence', higherIsBetter: true, logCandidate: false,
-    get: m => m.overallIntelligence, format: v => `${v}`
+    get: m => m.overallIntelligence, format: v => `${v}`, zoneSplit: 0.75
   },
   {
     key: 'tokensPerSecond', label: 'Speed (tok/s)', higherIsBetter: true, logCandidate: false,
@@ -89,7 +92,6 @@ export const AXIS_DEFS: AxisDef[] = [
 interface AxisExtent {
   min: number;
   max: number;
-  mid: number;
   log: boolean;
 }
 
@@ -310,14 +312,13 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       const pad = 1.05;
       min = min / pad;
       max = max * pad;
-      const mid = Math.sqrt(min * max);
-      return {min, max, mid, log: true};
+      return {min, max, log: true};
     }
 
     const range = max - min;
     min = min - range * 0.05;
     max = max + range * 0.05;
-    return {min, max, mid: (min + max) / 2, log: false};
+    return {min, max, log: false};
   }
 
   private buildCuboid(
@@ -346,22 +347,33 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     };
   }
 
-  /** The plotted ranges of the "Most attractive" and "Least attractive" cuboids per axis, null without a range on each axis. */
-  private readonly regions = computed<{ attractive: [number, number][]; unattractive: [number, number][] } | null>(() => {
-    const defs = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
-    const logScale = this.state.logScale3d();
+  /** The `zoneSplit` percentile of each axis over all models with a value on all three axes, before any filter. */
+  readonly zoneSplit3d = computed<[number, number, number] | null>(() => {
+    const axes = this.axes();
+    const models = this.state.allModels().filter(m => axes.every(a => a.get(m) !== null));
+    const split = axes.map(a => percentile(models.map(m => a.get(m)!), a.zoneSplit ?? 0.5));
+    return split.some(v => v === null) ? null : split as [number, number, number];
+  });
+
+  /** The plotted ranges of the "Most attractive" and "Least attractive" cuboids per axis; null for a cuboid without volume. */
+  private readonly regions = computed<{ attractive: [number, number][] | null; unattractive: [number, number][] | null } | null>(() => {
+    const defs = this.axes();
     const allModels = this.axisModels();
-    const exts = defs.map(def => this.computeAxisExtent(allModels, def, logScale && def.logCandidate));
-    if (exts.some(ext => !ext)) return null;
-    const halfRange = (i: number, attractive: boolean): [number, number] => {
-      const ext = exts[i]!;
-      const def = defs[i];
-      const pickUpper = def.higherIsBetter ? attractive : !attractive;
-      const r: [number, number] = pickUpper ? [ext.mid, ext.max] : [ext.min, ext.mid];
-      const log = this.isLogAxis(def);
-      return [this.toPlotVal(r[0], log), this.toPlotVal(r[1], log)];
+    const exts = defs.map(def => this.computeAxisExtent(allModels, def, this.isLogAxis(def)));
+    const split = this.zoneSplit3d();
+    if (!split || exts.some(ext => !ext)) return null;
+    const region = (attractive: boolean): [number, number][] | null => {
+      const ranges = defs.map((def, i): [number, number] => {
+        const ext = exts[i]!;
+        const mid = Math.max(ext.min, Math.min(ext.max, split[i]));
+        const pickUpper = def.higherIsBetter ? attractive : !attractive;
+        const r: [number, number] = pickUpper ? [mid, ext.max] : [ext.min, mid];
+        const log = this.isLogAxis(def);
+        return [this.toPlotVal(r[0], log), this.toPlotVal(r[1], log)];
+      });
+      return ranges.some(([lo, hi]) => lo === hi) ? null : ranges;
     };
-    return {attractive: [0, 1, 2].map(i => halfRange(i, true)), unattractive: [0, 1, 2].map(i => halfRange(i, false))};
+    return {attractive: region(true), unattractive: region(false)};
   });
 
   private plotPoint(m: AiModel): [number, number, number] {
@@ -461,22 +473,23 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const regionTraces: any[] = [];
     const regions = this.regions();
-    if (regions) {
-      const centroid = (r: [number, number]) => (r[0] + r[1]) / 2;
-      const [attrX, attrY, attrZ] = regions.attractive;
-      const [unX, unY, unZ] = regions.unattractive;
+    const centroid = (r: [number, number]) => (r[0] + r[1]) / 2;
+    const shownRegions = [
+      {box: regions?.attractive, name: 'Most attractive', line: colors.attractiveCuboid, label: colors.attractiveLabel, opacity: 0.8},
+      {box: regions?.unattractive, name: 'Least attractive', line: colors.unattractiveCuboid, label: colors.unattractiveLabel, opacity: 0.6},
+    ].filter((r): r is typeof r & { box: [number, number][] } => !!r.box);
+    if (shownRegions.length > 0) {
       regionTraces.push(
-        this.buildCuboid(attrX, attrY, attrZ, colors.attractiveCuboid, 0.8, 'Most attractive'),
-        this.buildCuboid(unX, unY, unZ, colors.unattractiveCuboid, 0.6, 'Least attractive'),
+        ...shownRegions.map(({box: [x, y, z], line, opacity, name}) => this.buildCuboid(x, y, z, line, opacity, name)),
         {
           type: 'scatter3d',
           mode: 'text',
           name: 'Region labels',
-          x: [centroid(attrX), centroid(unX)],
-          y: [centroid(attrY), centroid(unY)],
-          z: [centroid(attrZ), centroid(unZ)],
-          text: ['Most attractive', 'Least attractive'],
-          textfont: {size: 12, color: [colors.attractiveLabel, colors.unattractiveLabel]},
+          x: shownRegions.map(r => centroid(r.box[0])),
+          y: shownRegions.map(r => centroid(r.box[1])),
+          z: shownRegions.map(r => centroid(r.box[2])),
+          text: shownRegions.map(r => r.name),
+          textfont: {size: 12, color: shownRegions.map(r => r.label)},
           hoverinfo: 'skip',
           showlegend: false,
         },
