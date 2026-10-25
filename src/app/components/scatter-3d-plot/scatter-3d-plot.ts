@@ -9,6 +9,7 @@ import {AxisField} from '../../models/view-types';
 import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 import {effortSeries, shortEffortLabel} from '../../models/effort.util';
+import {Rect, Shift, spreadLabels} from '../../models/label-layout.util';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
 
@@ -92,8 +93,89 @@ interface AxisExtent {
   log: boolean;
 }
 
-const BALANCED_LABEL_SHIFT = 20;
+export const MARKER_SIZE_3D = {useful: 10, axisBest: 13, balanced: 18};
+export const LABEL_SIZE_3D = 10;
+export const HIGHLIGHT_LABEL_SIZE_3D = 14;
+export const BALANCED_LABEL_SIZE_3D = 17;
+const LABEL_GAP_3D = 3;
 const HIDDEN_TEXT = 'rgba(0,0,0,0)';
+const NO_SHIFT: Shift = {dx: 0, dy: 0};
+const SETTLED_FRAMES = 3;
+const MAX_SETTLE_FRAMES = 120;
+
+type ModelGroup = 'deprecated' | 'api' | 'local' | 'useful' | 'axisBest' | 'balanced';
+
+const MODEL_MARKER_SIZE: Record<ModelGroup, number> = {
+  deprecated: 4, api: 5, local: 5,
+  useful: MARKER_SIZE_3D.useful, axisBest: MARKER_SIZE_3D.axisBest, balanced: MARKER_SIZE_3D.balanced,
+};
+const GROUP_RANK: Record<ModelGroup, number> = {deprecated: 0, api: 0, local: 0, useful: 1, axisBest: 2, balanced: 3};
+const LEVEL_MARKER_SIZE = [2, MARKER_SIZE_3D.useful, MARKER_SIZE_3D.axisBest, MARKER_SIZE_3D.balanced];
+
+export interface Label3d {
+  /** The model id, or `<model id>@<effort>` for an effort level. */
+  id: string;
+  point: AiModel;
+  text: string;
+  color: string;
+  size: number;
+  bold: boolean;
+  /** 3 for best balanced, 2 for best per axis, 1 for Pareto efficient, 0 for the others. */
+  rank: number;
+  /** The drawn marker diameter in pixels. */
+  marker: number;
+  side: 'top' | 'right';
+}
+
+/** The pixel offset of the label from its point at the base place: above the marker, or right of it. */
+export function baseOffset(l: Pick<Label3d, 'marker' | 'side'>): { ax: number; ay: number } {
+  const d = l.marker / 2 + LABEL_GAP_3D;
+  return l.side === 'right' ? {ax: d, ay: 0} : {ax: 0, ay: -d};
+}
+
+/** The scene annotation of a label; a shifted label gets a line to its point. */
+export function labelAnnotation(l: Label3d, [x, y, z]: [number, number, number], shift: Shift = NO_SHIFT): any {
+  const base = baseOffset(l);
+  const moved = shift.dx !== 0 || shift.dy !== 0;
+  return {
+    x, y, z,
+    text: l.text,
+    showarrow: true,
+    ax: base.ax + shift.dx,
+    ay: base.ay + shift.dy,
+    xanchor: l.side === 'right' ? 'left' : 'center',
+    yanchor: l.side === 'right' ? 'middle' : 'bottom',
+    arrowhead: 0,
+    arrowwidth: 1,
+    standoff: l.marker / 2,
+    arrowcolor: moved ? l.color : 'rgba(0,0,0,0)',
+    font: {size: l.size, color: l.color, weight: l.bold ? 'bold' : 'normal'},
+  };
+}
+
+/**
+ * The label shifts that clear the overlaps, from the drawn label boxes.
+ *
+ * @param rects the drawn box of each label in pixels, null for a label that is not drawn
+ * @param current the shift of each label when its box was drawn
+ */
+export function shiftsFromRects(labels: Label3d[], rects: (Rect | null)[], current: Shift[]): Shift[] {
+  const items = labels.flatMap((l, i) => {
+    const r = rects[i];
+    if (!r || r.w === 0 || r.h === 0) return [];
+    return [{i, l, box: {x: r.x - current[i].dx, y: r.y - current[i].dy, w: r.w, h: r.h, rank: l.rank}}];
+  });
+  const markers = items.filter(({l}) => l.rank > 0).map(({l, box}) => {
+    const {ax, ay} = baseOffset(l);
+    const cx = l.side === 'right' ? box.x - ax : box.x + box.w / 2;
+    const cy = l.side === 'right' ? box.y + box.h / 2 : box.y + box.h - ay;
+    return {x: cx - l.marker / 2, y: cy - l.marker / 2, w: l.marker, h: l.marker};
+  });
+  const spread = spreadLabels(items.map(it => it.box), markers);
+  const shifts = labels.map(() => NO_SHIFT);
+  items.forEach((it, k) => shifts[it.i] = {dx: Math.round(spread[k].dx), dy: Math.round(spread[k].dy)});
+  return shifts;
+}
 
 @Component({
   selector: 'app-scatter-3d-plot',
@@ -113,6 +195,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   readonly errorMsg = signal<string | null>(null);
 
   private plotly: PlotlyModule | null = null;
+  private settleFrame = 0;
   private resizeObserver?: ResizeObserver;
 
   private readonly defOf = (key: AxisField): AxisDef => AXIS_DEFS.find(a => a.key === key)!;
@@ -183,22 +266,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   });
 
   /** The shown best balanced point and its label; the layout draws the label as an annotation beside the marker. */
-  readonly balancedLabel3d = computed<{ point: AiModel; text: string } | null>(() => {
-    const {balancedId} = this.specialMarkers3d();
-    if (!balancedId) return null;
-    const model = this.shownModels().find(m => m.id === balancedId);
-    if (model) return {point: model, text: model.publicName};
-    const shownIds = new Set(this.shownModels().map(m => m.id));
-    for (const c of this.shownEffortCurves()) {
-      const level = c.points.find(p => p !== c.model && p.id === balancedId);
-      if (level) {
-        const effort = shortEffortLabel(level.effort!);
-        return {point: level, text: shownIds.has(c.model.id) ? effort : `${c.model.publicName} ${effort}`};
-      }
-    }
-    return null;
-  });
-
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
     const models = this.plotModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
@@ -279,88 +346,125 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     };
   }
 
+  /** The plotted ranges of the "Most attractive" and "Least attractive" cuboids per axis, null without a range on each axis. */
+  private readonly regions = computed<{ attractive: [number, number][]; unattractive: [number, number][] } | null>(() => {
+    const defs = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
+    const logScale = this.state.logScale3d();
+    const allModels = this.axisModels();
+    const exts = defs.map(def => this.computeAxisExtent(allModels, def, logScale && def.logCandidate));
+    if (exts.some(ext => !ext)) return null;
+    const halfRange = (i: number, attractive: boolean): [number, number] => {
+      const ext = exts[i]!;
+      const def = defs[i];
+      const pickUpper = def.higherIsBetter ? attractive : !attractive;
+      const r: [number, number] = pickUpper ? [ext.mid, ext.max] : [ext.min, ext.mid];
+      const log = this.isLogAxis(def);
+      return [this.toPlotVal(r[0], log), this.toPlotVal(r[1], log)];
+    };
+    return {attractive: [0, 1, 2].map(i => halfRange(i, true)), unattractive: [0, 1, 2].map(i => halfRange(i, false))};
+  });
+
+  private plotPoint(m: AiModel): [number, number, number] {
+    const defs = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
+    return defs.map(def => this.toPlotVal(def.get(m)!, this.isLogAxis(def))) as [number, number, number];
+  }
+
+  /** The label text color, darkened by `attractiveTextShade` for a point inside the "Most attractive" box. */
+  private labelColor(m: AiModel, color: string): string {
+    const box = this.regions()?.attractive;
+    if (!box) return color;
+    const inside = this.plotPoint(m).every((v, i) => v >= Math.min(...box[i]) && v <= Math.max(...box[i]));
+    return inside ? darken(color, getPlotColors(this.themeState.theme()).attractiveTextShade) : color;
+  }
+
+  /** The labels of the shown models and effort levels, drawn as scene annotations so they can move apart. */
+  readonly labels3d = computed<Label3d[]>(() => {
+    const models = this.shownModels();
+    const useful = this.useful3d();
+    const {axisBestIds, balancedId} = this.specialMarkers3d();
+    const colors = getPlotColors(this.themeState.theme());
+    const style = (m: AiModel, rank: number, plainColor: string) => ({
+      color: rank === 3 ? colors.balanced
+        : this.labelColor(m, rank === 2 ? colors.axisBestLabel : rank === 1 ? colors.usefulLabel : plainColor),
+      size: rank === 3 ? BALANCED_LABEL_SIZE_3D : rank > 0 ? HIGHLIGHT_LABEL_SIZE_3D : LABEL_SIZE_3D,
+      bold: rank > 0,
+      rank,
+      side: (rank === 3 ? 'right' : 'top') as Label3d['side'],
+    });
+
+    const modelLabels = models.map(m => {
+      const group = this.groupOf(m, useful, axisBestIds, balancedId);
+      return {id: m.id, point: m, text: m.publicName, marker: MODEL_MARKER_SIZE[group], ...style(m, GROUP_RANK[group], colors.pointLabel3d)};
+    });
+
+    const shownIds = new Set(models.map(m => m.id));
+    const effortLabels = this.shownEffortCurves().flatMap(({model, points}) => {
+      const lineColor = model.deprecated ? colors.deprecated : model.localModel ? colors.local : colors.api;
+      const plainColor = darken(lineColor, colors.effortLabelShade3d);
+      return points.filter(p => p !== model).map(p => {
+        const rank = this.levelRank(p, useful, axisBestIds, balancedId);
+        const effort = shortEffortLabel(p.effort!);
+        return {
+          id: p.id, point: p, text: shownIds.has(model.id) ? effort : `${model.publicName} ${effort}`,
+          marker: LEVEL_MARKER_SIZE[rank], ...style(p, rank, plainColor), side: 'right' as const,
+        };
+      });
+    });
+    return modelLabels.concat(effortLabels);
+  });
+
+  private groupOf(m: AiModel, useful: Set<string>, axisBestIds: Set<string>, balancedId: string | null): ModelGroup {
+    if (m.deprecated) return 'deprecated';
+    if (m.id === balancedId) return 'balanced';
+    if (axisBestIds.has(m.id)) return 'axisBest';
+    if (useful.has(m.id)) return 'useful';
+    return m.localModel ? 'local' : 'api';
+  }
+
+  /** 3 for best balanced, 2 for best per axis, 1 for Pareto efficient, 0 for any other effort level. */
+  private levelRank(p: AiModel, useful: Set<string>, axisBestIds: Set<string>, balancedId: string | null): number {
+    return p.id === balancedId ? 3 : axisBestIds.has(p.id) ? 2 : useful.has(p.id) ? 1 : 0;
+  }
+
   readonly traces = computed(() => {
     const models = this.shownModels();
     const useful = this.useful3d();
-    const xDef = this.defOf(this.state.scatter3dX());
-    const yDef = this.defOf(this.state.scatter3dY());
-    const zDef = this.defOf(this.state.scatter3dZ());
-    const logScale = this.state.logScale3d();
     const {axisBestIds, balancedId} = this.specialMarkers3d();
-    const xLog = this.isLogAxis(xDef);
-    const yLog = this.isLogAxis(yDef);
-    const zLog = this.isLogAxis(zDef);
     const colors = getPlotColors(this.themeState.theme());
-
-    const groups = {
-      deprecated: [] as AiModel[],
-      api: [] as AiModel[],
-      local: [] as AiModel[],
-      useful: [] as AiModel[],
-      axisBest: [] as AiModel[],
-      balanced: [] as AiModel[],
+    const coords = (items: AiModel[]) => {
+      const pts = items.map(m => this.plotPoint(m));
+      return {x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => p[2])};
     };
-    for (const m of models) {
-      if (m.deprecated) groups.deprecated.push(m);
-      else if (m.id === balancedId) groups.balanced.push(m);
-      else if (axisBestIds.has(m.id)) groups.axisBest.push(m);
-      else if (useful.has(m.id)) groups.useful.push(m);
-      else if (m.localModel) groups.local.push(m);
-      else groups.api.push(m);
-    }
 
-    let attractiveBox: [number, number][] | null = null;
-    const inAttractiveBox = (m: AiModel) => !!attractiveBox && [xDef, yDef, zDef].every((def, i) => {
-      const v = this.toPlotVal(def.get(m)!, [xLog, yLog, zLog][i]);
-      const [a, b] = attractiveBox![i];
-      return v >= Math.min(a, b) && v <= Math.max(a, b);
-    });
-    const labelColor = (m: AiModel, color: string) => inAttractiveBox(m) ? darken(color, colors.attractiveTextShade) : color;
+    const groups: Record<ModelGroup, AiModel[]> = {deprecated: [], api: [], local: [], useful: [], axisBest: [], balanced: []};
+    for (const m of models) groups[this.groupOf(m, useful, axisBestIds, balancedId)].push(m);
 
-    const costAxis = [xDef, yDef, zDef].some(d => d.key === 'costsToRun');
+    const defs = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
+    const costAxis = defs.some(d => d.key === 'costsToRun');
     const symbolOf = (m: AiModel, symbol: string) =>
       costAxis && m.tokensPerRunEstimated && !symbol.endsWith('-open') ? `${symbol}-open` : symbol;
-    const buildTrace = (items: AiModel[], name: string, color: string, symbol: string, size: number, highlight = false) => ({
+    const buildTrace = (group: ModelGroup, name: string, color: string, symbol: string) => ({
       type: 'scatter3d',
       mode: 'markers+text',
       name,
-      x: items.map(m => this.toPlotVal(xDef.get(m)!, xLog)),
-      y: items.map(m => this.toPlotVal(yDef.get(m)!, yLog)),
-      z: items.map(m => this.toPlotVal(zDef.get(m)!, zLog)),
-      text: items.map(m => m.publicName),
-      textposition: 'top center',
-      textfont: {size: 10, color: highlight ? HIDDEN_TEXT : items.map(m => labelColor(m, colors.pointLabel3d))},
-      hovertext: items.map(m => buildModelTooltipLines(m).join('<br>')),
+      ...coords(groups[group]),
+      text: groups[group].map(m => m.publicName),
+      textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
+      hovertext: groups[group].map(m => buildModelTooltipLines(m).join('<br>')),
       hoverinfo: 'text',
       marker: {
-        color, size, symbol: items.map(m => symbolOf(m, symbol)),
-        line: highlight ? {color: colors.balancedRing, width: 3} : {color: 'rgba(0,0,0,0.4)', width: 0.5},
+        color, size: MODEL_MARKER_SIZE[group], symbol: groups[group].map(m => symbolOf(m, symbol)),
+        line: group === 'balanced' ? {color: colors.balancedRing, width: 3} : {color: 'rgba(0,0,0,0.4)', width: 0.5},
         opacity: 0.95,
       },
     });
 
-    const allModels = this.axisModels();
-    const xExt = this.computeAxisExtent(allModels, xDef, logScale && xDef.logCandidate);
-    const yExt = this.computeAxisExtent(allModels, yDef, logScale && yDef.logCandidate);
-    const zExt = this.computeAxisExtent(allModels, zDef, logScale && zDef.logCandidate);
-
     const regionTraces: any[] = [];
-    if (xExt && yExt && zExt) {
-      const halfRange = (ext: AxisExtent, attractive: boolean, higherIsBetter: boolean, log: boolean): [number, number] => {
-        const pickUpper = higherIsBetter ? attractive : !attractive;
-        const r: [number, number] = pickUpper ? [ext.mid, ext.max] : [ext.min, ext.mid];
-        return [this.toPlotVal(r[0], log), this.toPlotVal(r[1], log)];
-      };
+    const regions = this.regions();
+    if (regions) {
       const centroid = (r: [number, number]) => (r[0] + r[1]) / 2;
-
-      const attrX = halfRange(xExt, true, xDef.higherIsBetter, xLog);
-      const attrY = halfRange(yExt, true, yDef.higherIsBetter, yLog);
-      const attrZ = halfRange(zExt, true, zDef.higherIsBetter, zLog);
-      attractiveBox = [attrX, attrY, attrZ];
-      const unX = halfRange(xExt, false, xDef.higherIsBetter, xLog);
-      const unY = halfRange(yExt, false, yDef.higherIsBetter, yLog);
-      const unZ = halfRange(zExt, false, zDef.higherIsBetter, zLog);
-
+      const [attrX, attrY, attrZ] = regions.attractive;
+      const [unX, unY, unZ] = regions.unattractive;
       regionTraces.push(
         this.buildCuboid(attrX, attrY, attrZ, colors.attractiveCuboid, 0.8, 'Most attractive'),
         this.buildCuboid(unX, unY, unZ, colors.unattractiveCuboid, 0.6, 'Least attractive'),
@@ -382,30 +486,25 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const shownIds = new Set(models.map(m => m.id));
     const effortTraces = this.shownEffortCurves().map(({model, points}) => {
       const lineColor = model.deprecated ? colors.deprecated : model.localModel ? colors.local : colors.api;
-      const effortLabelColor = darken(lineColor, colors.effortLabelShade3d);
-      const isUseful = (p: AiModel) => p !== model && useful.has(p.id);
-      const isBalanced = (p: AiModel) => p !== model && p.id === balancedId;
-      const isAxisBest = (p: AiModel) => p !== model && !isBalanced(p) && axisBestIds.has(p.id);
+      const rankOf = (p: AiModel) => p === model ? 0 : this.levelRank(p, useful, axisBestIds, balancedId);
       return {
         type: 'scatter3d',
         mode: 'lines+markers+text',
         name: `${model.publicName} effort levels`,
         showlegend: false,
-        x: points.map(p => this.toPlotVal(xDef.get(p)!, xLog)),
-        y: points.map(p => this.toPlotVal(yDef.get(p)!, yLog)),
-        z: points.map(p => this.toPlotVal(zDef.get(p)!, zLog)),
+        ...coords(points),
         text: points.map(p => p === model ? ''
           : shownIds.has(model.id) ? shortEffortLabel(p.effort!) : `${model.publicName} ${shortEffortLabel(p.effort!)}`),
         textposition: 'middle right',
-        textfont: {size: 10, color: points.map(p => isBalanced(p) ? HIDDEN_TEXT : labelColor(p, effortLabelColor))},
+        textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
         hovertext: points.map(p => buildModelTooltipLines(p).join('<br>')),
         hoverinfo: 'text',
         line: {color: lineColor, width: 2, dash: 'dash'},
         marker: {
-          size: points.map(p => isBalanced(p) ? 16 : isAxisBest(p) ? 10 : isUseful(p) ? 4 : 2),
+          size: points.map(p => LEVEL_MARKER_SIZE[rankOf(p)]),
           sizeref: 0.5,
-          color: points.map(p => isBalanced(p) ? colors.balanced : isAxisBest(p) ? colors.axisBest : isUseful(p) ? colors.useful : lineColor),
-          symbol: points.map(p => isBalanced(p) ? 'square' : isAxisBest(p) ? 'diamond-open' : 'circle'),
+          color: points.map(p => [lineColor, colors.useful, colors.axisBest, colors.balanced][rankOf(p)]),
+          symbol: points.map(p => ['circle', 'circle', 'diamond-open', 'square'][rankOf(p)]),
         },
       };
     });
@@ -413,23 +512,24 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return [
       ...regionTraces,
       ...effortTraces,
-      buildTrace(groups.deprecated, 'Deprecated', colors.deprecated, 'circle', 4),
-      buildTrace(groups.api, 'API', colors.api, 'circle', 5),
-      buildTrace(groups.local, 'Local', colors.local, 'diamond', 5),
-      buildTrace(groups.useful, 'Pareto efficient', colors.useful, 'circle', 8),
-      buildTrace(groups.axisBest, 'Best per axis', colors.axisBest, 'diamond-open', 10),
-      buildTrace(groups.balanced, 'Best balanced', colors.balanced, 'square', 16, true),
+      buildTrace('deprecated', 'Deprecated', colors.deprecated, 'circle'),
+      buildTrace('api', 'API', colors.api, 'circle'),
+      buildTrace('local', 'Local', colors.local, 'diamond'),
+      buildTrace('useful', 'Pareto efficient', colors.useful, 'circle'),
+      buildTrace('axisBest', 'Best per axis', colors.axisBest, 'diamond-open'),
+      buildTrace('balanced', 'Best balanced', colors.balanced, 'square'),
     ];
   });
+
+  /** The shift of each label away from its base place, by label id; `measureLabels` sets it after each render. */
+  readonly labelShifts = signal<ReadonlyMap<string, Shift>>(new Map());
 
   readonly layout = computed(() => {
     const xDef = this.defOf(this.state.scatter3dX());
     const yDef = this.defOf(this.state.scatter3dY());
     const zDef = this.defOf(this.state.scatter3dZ());
     const models = this.axisModels();
-    const balancedLabel = this.balancedLabel3d();
-    const colors = getPlotColors(this.themeState.theme());
-    const plotVal = (def: AxisDef, m: AiModel) => this.toPlotVal(def.get(m)!, this.isLogAxis(def));
+    const shifts = this.labelShifts();
 
     const axisCfg = (def: AxisDef): any => {
       const base: any = {
@@ -475,6 +575,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     return {
       autosize: true,
+      uirevision: 'scatter3d',
       paper_bgcolor: 'rgba(0,0,0,0)',
       plot_bgcolor: 'rgba(0,0,0,0)',
       margin: {l: 0, r: 0, t: 10, b: 0},
@@ -484,16 +585,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         xaxis: axisCfg(xDef),
         yaxis: axisCfg(yDef),
         zaxis: axisCfg(zDef),
-        annotations: balancedLabel ? [{
-          x: plotVal(xDef, balancedLabel.point),
-          y: plotVal(yDef, balancedLabel.point),
-          z: plotVal(zDef, balancedLabel.point),
-          text: balancedLabel.text,
-          showarrow: false,
-          xanchor: 'left',
-          xshift: BALANCED_LABEL_SHIFT,
-          font: {size: 13, color: colors.balanced, weight: 'bold'},
-        }] : [],
+        annotations: this.labels3d().map(l => labelAnnotation(l, this.plotPoint(l.point), shifts.get(l.id))),
         camera: {eye: {x: 1.6, y: -1.6, z: 1.2}},
       },
     };
@@ -513,9 +605,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       this.plotly = (mod as any).default ?? mod;
       this.loading.set(false);
       this.render(this.traces(), this.layout());
+      (this.plotRef.nativeElement as any).on('plotly_relayout', () => this.measureLabels());
       this.resizeObserver = new ResizeObserver(() => {
         if (this.plotly && this.plotRef.nativeElement) {
-          this.plotly.Plots.resize(this.plotRef.nativeElement);
+          Promise.resolve(this.plotly.Plots.resize(this.plotRef.nativeElement)).then(() => this.measureLabels());
         }
       });
       this.resizeObserver.observe(this.plotRef.nativeElement);
@@ -526,6 +619,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    cancelAnimationFrame(this.settleFrame);
     this.resizeObserver?.disconnect();
     if (this.plotly && this.plotRef?.nativeElement) {
       this.plotly.purge(this.plotRef.nativeElement);
@@ -539,12 +633,56 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     else this.state.scatter3dZ.set(v);
   }
 
+  /** Measures the labels once the drawn annotations keep their place for a few frames; the camera moves on after a drag. */
+  private measureLabels(): void {
+    cancelAnimationFrame(this.settleFrame);
+    let last = '';
+    let stillFrames = 0;
+    let frames = 0;
+    const tick = () => {
+      const signature = [...this.plotRef.nativeElement.querySelectorAll('.annotation-text-g')]
+        .map(el => el.getAttribute('transform')).join('|');
+      stillFrames = signature === last ? stillFrames + 1 : 0;
+      last = signature;
+      if (stillFrames >= SETTLED_FRAMES || ++frames > MAX_SETTLE_FRAMES) this.measureDrawnLabels();
+      else this.settleFrame = requestAnimationFrame(tick);
+    };
+    this.settleFrame = requestAnimationFrame(tick);
+  }
+
+  /** Reads the drawn label boxes and moves the labels apart where they overlap. */
+  private measureDrawnLabels(): void {
+    const root = this.plotRef?.nativeElement;
+    if (!root) return;
+    const origin = root.getBoundingClientRect();
+    const labels = this.labels3d();
+    const drawn: any[] = (root as any).layout?.scene?.annotations ?? [];
+    if (drawn.length !== labels.length || drawn.some((a, i) => a.text !== labels[i].text)) return;
+    const drawnShifts = labels.map((l, i) => {
+      const base = baseOffset(l);
+      return {dx: drawn[i].ax - base.ax, dy: drawn[i].ay - base.ay};
+    });
+    const rects = labels.map((_, i) => {
+      const el = root.querySelector(`.annotation-scene[data-index="${i}"] .annotation-text-g`);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {x: r.left - origin.left, y: r.top - origin.top, w: r.width, h: r.height};
+    });
+    const current = this.labelShifts();
+    const next = shiftsFromRects(labels, rects, drawnShifts);
+    const changed = labels.some((l, i) => {
+      const c = current.get(l.id) ?? NO_SHIFT;
+      return c.dx !== next[i].dx || c.dy !== next[i].dy;
+    });
+    if (changed) this.labelShifts.set(new Map(labels.map((l, i) => [l.id, next[i]])));
+  }
+
   private render(traces: any[], layout: any): void {
     if (!this.plotly || !this.plotRef?.nativeElement) return;
     this.plotly.react(this.plotRef.nativeElement, traces, layout, {
       responsive: true,
       displaylogo: false,
       modeBarButtonsToRemove: ['toImage', 'sendDataToCloud'],
-    });
+    }).then(() => this.measureLabels());
   }
 }

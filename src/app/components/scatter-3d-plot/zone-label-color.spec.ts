@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing';
-import {Scatter3dPlotComponent} from './scatter-3d-plot';
+import {Label3d, Scatter3dPlotComponent} from './scatter-3d-plot';
 import {ThemeState} from '../../state/theme.state';
 import {AppState} from '../../state/app.state';
 import {testModel} from '../../../testing/model-fixture';
@@ -11,9 +11,7 @@ describe('3D label color in the "Most attractive" box', () => {
   const mid = testModel({id: 'mid', publicName: 'Mid', costsToRun: 50, overallIntelligence: 45, contextWindow: 200_000});
   const bad = testModel({id: 'bad', publicName: 'Bad', costsToRun: 100, overallIntelligence: 30, contextWindow: 8_000});
 
-  const labelColors = (c: Scatter3dPlotComponent) => new Map(c.traces()
-    .filter((t: any) => t.mode === 'markers+text' && Array.isArray(t.textfont.color))
-    .flatMap((t: any) => t.text.map((name: string, i: number) => [name, t.textfont.color[i]] as const)));
+  const labelColors = (c: Scatter3dPlotComponent) => new Map(c.labels3d().map(l => [l.text, l.color] as const));
 
   let state: AppState;
   let theme: ThemeState;
@@ -69,18 +67,17 @@ describe('3D effort label color', () => {
       }),
     ]);
     const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
-    const trace = c.traces().find((t: any) => t.name.endsWith('effort levels')) as any;
-    const index = c.shownEffortCurves()[0].points.findIndex(p => p.id === 'lv@low');
-    lastTrace = trace;
-    return trace.textfont.color[index] as string;
+    const label = c.labels3d().find(l => l.id === 'lv@low')!;
+    lastLabel = label;
+    return label.color;
   };
-  let lastTrace: any;
+  let lastLabel: Label3d;
 
   it('draws the effort labels as large as the model names', () => {
     effortLabelColors('light');
-    const names = TestBed.createComponent(Scatter3dPlotComponent).componentInstance.traces()
-      .find((t: any) => t.name === 'API') as any;
-    expect(lastTrace.textfont.size).toBe(names.textfont.size);
+    const name = TestBed.createComponent(Scatter3dPlotComponent).componentInstance.labels3d().find(l => l.id === 'b')!;
+    expect(lastLabel.rank).toBe(0);
+    expect(lastLabel.size).toBe(name.size);
   });
 
   it('darkens the effort labels outside the box in the light theme', () => {

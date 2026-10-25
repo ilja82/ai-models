@@ -124,10 +124,10 @@ describe('special marker sizes', () => {
     const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
     const trace = c3.traces().find(t => t.name === 'Best balanced') as any;
     expect(trace.marker.line.color).toBe(colors.balancedRing);
-    const [label] = (c3.layout() as any).scene.annotations;
-    expect(label).toEqual(expect.objectContaining({text: cheap.publicName, xanchor: 'left'}));
+    const label = (c3.layout() as any).scene.annotations.find((a: any) => a.text === cheap.publicName);
+    expect(label.xanchor).toBe('left');
     expect(label.font).toEqual(expect.objectContaining({color: colors.balanced, weight: 'bold'}));
-    expect(label.xshift).toBeGreaterThan(drawnArraySize(16, 0.5) / 2);
+    expect(label.ax).toBeGreaterThan(trace.marker.size / 2);
     expect(trace.textfont.color).toBe('rgba(0,0,0,0)');
   });
 });
@@ -154,9 +154,9 @@ describe('best balanced effort level label in 3D', () => {
     expect(c3.specialMarkers3d().balancedId).toBe('lv@low');
     const levelTrace = c3.traces().find(t => t.name.endsWith('effort levels')) as any;
     const index = c3.shownEffortCurves()[0].points.findIndex(p => p.id === 'lv@low');
-    expect(levelTrace.textfont.color[index]).toBe('rgba(0,0,0,0)');
-    const [label] = (c3.layout() as any).scene.annotations;
-    expect(label.text).toBe('low');
+    expect(levelTrace.textfont.color).toBe('rgba(0,0,0,0)');
+    const label = (c3.layout() as any).scene.annotations.find((a: any) => a.text === 'low');
+    expect(label.font.color).toBe(getPlotColors(TestBed.inject(ThemeState).theme()).balanced);
     expect(label.x).toBe(levelTrace.x[index]);
   });
 });

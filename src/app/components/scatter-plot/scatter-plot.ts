@@ -34,10 +34,13 @@ interface EffortCurve {
 }
 
 const LABEL_FONT = '13px system-ui, sans-serif';
-const BALANCED_LABEL_FONT = 'bold 14px system-ui, sans-serif';
+const HIGHLIGHT_LABEL_FONT = 'bold 16px system-ui, sans-serif';
+const BALANCED_LABEL_FONT = 'bold 17px system-ui, sans-serif';
 const EFFORT_LABEL_FONT = '10px system-ui, sans-serif';
-const BALANCED_EFFORT_LABEL_FONT = 'bold 12px system-ui, sans-serif';
+const HIGHLIGHT_EFFORT_LABEL_FONT = 'bold 13px system-ui, sans-serif';
+const BALANCED_EFFORT_LABEL_FONT = 'bold 15px system-ui, sans-serif';
 const BALANCED_BORDER_WIDTH = 2.5;
+export const STAR_SIZE = 26;
 
 const LABEL_GAP = 3;
 
@@ -53,8 +56,31 @@ export function effortLabelOffset(radius: number): { dx: number; dy: number } {
   return radius > 5 ? {dx: radius + LABEL_GAP, dy: 0} : {dx: 5, dy: 8};
 }
 
-function effortPointRadius(p: { balanced: boolean; axisBest: boolean; useful: boolean }): number {
-  return p.balanced ? 13 : p.axisBest ? 11 : p.useful ? 5 : 3;
+export interface MarkerRole {
+  balanced: boolean;
+  axisBest: boolean;
+  useful: boolean;
+}
+
+/** 3 for best balanced, 2 for best per axis, 1 for Pareto efficient, 0 for any other point. */
+export function markerRank(p: MarkerRole): number {
+  return p.balanced ? 3 : p.axisBest ? 2 : p.useful ? 1 : 0;
+}
+
+export function modelPointRadius(p: MarkerRole): number {
+  return [7, 9, STAR_SIZE / 2, 17][markerRank(p)];
+}
+
+export function effortPointRadius(p: MarkerRole): number {
+  return [3, 7, STAR_SIZE / 2, 15][markerRank(p)];
+}
+
+export function modelLabelFont(p: MarkerRole): string {
+  return [LABEL_FONT, HIGHLIGHT_LABEL_FONT, HIGHLIGHT_LABEL_FONT, BALANCED_LABEL_FONT][markerRank(p)];
+}
+
+export function effortLabelFont(p: MarkerRole): string {
+  return [EFFORT_LABEL_FONT, HIGHLIGHT_EFFORT_LABEL_FONT, HIGHLIGHT_EFFORT_LABEL_FONT, BALANCED_EFFORT_LABEL_FONT][markerRank(p)];
 }
 
 function makeStarImage(color: string, size: number, onLoad: () => void): HTMLImageElement {
@@ -172,7 +198,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private chart?: Chart;
 
   private readonly starIcon = computed(() =>
-    makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22, () => this.chart?.update('none')));
+    makeStarImage(getPlotColors(this.themeState.theme()).axisBest, STAR_SIZE, () => this.chart?.update('none')));
 
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => plotTypeDef(this.state.plotType()));
@@ -366,27 +392,27 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           isUseful: false,
           hollow: hasRunCostX(plotType) && m.tokensPerRunEstimated,
           balanced: false,
+          axisBest: false,
         };
       }
 
       let color = m.localModel ? colors.local : colors.api;
       let pointStyle: string | HTMLImageElement = m.localModel ? 'triangle' : 'circle';
-      let radius = 7;
       const isUseful = useful.has(m.id);
+      const axisBest = axisBestIds.has(m.id);
+      const balanced = m.id === balancedId;
       if (isUseful) color = colors.useful;
-      if (axisBestIds.has(m.id)) {
+      if (axisBest) {
         pointStyle = starIcon;
         color = colors.axisBest;
-        radius = 11;
       }
-      if (m.id === balancedId) {
+      if (balanced) {
         pointStyle = 'rectRot';
         color = colors.balanced;
-        radius = 15;
       }
+      const radius = modelPointRadius({balanced, axisBest, useful: isUseful});
 
       const hollow = hasRunCostX(plotType) && m.tokensPerRunEstimated;
-      const balanced = m.id === balancedId;
       return {
         x: this.transformX(x, plotType),
         y: this.transformY(y, plotType),
@@ -396,7 +422,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         radius,
         isUseful,
         hollow,
-        balanced
+        balanced,
+        axisBest
       };
     });
   });
@@ -590,8 +617,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           label: p.label,
           color: this.pointLabelColor(p.color),
           balanced: p.balanced,
+          axisBest: p.axisBest,
+          useful: p.isUseful,
           radius: p.radius,
-        }));
+        })).sort((a, b) => markerRank(b) - markerRank(a));
 
         const usedRects: { x1: number; y1: number; x2: number; y2: number }[] = positions
           .filter(pos => pos.balanced)
@@ -601,9 +630,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         ctx.textAlign = 'center';
 
         for (const pos of positions) {
-          ctx.font = pos.balanced ? BALANCED_LABEL_FONT : LABEL_FONT;
+          ctx.font = modelLabelFont(pos);
           const labelW = ctx.measureText(pos.label).width + 4;
-          const labelH = 12;
+          const labelH = markerRank(pos) > 0 ? 16 : 12;
           const labelX = pos.px;
           let labelY = pos.py - 10;
 
@@ -650,7 +679,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             // The current level sits under the model point, which has its own label.
             if (p.current) continue;
             const color = this.effortLabelColor(curve, p);
-            ctx.font = p.balanced ? BALANCED_EFFORT_LABEL_FONT : EFFORT_LABEL_FONT;
+            ctx.font = effortLabelFont(p);
             const offset = effortLabelOffset(effortPointRadius(p));
             const x = xAxis.getPixelForValue(p.px) + offset.dx;
             const y = yAxis.getPixelForValue(p.py) + offset.dy;
@@ -868,7 +897,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       radius: number;
       isUseful: boolean;
       hollow: boolean;
-      balanced: boolean
+      balanced: boolean;
+      axisBest: boolean
     }[],
     curves: EffortCurve[],
     logScale: boolean,
