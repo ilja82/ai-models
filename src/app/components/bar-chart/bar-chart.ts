@@ -4,6 +4,7 @@ import {AppState} from '../../state/app.state';
 import {AiModel, latencyOf, responseTimeOf} from '../../models/ai-model.model';
 import {BarMetric} from '../../models/view-types';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
+import {otherEffortVariants, parseEffortVariantId, shortEffortLabel} from '../../models/effort.util';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -51,6 +52,7 @@ const SEG_COLOR_1 = 'rgba(99,140,210,0.82)';
 const SEG_COLOR_2 = 'rgba(180,100,210,0.82)';
 const SEG_COLOR_3 = 'rgba(70,180,180,0.82)';
 const ESTIMATED_FILL_ALPHA = '0.15)';
+const EFFORT_FILL_ALPHA = '0.4)';
 
 const METRICS: MetricDef[] = [
   {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score', sortAsc: false, stacked: false},
@@ -64,6 +66,19 @@ const METRICS: MetricDef[] = [
   {key: 'latency', label: 'Latency', unit: 's', axisLabel: 'Latency (s) - Time until first token', sortAsc: true, stacked: true},
   {key: 'responseTime', label: 'Response Time', unit: 's', axisLabel: 'Response Time until first 500 tokens (s)', sortAsc: true, stacked: true},
 ];
+
+function isEffortLevel(m: AiModel): boolean {
+  return parseEffortVariantId(m.id).effort !== null;
+}
+
+function effortFill(m: AiModel, color: string): string {
+  return isEffortLevel(m) ? color.replace(/[\d.]+\)$/, EFFORT_FILL_ALPHA) : color;
+}
+
+function barLabel(m: AiModel, leveled: ReadonlySet<string>): string {
+  const {modelId} = parseEffortVariantId(m.id);
+  return leveled.has(modelId) && m.effort ? `${m.publicName} (${shortEffortLabel(m.effort)})` : m.publicName;
+}
 
 @Component({
   selector: 'app-bar-chart',
@@ -108,6 +123,15 @@ export class BarChartComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** The other effort levels of a model whose value of the metric differs from the model value. */
+  private differingLevels(m: AiModel, metric: BarMetric): AiModel[] {
+    const own = this.getTotalValue(m, metric);
+    return otherEffortVariants(m).filter(v => {
+      const value = this.getTotalValue(v, metric);
+      return value !== null && value !== own;
+    });
+  }
+
   readonly chartData = computed((): ChartDataResult => {
     const metric = this.state.barMetric();
     const metricDef = METRICS.find(x => x.key === metric)!;
@@ -115,19 +139,22 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const all = this.state.filteredModels();
     const missing = all.filter(m => this.getTotalValue(m, metric) === null);
     const withValue = all.filter(m => this.getTotalValue(m, metric) !== null);
-    const allValues = withValue.map(m => this.getTotalValue(m, metric)!);
+    const levels = this.state.showEfforts() ? withValue.flatMap(m => this.differingLevels(m, metric)) : [];
+    const leveled = new Set(levels.map(v => parseEffortVariantId(v.id).modelId));
+    const bars = withValue.concat(levels);
+    const allValues = bars.map(m => this.getTotalValue(m, metric)!);
     const ySuggestedMax = allValues.length ? Math.max(...allValues) : undefined;
     const useful = this.state.usefulModelIds();
-    const shown = this.state.showOnlyPareto() ? withValue.filter(m => useful.has(m.id)) : withValue;
+    const shown = this.state.showOnlyPareto() ? bars.filter(m => useful.has(m.id)) : bars;
     const models = shown.sort((a, b) => {
       const va = this.getTotalValue(a, metric)!;
       const vb = this.getTotalValue(b, metric)!;
       return metricDef.sortAsc ? va - vb : vb - va;
     });
 
-    const labels = models.map(m => m.publicName);
+    const labels = models.map(m => barLabel(m, leveled));
 
-    const stackColor = (base: string) => models.map(m => m.deprecated ? DEPRECATED_STACK_COLOR : base);
+    const stackColor = (base: string) => models.map(m => effortFill(m, m.deprecated ? DEPRECATED_STACK_COLOR : base));
 
     if (metric === 'latency') {
       return {
@@ -174,7 +201,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
       labels,
       segments: [{
         label: metricDef.label,
-        color: solid.map((c, i) => estimated[i] ? c.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA) : c),
+        color: solid.map((c, i) => estimated[i] ? c.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA) : effortFill(models[i], c)),
         baseColor: API_COLOR,
         values,
         borderColor: solid,
@@ -203,6 +230,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
     }
     if (data.models.some(m => m.deprecated)) {
       items.push({label: 'Deprecated', color: DEPRECATED_BAR_COLOR});
+    }
+    if (data.models.some(isEffortLevel)) {
+      items.push({label: 'Other effort level', color: API_COLOR.replace(/[\d.]+\)$/, EFFORT_FILL_ALPHA)});
     }
     if (data.metricDef.key === 'costsToRun' && data.models.some(m => m.tokensPerRunEstimated)) {
       items.push({label: 'Estimated tokens (hollow)', color: API_COLOR.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA)});

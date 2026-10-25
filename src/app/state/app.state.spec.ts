@@ -119,3 +119,38 @@ describe('AppState modality filter', () => {
     expect(state.outputModalities()).toEqual([]);
   });
 });
+
+describe('AppState provider filter', () => {
+  afterEach(() => localStorage.clear());
+
+  function setUp(): AppState {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'aws', provider: 'bedrock'}),
+      testModel({id: 'tx', provider: 'tensorx'}),
+      testModel({id: 'local', provider: null, localModel: true}),
+    ]);
+    state.showLocal.set(true);
+    state.maxVram.set(null);
+    state.hiddenProviders.set([]);
+    return state;
+  }
+
+  const ids = (state: AppState) => state.availableModels().map(m => m.id);
+
+  it('hides the models of a provider and keeps the local models', () => {
+    const state = setUp();
+    state.toggleProvider('tensorx');
+    expect(ids(state)).toEqual(['aws', 'local']);
+    state.toggleProvider('bedrock');
+    expect(state.hiddenProviders()).toEqual(['bedrock', 'tensorx']);
+    expect(ids(state)).toEqual(['local']);
+    state.toggleProvider('tensorx');
+    expect(ids(state)).toEqual(['tx', 'local']);
+  });
+
+  it('ignores unknown stored providers', () => {
+    localStorage.setItem('ai-models.hiddenProviders', JSON.stringify(['lorem', 'tensorx']));
+    expect(TestBed.inject(AppState).hiddenProviders()).toEqual(['tensorx']);
+  });
+});

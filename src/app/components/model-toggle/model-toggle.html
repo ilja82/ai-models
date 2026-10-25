@@ -53,6 +53,14 @@
     />
     Show deprecated
   </label>
+  <div class="providers" role="group" aria-label="Providers">
+    @for (option of providerOptions(); track option.provider) {
+      <label class="provider" [title]="'Show the models of ' + option.label">
+        <input type="checkbox" [checked]="option.shown" (change)="state.toggleProvider(option.provider)"/>
+        {{ option.label }}
+      </label>
+    }
+  </div>
   <ul class="model-list">
     @for (model of sortedModels(); track model.id) {
       <li

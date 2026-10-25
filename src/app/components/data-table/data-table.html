@@ -37,6 +37,7 @@
           <th (click)="sort('maxInputTokens')" class="sortable">Max In {{ sortIcon('maxInputTokens') }}</th>
           <th (click)="sort('maxOutputTokens')" class="sortable">Max Out {{ sortIcon('maxOutputTokens') }}</th>
           <th (click)="sort('localModel')" class="sortable">Type {{ sortIcon('localModel') }}</th>
+          <th (click)="sort('provider')" class="sortable">Provider {{ sortIcon('provider') }}</th>
           <th (click)="sort('minVramRequirement')" class="sortable">VRAM {{ sortIcon('minVramRequirement') }}</th>
           <th (click)="sort('releaseDate')" class="sortable">Released {{ sortIcon('releaseDate') }}</th>
           <th (click)="sort('cutoffDate')" class="sortable">Cutoff {{ sortIcon('cutoffDate') }}</th>
@@ -75,6 +76,7 @@
             <td class="num hist" [style]="cellStyle(model, 'maxInputTokens')">{{ formatTokens(model.maxInputTokens) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'maxOutputTokens')">{{ formatTokens(model.maxOutputTokens) }}</td>
             <td class="center">{{ model.localModel ? 'Local' : 'API' }}</td>
+            <td class="center">{{ providerLabel(model) }}</td>
             <td class="num hist"
                 [style]="cellStyle(model, 'minVramRequirement')">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}
             </td>
@@ -97,7 +99,7 @@
         }
         @empty {
           <tr>
-            <td colspan="25" class="empty">No models match the current filters.</td>
+            <td colspan="24" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>

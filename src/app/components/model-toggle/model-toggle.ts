@@ -10,6 +10,9 @@ import {
   MODALITY_LABELS,
   OUTPUT_MODALITIES,
   OutputModality,
+  Provider,
+  PROVIDER_LABELS,
+  PROVIDERS,
 } from '../../models/ai-model.model';
 
 export interface ModalityChip<T extends Modality> {
@@ -42,6 +45,11 @@ export class ModelToggleComponent {
     const inputs = this.state.inputModalities();
     const outputs = this.state.outputModalities();
     return OUTPUT_MODALITIES.map(modality => this.chip(modality, outputs.includes(modality), inputs, [...outputs, modality]));
+  });
+
+  readonly providerOptions = computed(() => {
+    const hidden = this.state.hiddenProviders();
+    return PROVIDERS.map((provider: Provider) => ({provider, label: PROVIDER_LABELS[provider], shown: !hidden.includes(provider)}));
   });
 
   readonly hasModalityFilter = computed(() =>

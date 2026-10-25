@@ -3,7 +3,7 @@ import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 const DEFAULTS: UrlSnapshot = {
   view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'responseTime',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
-  showDeprecated: false, showEfforts: true, logScaleX: true, logScale3d: true, onlyPareto: false,
+  showDeprecated: false, hiddenProviders: [], showEfforts: true, logScaleX: true, logScale3d: true, onlyPareto: false,
   inputModalities: [], outputModalities: [],
 };
 
@@ -84,5 +84,19 @@ describe('url-sync PDF and rerank', () => {
     const hash = serializeHash({...DEFAULTS, view: 'table', inputModalities: ['pdf'], outputModalities: ['rerank']});
     expect(hash).toBe('#/table?in=pdf&out=rerank');
     expect(parseHash(hash)).toEqual({view: 'table', inputModalities: ['pdf'], outputModalities: ['rerank']});
+  });
+});
+
+describe('url-sync providers', () => {
+  it('omits the parameter while every provider is shown', () => {
+    expect(serializeHash(DEFAULTS)).toBe('#/scatter');
+    expect(parseHash('#/scatter')?.hiddenProviders).toBeUndefined();
+  });
+
+  it('round-trips the hidden providers and drops unknown names', () => {
+    const hash = serializeHash({...DEFAULTS, view: 'table', hiddenProviders: ['bedrock', 'tensorx']});
+    expect(hash).toBe('#/table?hide=bedrock&hide=tensorx');
+    expect(parseHash(hash)).toEqual({view: 'table', hiddenProviders: ['bedrock', 'tensorx']});
+    expect(parseHash('#/table?hide=lorem&hide=tensorx')).toEqual({view: 'table', hiddenProviders: ['tensorx']});
   });
 });

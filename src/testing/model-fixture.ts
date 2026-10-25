@@ -4,7 +4,7 @@ export function testModel(overrides: Partial<AiModel> = {}): AiModel {
   return {
     id: 'lorem-1', publicName: 'Lorem 1', modelName: 'lorem-1', inputCosts: 1, outputCosts: 2, cacheCosts: null,
     contextWindow: 200_000, maxInputTokens: 200_000, maxOutputTokens: 64_000, costsToRun: 10, localModel: false,
-    minVramRequirement: 0, overallIntelligence: 40,
+    provider: 'bedrock', minVramRequirement: 0, overallIntelligence: 40,
     releaseDate: '2026-05-28', cutoffDate: null, reasoning: true, inputModalities: ['text'], outputModalities: ['text'],
     totalTokens: 1, totalSpend: 0, totalRequests: 0, tokensPerRun: 100,
     inputTokensPerRun: 90, outputTokensPerRun: 10, cacheHitRate: null, tokensPerRunEstimated: false,

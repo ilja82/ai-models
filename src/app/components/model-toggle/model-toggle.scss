@@ -127,6 +127,30 @@
     }
   }
 
+  .providers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.9rem;
+    margin-bottom: 0.6rem;
+    padding: 0 0.15rem;
+  }
+
+  .provider {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+
+    input {
+      cursor: pointer;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+  }
+
   .model-list {
     list-style: none;
     margin: 0;

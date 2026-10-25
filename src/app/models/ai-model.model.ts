@@ -16,6 +16,11 @@ export const MODALITY_ICONS: Record<Modality, string> = {
   text: '🔤', image: '🖼️', audio: '🔊', video: '🎬', pdf: '📄', embedding: '🔢', rerank: '🔃',
 };
 
+export const PROVIDERS = ['bedrock', 'tensorx'] as const;
+export type Provider = typeof PROVIDERS[number];
+
+export const PROVIDER_LABELS: Record<Provider, string> = {bedrock: 'AWS Bedrock', tensorx: 'TensorX'};
+
 export interface AiModel {
   id: string;
   publicName: string;
@@ -33,6 +38,8 @@ export interface AiModel {
   /** USD for one Intelligence Index run, or null without token counts. */
   costsToRun: number | null;
   localModel: boolean;
+  /** The provider that serves the API model, or null for a local model. */
+  provider: Provider | null;
   minVramRequirement: number;
   /** Intelligence Index score, or null for a model without benchmark (embedding, speech, rerank). */
   overallIntelligence: number | null;

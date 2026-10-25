@@ -56,3 +56,25 @@ describe('ModelToggleComponent modality chips', () => {
     expect(state.inputModalities()).toEqual([]);
   });
 });
+
+describe('ModelToggleComponent providers', () => {
+  afterEach(() => localStorage.clear());
+
+  it('hides the models of an unchecked provider', async () => {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([testModel({id: 'aws', provider: 'bedrock'}), testModel({id: 'tx', provider: 'tensorx'})]);
+    state.hiddenProviders.set([]);
+    const fixture = TestBed.createComponent(ModelToggleComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const box = (label: string) => [...el.querySelectorAll<HTMLLabelElement>('.provider')]
+      .find(l => l.textContent!.includes(label))!.querySelector('input')!;
+    expect(box('AWS Bedrock').checked).toBe(true);
+
+    box('TensorX').click();
+    await fixture.whenStable();
+    expect(state.hiddenProviders()).toEqual(['tensorx']);
+    expect(box('TensorX').checked).toBe(false);
+    expect(el.querySelectorAll('.model-item').length).toBe(1);
+  });
+});

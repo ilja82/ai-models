@@ -1,5 +1,14 @@
 import {computed, effect, Injectable, signal} from '@angular/core';
-import {AiModel, hasModalities, INPUT_MODALITIES, InputModality, OUTPUT_MODALITIES, OutputModality} from '../models/ai-model.model';
+import {
+  AiModel,
+  hasModalities,
+  INPUT_MODALITIES,
+  InputModality,
+  OUTPUT_MODALITIES,
+  OutputModality,
+  Provider,
+  PROVIDERS,
+} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
@@ -19,9 +28,10 @@ export class AppState {
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showOnlyPareto = signal(this.loadBool('showOnlyPareto', false));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
+  readonly hiddenProviders = signal<Provider[]>(this.loadList('hiddenProviders', PROVIDERS));
   readonly showEfforts = signal(this.loadBool('showEfforts', true));
-  readonly inputModalities = signal<InputModality[]>(this.loadModalities('inputModalities', INPUT_MODALITIES));
-  readonly outputModalities = signal<OutputModality[]>(this.loadModalities('outputModalities', OUTPUT_MODALITIES));
+  readonly inputModalities = signal<InputModality[]>(this.loadList('inputModalities', INPUT_MODALITIES));
+  readonly outputModalities = signal<OutputModality[]>(this.loadList('outputModalities', OUTPUT_MODALITIES));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
   readonly logScale3d = signal(this.loadBool('logScale3d', SCATTER3D_DEFAULTS.log));
 
@@ -60,6 +70,11 @@ export class AppState {
       const v = this.showDeprecated();
       if (this.hydrating) return;
       localStorage.setItem(KEY('showDeprecated'), String(v));
+    });
+    effect(() => {
+      const v = this.hiddenProviders();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('hiddenProviders'), JSON.stringify(v));
     });
     effect(() => {
       const v = this.showEfforts();
@@ -134,6 +149,7 @@ export class AppState {
         showAPI: this.showAPI(),
         showLocal: this.showLocal(),
         showDeprecated: this.showDeprecated(),
+        hiddenProviders: this.hiddenProviders(),
         showEfforts: this.showEfforts(),
         logScaleX: this.logScaleX(),
         logScale3d: this.logScale3d(),
@@ -176,6 +192,7 @@ export class AppState {
     this.showAPI.set(parsed.showAPI ?? true);
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
+    this.hiddenProviders.set(parsed.hiddenProviders ?? []);
     this.showEfforts.set(parsed.showEfforts ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? SCATTER3D_DEFAULTS.log);
@@ -198,7 +215,7 @@ export class AppState {
     return (AXIS_FIELD_KEYS as readonly string[]).includes(v ?? '') ? v as AxisField : fallback;
   }
 
-  private loadModalities<T extends string>(key: string, known: readonly T[]): T[] {
+  private loadList<T extends string>(key: string, known: readonly T[]): T[] {
     try {
       const stored = JSON.parse(localStorage.getItem(KEY(key)) ?? '[]') as unknown;
       return Array.isArray(stored) ? known.filter(m => stored.includes(m)) : [];
@@ -236,8 +253,10 @@ export class AppState {
     const showLocal = this.showLocal();
     const maxVram = this.maxVram();
     const showDeprecated = this.showDeprecated();
+    const hiddenProviders = this.hiddenProviders();
 
     return this.allModels().filter(m => {
+      if (m.provider !== null && hiddenProviders.includes(m.provider)) return false;
       if (!showAPI && !m.localModel) return false;
       if (!showLocal && m.localModel) return false;
       if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) return false;
@@ -278,6 +297,10 @@ export class AppState {
 
   toggleOutputModality(modality: OutputModality): void {
     this.outputModalities.update(list => toggled(OUTPUT_MODALITIES, list, modality));
+  }
+
+  toggleProvider(provider: Provider): void {
+    this.hiddenProviders.update(list => toggled(PROVIDERS, list, provider));
   }
 
   clearModalities(): void {

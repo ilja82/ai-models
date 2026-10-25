@@ -1,7 +1,7 @@
 import {Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AppState} from '../../state/app.state';
-import {AiModel, costPerRequestOf, latencyOf, Modality, MODALITY_ICONS, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, costPerRequestOf, latencyOf, Modality, MODALITY_ICONS, PROVIDER_LABELS, responseTimeOf,} from '../../models/ai-model.model';
 import {formatUsd, modalityNames} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
@@ -226,6 +226,10 @@ export class DataTableComponent {
 
   responseTime(model: AiModel): number | null {
     return responseTimeOf(model);
+  }
+
+  providerLabel(model: AiModel): string {
+    return model.provider ? PROVIDER_LABELS[model.provider] : '—';
   }
 
   icons(list: readonly Modality[]): string {

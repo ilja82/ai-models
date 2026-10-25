@@ -9,6 +9,7 @@ import {
   OUTPUT_MODALITIES,
   PRICE_BLEND,
   priceBlendLabel,
+  PROVIDERS,
   releaseTimeOf,
   responseTimeOf,
   runCostOf,
@@ -145,6 +146,22 @@ describe('modalities of the data entries', () => {
       expect(m.outputModalities.length, m.id).toBeGreaterThan(0);
       expect(m.inputModalities, m.id).toEqual(INPUT_MODALITIES.filter(x => m.inputModalities.includes(x)));
       expect(m.outputModalities, m.id).toEqual(OUTPUT_MODALITIES.filter(x => m.outputModalities.includes(x)));
+    }
+  });
+});
+
+describe('providers of the data entries', () => {
+  it('gives each API entry a provider and no local entry one', () => {
+    for (const m of AI_MODELS) {
+      if (m.localModel) expect(m.provider, m.id).toBeNull();
+      else expect(PROVIDERS, m.id).toContain(m.provider);
+    }
+  });
+
+  it('names the provider of the deprecation text', () => {
+    for (const m of AI_MODELS) {
+      if (m.deprecationInfo.includes('Offered by AWS Bedrock')) expect(m.provider, m.id).toBe('bedrock');
+      if (m.deprecationInfo.includes('Offered by tensorx.ai')) expect(m.provider, m.id).toBe('tensorx');
     }
   });
 });

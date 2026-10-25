@@ -1,4 +1,4 @@
-import {INPUT_MODALITIES, InputModality, OUTPUT_MODALITIES, OutputModality} from '../models/ai-model.model';
+import {INPUT_MODALITIES, InputModality, OUTPUT_MODALITIES, OutputModality, Provider, PROVIDERS} from '../models/ai-model.model';
 import {AXIS_FIELD_KEYS, AxisField, BAR_METRIC_KEYS, BarMetric, PLOT_TYPE_KEYS, PlotType, VIEW_TABS, ViewTab,} from '../models/view-types';
 
 export const SCATTER3D_DEFAULTS: { x: AxisField; y: AxisField; z: AxisField; log: boolean } = {
@@ -15,6 +15,7 @@ export interface UrlState {
   showAPI?: boolean;
   showLocal?: boolean;
   showDeprecated?: boolean;
+  hiddenProviders?: Provider[];
   showEfforts?: boolean;
   logScaleX?: boolean;
   logScale3d?: boolean;
@@ -33,6 +34,7 @@ export interface UrlSnapshot {
   showAPI: boolean;
   showLocal: boolean;
   showDeprecated: boolean;
+  hiddenProviders: readonly Provider[];
   showEfforts: boolean;
   logScaleX: boolean;
   logScale3d: boolean;
@@ -93,6 +95,9 @@ export function parseHash(hash: string): UrlState | null {
   if (deprecated === '1') out.showDeprecated = true;
   else if (deprecated === '0') out.showDeprecated = false;
 
+  const hidden = parseList(params.getAll('hide'), PROVIDERS);
+  if (hidden.length) out.hiddenProviders = hidden;
+
   const efforts = params.get('efforts');
   if (efforts === '1') out.showEfforts = true;
   else if (efforts === '0') out.showEfforts = false;
@@ -108,15 +113,15 @@ export function parseHash(hash: string): UrlState | null {
   if (pareto === '1') out.onlyPareto = true;
   else if (pareto === '0') out.onlyPareto = false;
 
-  const inputs = parseModalities(params.getAll('in'), INPUT_MODALITIES);
+  const inputs = parseList(params.getAll('in'), INPUT_MODALITIES);
   if (inputs.length) out.inputModalities = inputs;
-  const outputs = parseModalities(params.getAll('out'), OUTPUT_MODALITIES);
+  const outputs = parseList(params.getAll('out'), OUTPUT_MODALITIES);
   if (outputs.length) out.outputModalities = outputs;
 
   return out;
 }
 
-function parseModalities<T extends string>(names: string[], known: readonly T[]): T[] {
+function parseList<T extends string>(names: string[], known: readonly T[]): T[] {
   return known.filter(m => names.includes(m));
 }
 
@@ -140,6 +145,7 @@ export function serializeHash(s: UrlSnapshot): string {
   }
 
   if (s.showDeprecated) params.set('deprecated', '1');
+  s.hiddenProviders.forEach(p => params.append('hide', p));
   if (!s.showEfforts) params.set('efforts', '0');
 
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');

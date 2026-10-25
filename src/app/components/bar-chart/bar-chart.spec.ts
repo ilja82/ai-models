@@ -50,3 +50,52 @@ describe('BarChartComponent Pareto only', () => {
     expect(c.chartData().missing.map(m => m.id)).toEqual(['no-speed', 'dominated']);
   });
 });
+
+describe('BarChartComponent effort levels', () => {
+  let state: AppState;
+  let c: BarChartComponent;
+
+  const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
+    effort, overallIntelligence, costsToRun, tokensPerRun: 100, inputTokensPerRun: 90, outputTokensPerRun: 10,
+    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+  });
+
+  beforeEach(() => {
+    localStorage.clear();
+    state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({
+        id: 'lorem', publicName: 'Lorem', overallIntelligence: 60, costsToRun: 20, effort: 'high',
+        efforts: [level('low', 40, 5), level('medium', 60, 10), level('high', 60, 20)],
+      }),
+      testModel({id: 'ipsum', publicName: 'Ipsum', overallIntelligence: 50, costsToRun: 8}),
+    ]);
+    state.disabledModelIds.set(new Set());
+    state.showEfforts.set(true);
+    state.showOnlyPareto.set(false);
+    c = TestBed.createComponent(BarChartComponent).componentInstance;
+  });
+
+  it('adds a bar for each effort level whose value differs', () => {
+    state.barMetric.set('intelligence');
+    expect(c.chartData().labels).toEqual(['Lorem (high)', 'Ipsum', 'Lorem (low)']);
+    state.barMetric.set('costsToRun');
+    expect(c.chartData().labels).toEqual(['Lorem (high)', 'Lorem (med)', 'Ipsum', 'Lorem (low)']);
+    expect(c.legendItems().map(i => i.label)).toContain('Other effort level');
+  });
+
+  it('shows no effort bars for a metric without level values or while the levels are hidden', () => {
+    state.barMetric.set('inputCosts');
+    expect(c.chartData().labels).toEqual(['Lorem', 'Ipsum']);
+    state.barMetric.set('intelligence');
+    state.showEfforts.set(false);
+    expect(c.chartData().labels).toEqual(['Lorem', 'Ipsum']);
+    expect(c.legendItems().map(i => i.label)).not.toContain('Other effort level');
+  });
+
+  it('keeps an effort level of the Pareto set while Pareto only is on', () => {
+    state.barMetric.set('costsToRun');
+    state.showOnlyPareto.set(true);
+    expect(c.chartData().models.map(m => m.id)).toEqual(['lorem@medium', 'ipsum', 'lorem@low']);
+  });
+});
