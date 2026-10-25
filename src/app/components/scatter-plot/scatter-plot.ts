@@ -210,9 +210,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const plotType = this.state.plotType();
     const colors = getPlotColors(this.themeState.theme());
     const useful = this.state.showUsefulModels() ? this.usefulIds() : new Set<string>();
+    const factors = this.state.tokenFactors();
     const curves: EffortCurve[] = [];
     for (const {model: m} of this.plotted()) {
-      const points = effortPoints(m, plotType);
+      const points = effortPoints(m, plotType, factors);
       if (points.length < 2) continue;
       curves.push({
         model: m,
@@ -232,7 +233,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const plotType = this.state.plotType();
     const main = models.flatMap(m => this.plotXY(m, plotType) ?? []);
     if (!this.state.showEfforts()) return main;
-    return main.concat(models.flatMap(m => effortPoints(m, plotType).map(p => ({x: p.x, y: p.y}))));
+    const factors = this.state.tokenFactors();
+    return main.concat(models.flatMap(m => effortPoints(m, plotType, factors).map(p => ({x: p.x, y: p.y}))));
   });
 
   readonly yBounds = computed(() => {
@@ -426,8 +428,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       data: c.points.map(p => ({x: p.px, y: p.y})),
       showLine: true,
       borderColor: c.color,
-      backgroundColor: c.points.map(p => p.useful ? useful : c.color),
+      backgroundColor: c.points.map(p => p.estimated ? 'transparent' : p.useful ? useful : c.color),
       pointBorderColor: c.points.map(p => p.useful ? useful : c.color),
+      pointBorderWidth: c.points.map(p => p.estimated ? 1.5 : 1),
       borderWidth: 1.5,
       borderDash: [4, 3],
       pointRadius: c.points.map(p => p.useful ? 5 : 3),
@@ -473,6 +476,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         break;
       default: // price
         title = `Blended Price (USD per 1M tokens, ${PRICE_BLEND.cache}:${PRICE_BLEND.input}:${PRICE_BLEND.output} cache:input:output)`;
+        if (this.state.showEfforts()) title += ', effort levels scaled by tokens per run, hollow: estimated';
         tickCallback = (v: any) => `$${(+v).toFixed(2)}`;
         axisType = 'linear';
     }
@@ -572,6 +576,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
       responseTime !== null
         ? `★ Response time: ${responseTime.toFixed(1)}s (in: ${l.inputProcessingTime}s, think: ${l.thinkingTime}s, out: ${l.outputTime}s)`
+        : '',
+      this.state.plotType() === 'price' && !point.current
+        ? `★ Price: $${point.x.toFixed(2)} (${point.tokenRatio!.toFixed(2)}x the tokens per run of ${curve.model.effort}`
+        + `${point.estimated ? ', estimated from the effort names' : ''})`
         : '',
       l.costsToRun !== null ? `★ Run cost: $${l.costsToRun.toFixed(2)}` : '',
       l.tokensPerRun !== null ? `Tokens per run: ${l.tokensPerRun}M` : '',

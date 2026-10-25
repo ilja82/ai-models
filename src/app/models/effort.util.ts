@@ -1,5 +1,6 @@
 import {AiModel, blendedPriceOf, EffortLevel, responseTimeOf} from './ai-model.model';
 import {PlotType} from './view-types';
+import {estimatedTokenRatio, NO_TOKEN_FACTORS, TokenFactors} from './token-factors.util';
 
 export interface EffortPoint {
   effort: string;
@@ -7,6 +8,15 @@ export interface EffortPoint {
   y: number;
   current: boolean;
   level: EffortLevel;
+  /** Tokens per run relative to the level of the model values, on the price plot only. */
+  tokenRatio: number | null;
+  estimated: boolean;
+}
+
+export interface EffortPrice {
+  price: number;
+  tokenRatio: number;
+  estimated: boolean;
 }
 
 const SHORT_LABELS: Record<string, string> = {
@@ -24,7 +34,27 @@ export function effortResponseTime(level: EffortLevel): number | null {
   return responseTimeOf(level);
 }
 
-function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType): { x: number | null; y: number | null } {
+/**
+ * The blended price of the model, scaled by the tokens per run of the level relative to the tokens per run of the model.
+ * Without both token counts, the ratio is estimated from the token factors of the two effort names.
+ * Returns the blended price for the level of the model values, and null if no ratio is known.
+ */
+export function effortPrice(model: AiModel, level: EffortLevel, factors: TokenFactors = NO_TOKEN_FACTORS): EffortPrice | null {
+  const price = blendedPriceOf(model);
+  if (level.effort === model.effort) return {price, tokenRatio: 1, estimated: false};
+  if (level.tokensPerRun !== null && model.tokensPerRun !== null && model.tokensPerRun > 0) {
+    const tokenRatio = level.tokensPerRun / model.tokensPerRun;
+    return {price: price * tokenRatio, tokenRatio, estimated: false};
+  }
+  const tokenRatio = model.effort === null ? null : estimatedTokenRatio(factors, model.effort, level.effort);
+  return tokenRatio === null ? null : {price: price * tokenRatio, tokenRatio, estimated: true};
+}
+
+function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType, factors: TokenFactors): {
+  x: number | null;
+  y: number | null;
+  price?: EffortPrice
+} {
   const intel = level.overallIntelligence;
   switch (plotType) {
     case 'release':
@@ -37,18 +67,23 @@ function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType): { x: 
       return {x: effortResponseTime(level), y: intel};
     case 'responseVsSpeed':
       return {x: effortResponseTime(level), y: level.tokensPerSecond};
-    default:
-      return {x: blendedPriceOf(model), y: intel};
+    default: {
+      const price = effortPrice(model, level, factors);
+      return price ? {x: price.price, y: intel, price} : {x: null, y: intel};
+    }
   }
 }
 
 /** The effort levels of a model that have a value on both axes of the plot type. */
-export function effortPoints(model: AiModel, plotType: PlotType): EffortPoint[] {
+export function effortPoints(model: AiModel, plotType: PlotType, factors: TokenFactors = NO_TOKEN_FACTORS): EffortPoint[] {
   const points: EffortPoint[] = [];
   for (const level of model.efforts) {
-    const {x, y} = effortXY(model, level, plotType);
+    const {x, y, price} = effortXY(model, level, plotType, factors);
     if (x === null || y === null) continue;
-    points.push({effort: level.effort, x, y, current: level.effort === model.effort, level});
+    points.push({
+      effort: level.effort, x, y, current: level.effort === model.effort, level,
+      tokenRatio: price?.tokenRatio ?? null, estimated: price?.estimated ?? false,
+    });
   }
   return points;
 }

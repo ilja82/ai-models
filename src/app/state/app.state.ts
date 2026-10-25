@@ -3,7 +3,8 @@ import {AiModel, blendedPriceOf} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, serializeHash} from './url-sync';
-import {otherEffortVariants} from '../models/effort.util';
+import {effortPrice, effortVariantId, otherEffortVariants} from '../models/effort.util';
+import {fitTokenFactors} from '../models/token-factors.util';
 
 const KEY = (k: string) => `ai-models.${k}`;
 
@@ -252,8 +253,21 @@ export class AppState {
   /** Pareto set on the run cost. Effort levels have the id `<model id>@<effort>`. */
   readonly usefulModelIds = computed(() => paretoIds(this.paretoCandidates(), m => m.costsToRun));
 
-  /** Pareto set on the blended price, for the price plot. */
-  readonly usefulPriceModelIds = computed(() => paretoIds(this.paretoCandidates(), blendedPriceOf));
+  /** Token factors of the effort names, fitted over all models, for the estimated effort prices. */
+  readonly tokenFactors = computed(() => fitTokenFactors(this.allModels()));
+
+  /** Pareto set on the blended price, for the price plot. An effort level has the price of `effortPrice`. */
+  readonly usefulPriceModelIds = computed(() => {
+    const factors = this.tokenFactors();
+    const prices = new Map<string, number | null>();
+    for (const m of this.filteredModels()) {
+      prices.set(m.id, blendedPriceOf(m));
+      for (const l of m.efforts) {
+        if (l.effort !== m.effort) prices.set(effortVariantId(m.id, l.effort), effortPrice(m, l, factors)?.price ?? null);
+      }
+    }
+    return paretoIds(this.paretoCandidates(), m => prices.get(m.id) ?? null);
+  });
 
   toggleModel(id: string): void {
     this.disabledModelIds.update(set => {
