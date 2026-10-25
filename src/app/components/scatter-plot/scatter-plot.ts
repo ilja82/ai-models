@@ -30,7 +30,16 @@ Chart.register(ScatterController, PointElement, LineElement, LinearScale, Logari
 interface EffortCurve {
   model: AiModel;
   color: string;
-  points: (EffortPoint & { px: number; py: number; label: string; useful: boolean; axisBest: boolean; balanced: boolean })[];
+  points: (EffortPoint & {
+    px: number;
+    py: number;
+    label: string;
+    useful: boolean;
+    axisBest: boolean;
+    balanced: boolean;
+    labelRole: MarkerRole;
+    labelRadius: number;
+  })[];
 }
 
 const LABEL_FONT = '13px system-ui, sans-serif';
@@ -435,24 +444,35 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const colors = getPlotColors(this.themeState.theme());
     const useful = this.usefulIds();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
-    const shownIds = new Set(this.plotted().map(p => p.model.id));
+    const plotData = this.plotData();
+    const modelPoint = new Map(this.plotted().map((p, i) => [p.model.id, plotData[i]]));
     return this.plottedEffortPoints().map(({model: m, points}) => ({
       model: m,
       color: m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api,
       points: points.map(p => {
         const id = effortVariantId(m.id, p.effort);
-        return {
-          ...p,
-          px: this.transformX(p.x, plotType),
-          py: this.transformY(p.y, plotType),
-          label: shownIds.has(m.id) ? shortEffortLabel(p.effort) : `${m.publicName} ${shortEffortLabel(p.effort)}`,
+        const role = {
           useful: !p.current && useful.has(id),
           axisBest: !p.current && axisBestIds.has(id),
           balanced: !p.current && balancedId === id,
         };
+        return {
+          ...p,
+          ...role,
+          px: this.transformX(p.x, plotType),
+          py: this.transformY(p.y, plotType),
+          label: modelPoint.has(m.id) ? shortEffortLabel(p.effort) : `${m.publicName} ${shortEffortLabel(p.effort)}`,
+          ...this.effortLabelPlace(role, p.current ? modelPoint.get(m.id) : undefined),
+        };
       }),
     }));
   });
+
+  private effortLabelPlace(role: MarkerRole, modelPoint?: { isUseful: boolean; axisBest: boolean; balanced: boolean; radius: number }) {
+    if (!modelPoint) return {labelRole: role, labelRadius: effortPointRadius(role)};
+    const {isUseful: useful, axisBest, balanced, radius} = modelPoint;
+    return {labelRole: {useful, axisBest, balanced}, labelRadius: radius};
+  }
 
   /** The raw values of the filtered model and effort points before the Pareto filter; the axes fit them. */
   private readonly shownAxisData = computed(() => {
@@ -555,7 +575,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return markerColor;
   }
 
-  effortLabelColor(curve: EffortCurve, p: EffortCurve['points'][number]): string {
+  effortLabelColor(curve: EffortCurve, p: MarkerRole): string {
     const colors = getPlotColors(this.themeState.theme());
     return p.balanced ? colors.balanced : p.axisBest ? colors.axisBestLabel : p.useful ? colors.usefulLabel : curve.color;
   }
@@ -676,11 +696,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         ctx.textBaseline = 'middle';
         for (const curve of this.effortCurves()) {
           for (const p of curve.points) {
-            // The current level sits under the model point, which has its own label.
-            if (p.current) continue;
-            const color = this.effortLabelColor(curve, p);
-            ctx.font = effortLabelFont(p);
-            const offset = effortLabelOffset(effortPointRadius(p));
+            const color = this.effortLabelColor(curve, p.labelRole);
+            ctx.font = effortLabelFont(p.labelRole);
+            const offset = effortLabelOffset(p.labelRadius);
             const x = xAxis.getPixelForValue(p.px) + offset.dx;
             const y = yAxis.getPixelForValue(p.py) + offset.dy;
             ctx.fillStyle = this.labelColorAt(chart, color, x, y);

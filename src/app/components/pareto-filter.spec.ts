@@ -106,7 +106,7 @@ describe('show only Pareto best', () => {
     const names = c.traces().flatMap((t: any) => t.type === 'scatter3d' && t.mode === 'markers+text' ? t.text : []);
     expect(names).toEqual(['Eve']);
     const effortTexts = c.traces().flatMap((t: any) => t.mode === 'lines+markers+text' ? [t.text] : []);
-    expect(effortTexts).toEqual([[shortEffortLabel('low'), ''], [`Foo ${shortEffortLabel('low')}`]]);
+    expect(effortTexts).toEqual([[shortEffortLabel('low'), shortEffortLabel('high')], [`Foo ${shortEffortLabel('low')}`]]);
   });
 });
 

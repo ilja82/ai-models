@@ -8,7 +8,7 @@ import {bestBalancedId} from '../../models/balanced.util';
 import {AxisField} from '../../models/view-types';
 import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
-import {effortSeries, shortEffortLabel} from '../../models/effort.util';
+import {effortSeries, effortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {Rect, Shift, spreadLabels} from '../../models/label-layout.util';
 import {percentile} from '../../models/median.util';
 
@@ -412,12 +412,16 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const effortLabels = this.shownEffortCurves().flatMap(({model, points}) => {
       const lineColor = model.deprecated ? colors.deprecated : model.localModel ? colors.local : colors.api;
       const plainColor = darken(lineColor, colors.effortLabelShade3d);
-      return points.filter(p => p !== model).map(p => {
-        const rank = this.levelRank(p, useful, axisBestIds, balancedId);
+      return points.map(p => {
+        const current = p === model;
+        const group = this.groupOf(model, useful, axisBestIds, balancedId);
+        const rank = current ? GROUP_RANK[group] : this.levelRank(p, useful, axisBestIds, balancedId);
         const effort = shortEffortLabel(p.effort!);
         return {
-          id: p.id, point: p, text: shownIds.has(model.id) ? effort : `${model.publicName} ${effort}`,
-          marker: LEVEL_MARKER_SIZE[rank], ...style(p, rank, plainColor), side: 'right' as const,
+          id: current ? effortVariantId(model.id, p.effort!) : p.id, point: p,
+          text: shownIds.has(model.id) ? effort : `${model.publicName} ${effort}`,
+          marker: current ? MODEL_MARKER_SIZE[group] : LEVEL_MARKER_SIZE[rank],
+          ...style(p, rank, plainColor), side: 'right' as const,
         };
       });
     });
@@ -505,8 +509,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         name: `${model.publicName} effort levels`,
         showlegend: false,
         ...coords(points),
-        text: points.map(p => p === model ? ''
-          : shownIds.has(model.id) ? shortEffortLabel(p.effort!) : `${model.publicName} ${shortEffortLabel(p.effort!)}`),
+        text: points.map(p => shownIds.has(model.id) ? shortEffortLabel(p.effort!) : `${model.publicName} ${shortEffortLabel(p.effort!)}`),
         textposition: 'middle right',
         textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
         hovertext: points.map(p => buildModelTooltipLines(p).join('<br>')),
