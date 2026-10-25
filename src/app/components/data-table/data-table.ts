@@ -242,6 +242,11 @@ export class DataTableComponent {
     return formatUsd(value);
   }
 
+  formatTokens(value: number | null): string {
+    if (value === null) return '—';
+    return value < 1000 ? String(value) : `${(value / 1000).toFixed(0)}K`;
+  }
+
   formatTime(value: number | null): string {
     if (value === null || value <= 0) return '—';
     return `${value.toFixed(1)}s`;

@@ -71,16 +71,16 @@
             </td>
             <td class="num hist" [style]="cellStyle(model, 'costPerRequest')">{{ formatCost(costPerRequest(model)) }}</td>
             <td class="center">{{ model.usesCache ? '✅' : '—' }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'contextWindow')">{{ (model.contextWindow / 1000).toFixed(0) }}K</td>
-            <td class="num hist" [style]="cellStyle(model, 'maxInputTokens')">{{ (model.maxInputTokens / 1000).toFixed(0) }}K</td>
-            <td class="num hist" [style]="cellStyle(model, 'maxOutputTokens')">{{ (model.maxOutputTokens / 1000).toFixed(0) }}K</td>
+            <td class="num hist" [style]="cellStyle(model, 'contextWindow')">{{ formatTokens(model.contextWindow) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'maxInputTokens')">{{ formatTokens(model.maxInputTokens) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'maxOutputTokens')">{{ formatTokens(model.maxOutputTokens) }}</td>
             <td class="center">{{ model.localModel ? 'Local' : 'API' }}</td>
             <td class="num hist"
                 [style]="cellStyle(model, 'minVramRequirement')">{{ model.minVramRequirement > 0 ? model.minVramRequirement + ' GB' : '—' }}
             </td>
-            <td class="center">{{ model.releaseDate }}</td>
+            <td class="center">{{ model.releaseDate ?? '—' }}</td>
             <td class="center">{{ model.cutoffDate ?? '—' }}</td>
-            <td class="num intel hist" [style]="cellStyle(model, 'overallIntelligence')">{{ model.overallIntelligence }}</td>
+            <td class="num intel hist" [style]="cellStyle(model, 'overallIntelligence')">{{ model.overallIntelligence ?? '—' }}</td>
             <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
             <td class="modalities" [title]="modalitiesTitle(model)" [attr.aria-label]="modalitiesTitle(model)">
               <span aria-hidden="true">{{ icons(model.inputModalities) }} → {{ icons(model.outputModalities) }}</span>

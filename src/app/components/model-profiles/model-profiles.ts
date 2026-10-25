@@ -5,7 +5,7 @@ import {ModelBadgesService} from '../../services/model-badges.service';
 import {ProfileEntry} from '../../models/profile.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {BalancedAxis, bestBalancedId} from '../../models/balanced.util';
-import {MODALITY_ICONS, MODALITY_LABELS} from '../../models/ai-model.model';
+import {byIntelligenceDesc, MODALITY_ICONS, MODALITY_LABELS} from '../../models/ai-model.model';
 
 @Component({
   selector: 'app-model-profiles',
@@ -24,10 +24,10 @@ export class ModelProfilesComponent {
 
   /** The "best balanced" model or effort level id: closest-to-ideal in (cost ↓, intelligence ↑). */
   readonly balancedIds = computed(() => {
-    const models = this.state.paretoCandidates().filter(m => m.costsToRun !== null);
+    const models = this.state.paretoCandidates().filter(m => m.costsToRun !== null && m.overallIntelligence !== null);
     const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun!, higherIsBetter: false};
     return {
-      overall: bestBalancedId(models, [cost, {get: m => m.overallIntelligence, higherIsBetter: true}]),
+      overall: bestBalancedId(models, [cost, {get: m => m.overallIntelligence!, higherIsBetter: true}]),
     };
   });
 
@@ -40,7 +40,7 @@ export class ModelProfilesComponent {
     });
     const sorted = [...display].sort((a, b) => {
       if (a.deprecated !== b.deprecated) return a.deprecated ? 1 : -1;
-      const intelDiff = b.overallIntelligence - a.overallIntelligence;
+      const intelDiff = byIntelligenceDesc(a, b);
       if (intelDiff !== 0) return intelDiff;
       return (b.releaseDate || '').localeCompare(a.releaseDate || '');
     });

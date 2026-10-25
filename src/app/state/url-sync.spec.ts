@@ -78,3 +78,11 @@ describe('url-sync modalities', () => {
     expect(parseHash('#/table?in=embedding')).toEqual({view: 'table'});
   });
 });
+
+describe('url-sync PDF and rerank', () => {
+  it('round-trips PDF input and rerank output', () => {
+    const hash = serializeHash({...DEFAULTS, view: 'table', inputModalities: ['pdf'], outputModalities: ['rerank']});
+    expect(hash).toBe('#/table?in=pdf&out=rerank');
+    expect(parseHash(hash)).toEqual({view: 'table', inputModalities: ['pdf'], outputModalities: ['rerank']});
+  });
+});

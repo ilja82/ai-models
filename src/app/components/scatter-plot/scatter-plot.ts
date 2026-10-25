@@ -15,7 +15,7 @@ import {
 } from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, blendedPriceOf, priceBlendLabel, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, blendedPriceOf, priceBlendLabel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines, formatUsd} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
@@ -105,7 +105,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     switch (plotType) {
       case 'release':
-        return {x: new Date(m.releaseDate).getTime(), y: intel};
+        return {x: releaseTimeOf(m), y: intel};
       case 'context':
         return {x: m.contextWindow, y: intel};
       case 'speed':

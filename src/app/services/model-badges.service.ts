@@ -36,7 +36,8 @@ interface BestSets {
 }
 
 interface ModelMetrics {
-  intel: number;
+  /** null for a model without benchmark; no intelligence badge applies then. */
+  intel: number | null;
   speed: number;
   lat: number;
   ctx: number;
@@ -74,23 +75,23 @@ function metricsFor(model: AiModel): ModelMetrics {
     intel,
     speed: model.tokensPerSecond ?? 0,
     lat: latency(model),
-    ctx: model.contextWindow,
+    ctx: model.contextWindow ?? 0,
     cost,
-    value: cost > 0 ? intel / cost : 0,
+    value: cost > 0 && intel !== null ? intel / cost : 0,
     months: monthsAgo(model.releaseDate),
     cutoffMonths: monthsAgo(model.cutoffDate),
   };
 }
 
 function buildThresholds(baseline: AiModel[]): Thresholds {
-  const intel = baseline.map(m => m.overallIntelligence);
+  const intel = baseline.map(m => m.overallIntelligence).filter(v => v !== null);
   const speed = baseline.map(m => m.tokensPerSecond ?? 0).filter(v => v > 0);
   const latencies = baseline.map(latency).filter(v => v > 0);
-  const contexts = baseline.map(m => m.contextWindow).filter(v => v > 0);
+  const contexts = baseline.map(m => m.contextWindow ?? 0).filter(v => v > 0);
   const costs = baseline.map(m => m.costsToRun ?? 0).filter(v => v > 0);
   const values = baseline
-    .filter(m => (m.costsToRun ?? 0) > 0)
-    .map(m => m.overallIntelligence / m.costsToRun!);
+    .filter(m => (m.costsToRun ?? 0) > 0 && m.overallIntelligence !== null)
+    .map(m => m.overallIntelligence! / m.costsToRun!);
   const ages = baseline.map(m => monthsAgo(m.releaseDate)).filter(v => Number.isFinite(v));
 
   return {
@@ -113,8 +114,8 @@ function buildThresholds(baseline: AiModel[]): Thresholds {
 }
 
 function buildBestSets(baseline: AiModel[]): BestSets {
-  const ranked = (key: (m: AiModel) => number): { top: Set<string>; best: Set<string> } => {
-    const sorted = [...baseline].sort((a, b) => key(b) - key(a));
+  const ranked = (key: (m: AiModel) => number | null): { top: Set<string>; best: Set<string> } => {
+    const sorted = baseline.filter(m => key(m) !== null).sort((a, b) => key(b)! - key(a)!);
     const ids = sorted.slice(0, 3).map(m => m.id);
     return {top: new Set(ids), best: new Set(ids.slice(0, 1))};
   };
@@ -162,7 +163,7 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
       },
     },
     {
-      when: m.intel >= t.intelTop && !topBest,
+      when: m.intel !== null && m.intel >= t.intelTop && !topBest,
       badge: {
         id: 'top-intel',
         icon: '🧠',
@@ -248,7 +249,7 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
 function weaknessRules(model: AiModel, m: ModelMetrics, t: Thresholds): BadgeRule[] {
   return [
     {
-      when: Number.isFinite(m.months) && m.months >= t.oldestMonths && m.intel < t.intelTop,
+      when: Number.isFinite(m.months) && m.months >= t.oldestMonths && (m.intel === null || m.intel < t.intelTop),
       badge: {
         id: 'oldest',
         icon: '📅',
@@ -293,7 +294,7 @@ function weaknessRules(model: AiModel, m: ModelMetrics, t: Thresholds): BadgeRul
       },
     },
     {
-      when: m.intel <= t.intelBottom,
+      when: m.intel !== null && m.intel <= t.intelBottom,
       badge: {
         id: 'weak-intel',
         icon: '📊',
@@ -371,9 +372,10 @@ function computeBadges(model: AiModel, t: Thresholds, best: BestSets, balancedId
   ];
 }
 
-function computeHeadline(badges: Badge[]): string {
+function computeHeadline(badges: Badge[], model: AiModel): string {
   const ids = new Set(badges.map(b => b.id));
   if (ids.has('deprecated')) return 'Deprecated';
+  if (model.overallIntelligence === null) return 'No benchmark';
   const tier =
     ids.has('best-overall') || ids.has('top-overall') || ids.has('top-intel')
       ? 'Flagship'
@@ -406,7 +408,7 @@ export class ModelBadgesService {
       const badges = computeBadges(model, thresholds, best, balancedIds);
       return {
         model,
-        headline: computeHeadline(badges),
+        headline: computeHeadline(badges, model),
         badges,
       };
     });

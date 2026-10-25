@@ -12,6 +12,7 @@ describe('ModelToggleComponent modality chips', () => {
       testModel({id: 'text'}),
       testModel({id: 'vision', inputModalities: ['text', 'image']}),
       testModel({id: 'omni', inputModalities: ['text', 'image', 'audio', 'video']}),
+      testModel({id: 'doc', inputModalities: ['text', 'pdf'], overallIntelligence: null}),
     ]);
     state.clearModalities();
     const fixture = TestBed.createComponent(ModelToggleComponent);
@@ -27,6 +28,7 @@ describe('ModelToggleComponent modality chips', () => {
     expect(count(component.inputChips(), 'image')).toBe(2);
     expect(count(component.inputChips(), 'audio')).toBe(1);
     expect(count(component.outputChips(), 'embedding')).toBe(0);
+    expect(count(component.inputChips(), 'pdf')).toBe(1);
     state.toggleInputModality('image');
     expect(count(component.inputChips(), 'image')).toBe(2);
     expect(count(component.inputChips(), 'video')).toBe(1);
@@ -47,6 +49,7 @@ describe('ModelToggleComponent modality chips', () => {
     expect(state.inputModalities()).toEqual(['image']);
     expect(chip('Image').getAttribute('aria-pressed')).toBe('true');
     expect(el.querySelectorAll('.model-item').length).toBe(2);
+    expect(chip('PDF').disabled).toBe(true);
 
     el.querySelector<HTMLButtonElement>('.clear')!.click();
     await fixture.whenStable();

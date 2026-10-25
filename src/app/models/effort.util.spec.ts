@@ -12,7 +12,7 @@ import {
 import {testModel} from '../../testing/model-fixture';
 import {fitTokenFactors} from './token-factors.util';
 
-const PRICE = blendedPriceOf(testModel());
+const PRICE = blendedPriceOf(testModel())!;
 
 function level(effort: string, overrides: Partial<EffortLevel> = {}): EffortLevel {
   return {

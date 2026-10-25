@@ -92,11 +92,11 @@ export class BarChartComponent implements OnInit, OnDestroy {
       case 'outputCosts':
         return m.outputCosts;
       case 'contextWindow':
-        return m.contextWindow / 1000;
+        return m.contextWindow === null ? null : m.contextWindow / 1000;
       case 'maxInputTokens':
-        return m.maxInputTokens / 1000;
+        return m.maxInputTokens === null ? null : m.maxInputTokens / 1000;
       case 'maxOutputTokens':
-        return m.maxOutputTokens / 1000;
+        return m.maxOutputTokens === null ? null : m.maxOutputTokens / 1000;
       case 'tokensPerSecond':
         return m.tokensPerSecond;
       case 'latency':

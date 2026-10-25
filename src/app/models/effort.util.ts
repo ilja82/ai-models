@@ -1,4 +1,4 @@
-import {AiModel, blendedPriceOf, EffortLevel, responseTimeOf} from './ai-model.model';
+import {AiModel, blendedPriceOf, EffortLevel, releaseTimeOf, responseTimeOf} from './ai-model.model';
 import {PlotType} from './view-types';
 import {estimatedTokenRatio, NO_TOKEN_FACTORS, TokenFactors} from './token-factors.util';
 
@@ -37,10 +37,11 @@ export function effortResponseTime(level: EffortLevel): number | null {
 /**
  * The blended price of the model, scaled by the tokens per run of the level relative to the tokens per run of the model.
  * Without both token counts, the ratio is estimated from the token factors of the two effort names.
- * Returns the blended price for the level of the model values, and null if no ratio is known.
+ * Returns the blended price for the level of the model values, and null if no ratio or no price is known.
  */
 export function effortPrice(model: AiModel, level: EffortLevel, factors: TokenFactors = NO_TOKEN_FACTORS): EffortPrice | null {
   const price = blendedPriceOf(model);
+  if (price === null) return null;
   if (level.effort === model.effort) return {price, tokenRatio: 1, estimated: false};
   if (level.tokensPerRun !== null && model.tokensPerRun !== null && model.tokensPerRun > 0) {
     const tokenRatio = level.tokensPerRun / model.tokensPerRun;
@@ -58,7 +59,7 @@ function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType, factor
   const intel = level.overallIntelligence;
   switch (plotType) {
     case 'release':
-      return {x: new Date(model.releaseDate).getTime(), y: intel};
+      return {x: releaseTimeOf(model), y: intel};
     case 'context':
       return {x: model.contextWindow, y: intel};
     case 'speed':

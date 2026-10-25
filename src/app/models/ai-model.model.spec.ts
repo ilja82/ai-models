@@ -1,12 +1,15 @@
 import {
   blendedPriceOf,
+  byIntelligenceDesc,
   costPerRequestOf,
+  effectiveCutoffDate,
   hasModalities,
   INPUT_MODALITIES,
   latencyOf,
   OUTPUT_MODALITIES,
   PRICE_BLEND,
   priceBlendLabel,
+  releaseTimeOf,
   responseTimeOf,
   runCostOf,
 } from './ai-model.model';
@@ -69,7 +72,7 @@ describe('missing measurements', () => {
     expect(buildModelTooltipLines(testModel())).toContain('Cache: no cache, input price');
     expect(buildModelTooltipLines(testModel({cacheCosts: 0.1}))).toContain('Cache: $0.100/M tokens');
     expect(buildModelTooltipLines(testModel())).toContain(
-      `★ Price: $${blendedPriceOf(testModel()).toFixed(3)}/M tokens (blended by usage: ${priceBlendLabel()})`);
+      `★ Price: $${blendedPriceOf(testModel())!.toFixed(3)}/M tokens (blended by usage: ${priceBlendLabel()})`);
   });
 
   it('shows the run cost, the token split and the cost per request in the tooltip', () => {
@@ -110,13 +113,13 @@ describe('blendedPriceOf', () => {
 
   it('uses the usage blend by default', () => {
     const m = testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3});
-    expect(blendedPriceOf(m)).toBeCloseTo(blendedPriceOf(m, PRICE_BLEND));
+    expect(blendedPriceOf(m)).toBeCloseTo(blendedPriceOf(m, PRICE_BLEND)!);
     expect(priceBlendLabel(BLEND_7_2_1)).toBe('7% cache, 2% input, 1% output');
   });
 
   it('gives a non-reasoning model the same price, because the reasoning weight is 0', () => {
     const m = testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3});
-    expect(blendedPriceOf({...m, reasoning: false})).toBeCloseTo(blendedPriceOf(m));
+    expect(blendedPriceOf({...m, reasoning: false})).toBeCloseTo(blendedPriceOf(m)!);
   });
 });
 
@@ -150,5 +153,50 @@ describe('tooltip modalities', () => {
   it('names the input and output modalities', () => {
     const lines = buildModelTooltipLines(testModel({inputModalities: ['text', 'image'], outputModalities: ['text']}));
     expect(lines).toContain('Modalities: Text, Image → Text');
+  });
+});
+
+describe('models without benchmark or price', () => {
+  const embed = testModel({
+    overallIntelligence: null, inputCosts: 0.1, outputCosts: null, maxOutputTokens: null, contextWindow: null,
+    maxInputTokens: null, releaseDate: null, outputModalities: ['embedding'],
+  });
+
+  it('gives no blended price and no run cost without both prices', () => {
+    expect(blendedPriceOf(embed)).toBeNull();
+    expect(blendedPriceOf({...embed, inputCosts: null, outputCosts: 2})).toBeNull();
+    expect(runCostOf(embed, {inputTokensPerRun: 1, outputTokensPerRun: 1, cacheHitRate: null})).toBeNull();
+  });
+
+  it('sorts models without a score last', () => {
+    const ids = [embed, testModel({id: 'a', overallIntelligence: 10}), testModel({id: 'b', overallIntelligence: 30})]
+      .sort(byIntelligenceDesc).map(m => m.id);
+    expect(ids).toEqual(['b', 'a', 'lorem-1']);
+  });
+
+  it('has no release time and no estimated cutoff without a release date', () => {
+    expect(releaseTimeOf(embed)).toBeNull();
+    expect(effectiveCutoffDate(embed)).toBe('unknown');
+  });
+
+  it('names each missing value in the tooltip', () => {
+    const lines = buildModelTooltipLines(embed);
+    for (const line of ['★ Overall Intelligence: no data', '★ Price: no data', '★ Release: no data', 'Input: $0.100/M tokens',
+      'Output: no data', 'Context: no data', 'Max Out: no data', 'Modalities: Text → Embedding']) {
+      expect(lines).toContain(line);
+    }
+    expect(buildModelTooltipLines({...embed, contextWindow: 512})).toContain('Context: 512 tokens');
+  });
+});
+
+describe('data entries without token output', () => {
+  it('give embedding and rerank models no output limit and no output price', () => {
+    const tokenFree = AI_MODELS.filter(m => m.outputModalities.every(x => x === 'embedding' || x === 'rerank'));
+    expect(tokenFree.length).toBeGreaterThan(0);
+    for (const m of tokenFree) {
+      expect(m.maxOutputTokens, m.id).toBeNull();
+      expect(m.outputCosts, m.id).toBeNull();
+      expect(m.overallIntelligence, m.id).toBeNull();
+    }
   });
 });

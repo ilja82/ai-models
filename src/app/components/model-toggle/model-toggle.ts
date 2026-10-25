@@ -1,6 +1,7 @@
 import {Component, computed, inject} from '@angular/core';
 import {AppState} from '../../state/app.state';
 import {
+  byIntelligenceDesc,
   hasModalities,
   INPUT_MODALITIES,
   InputModality,
@@ -29,11 +30,7 @@ export interface ModalityChip<T extends Modality> {
 export class ModelToggleComponent {
   readonly state = inject(AppState);
 
-  readonly sortedModels = computed(() =>
-    [...this.state.availableModels()].sort(
-      (a, b) => b.overallIntelligence - a.overallIntelligence
-    )
-  );
+  readonly sortedModels = computed(() => [...this.state.availableModels()].sort(byIntelligenceDesc));
 
   readonly inputChips = computed<ModalityChip<InputModality>[]>(() => {
     const inputs = this.state.inputModalities();

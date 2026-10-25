@@ -1,7 +1,7 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
@@ -80,7 +80,7 @@ export const AXIS_DEFS: AxisDef[] = [
   },
   {
     key: 'releaseDate', label: 'Release Date', higherIsBetter: true, logCandidate: false,
-    get: m => new Date(m.releaseDate).getTime(),
+    get: m => releaseTimeOf(m),
     format: v => new Date(v).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})
   },
 ];
