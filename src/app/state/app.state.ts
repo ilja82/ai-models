@@ -36,7 +36,7 @@ export class AppState {
   readonly showAPI = signal(this.loadBool('showAPI', true));
   readonly showLocal = signal(this.loadBool('showLocal', false));
   readonly maxVram = signal<number | null>(this.loadMaxVram());
-  readonly showUsefulModels = signal(this.loadBool('showUsefulModels', true));
+  readonly showOnlyPareto = signal(this.loadBool('showOnlyPareto', false));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
   readonly showEfforts = signal(this.loadBool('showEfforts', true));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
@@ -69,9 +69,9 @@ export class AppState {
       localStorage.setItem(KEY('showLocal'), String(v));
     });
     effect(() => {
-      const v = this.showUsefulModels();
+      const v = this.showOnlyPareto();
       if (this.hydrating) return;
-      localStorage.setItem(KEY('showUsefulModels'), String(v));
+      localStorage.setItem(KEY('showOnlyPareto'), String(v));
     });
     effect(() => {
       const v = this.showDeprecated();
@@ -144,7 +144,7 @@ export class AppState {
         showEfforts: this.showEfforts(),
         logScaleX: this.logScaleX(),
         logScale3d: this.logScale3d(),
-        showUseful: this.showUsefulModels(),
+        onlyPareto: this.showOnlyPareto(),
       });
       if (typeof window === 'undefined') return;
       if (window.location.hash !== hash) {
@@ -184,7 +184,7 @@ export class AppState {
     this.showEfforts.set(parsed.showEfforts ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? false);
-    this.showUsefulModels.set(parsed.showUseful ?? true);
+    this.showOnlyPareto.set(parsed.onlyPareto ?? false);
   }
 
   private loadStr(key: string, fallback: string): string {

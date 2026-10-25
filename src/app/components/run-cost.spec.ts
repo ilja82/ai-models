@@ -37,7 +37,6 @@ describe('run cost with estimated tokens and cost per request', () => {
     state.scatter3dX.set('tokensPerSecond');
     state.scatter3dY.set('costsToRun');
     state.scatter3dZ.set('intelligence');
-    state.showUsefulModels.set(false);
     const symbols = () => c.traces().flatMap((t: any) => t.type === 'scatter3d' && t.mode === 'markers+text'
       ? t.text.map((name: string, i: number) => [name, t.marker.symbol[i]]) : []);
     expect(symbols()).toContainEqual(['Estimated', expect.stringMatching(/-open$/)]);

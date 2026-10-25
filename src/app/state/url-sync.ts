@@ -13,7 +13,7 @@ export interface UrlState {
   showEfforts?: boolean;
   logScaleX?: boolean;
   logScale3d?: boolean;
-  showUseful?: boolean;
+  onlyPareto?: boolean;
 }
 
 export interface UrlSnapshot {
@@ -29,7 +29,7 @@ export interface UrlSnapshot {
   showEfforts: boolean;
   logScaleX: boolean;
   logScale3d: boolean;
-  showUseful: boolean;
+  onlyPareto: boolean;
 }
 
 export function parseHash(hash: string): UrlState | null {
@@ -96,8 +96,8 @@ export function parseHash(hash: string): UrlState | null {
   }
 
   const pareto = params.get('pareto');
-  if (pareto === '1') out.showUseful = true;
-  else if (pareto === '0') out.showUseful = false;
+  if (pareto === '1') out.onlyPareto = true;
+  else if (pareto === '0') out.onlyPareto = false;
 
   return out;
 }
@@ -128,7 +128,7 @@ export function serializeHash(s: UrlSnapshot): string {
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');
   if (s.view === 'scatter3d' && s.logScale3d) params.set('log', '1');
 
-  if (!s.showUseful) params.set('pareto', '0');
+  if (s.onlyPareto) params.set('pareto', '1');
 
   const q = params.toString();
   return q ? `#/${s.view}?${q}` : `#/${s.view}`;

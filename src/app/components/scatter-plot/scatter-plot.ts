@@ -27,7 +27,7 @@ Chart.register(ScatterController, PointElement, LineElement, LinearScale, Logari
 interface EffortCurve {
   model: AiModel;
   color: string;
-  points: (EffortPoint & { px: number; useful: boolean; axisBest: boolean; balanced: boolean })[];
+  points: (EffortPoint & { px: number; label: string; useful: boolean; axisBest: boolean; balanced: boolean })[];
 }
 
 function makeStarImage(color: string, size: number): HTMLImageElement {
@@ -106,8 +106,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return x === null || y === null ? null : {x, y};
   }
 
+  private readonly usefulIds = computed(() =>
+    this.state.plotType() === 'price' ? this.state.usefulPriceModelIds() : this.state.usefulModelIds());
+
   /** The filtered models that have both values of the current plot type, in chart order. */
-  readonly plotted = computed(() => {
+  private readonly plottable = computed(() => {
     const plotType = this.state.plotType();
     return this.state.filteredModels().flatMap(m => {
       const xy = this.plotXY(m, plotType);
@@ -115,27 +118,45 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
+  /** The plottable models, only the Pareto set while the Pareto filter is on. */
+  readonly plotted = computed(() => {
+    if (!this.state.showOnlyPareto()) return this.plottable();
+    const useful = this.usefulIds();
+    return this.plottable().filter(p => useful.has(p.model.id));
+  });
+
   readonly missingModels = computed(() => {
-    const shown = new Set(this.plotted().map(p => p.model.id));
+    const shown = new Set(this.plottable().map(p => p.model.id));
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** The effort points of each plotted model with two or more, while the effort levels are shown. */
-  private readonly plottedEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
+  /** The effort points of each plottable model with two or more, while the effort levels are shown. */
+  private readonly allEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
     if (!this.state.showEfforts()) return [];
     const plotType = this.state.plotType();
     const factors = this.state.tokenFactors();
-    return this.plotted().flatMap(({model}) => {
+    return this.plottable().flatMap(({model}) => {
       const points = effortPoints(model, plotType, factors);
       return points.length < 2 ? [] : [{model, points}];
     });
   });
 
+  /** The effort points, only the Pareto points and only curves with such a level while the Pareto filter is on. */
+  private readonly plottedEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
+    const all = this.allEffortPoints();
+    if (!this.state.showOnlyPareto()) return all;
+    const useful = this.usefulIds();
+    return all.flatMap(({model, points}) => {
+      const shown = points.filter(p => useful.has(p.current ? model.id : effortVariantId(model.id, p.effort)));
+      return shown.some(p => !p.current) ? [{model, points: shown}] : [];
+    });
+  });
+
   readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const active = this.plotted().filter(p => !p.model.deprecated);
+    const active = this.plottable().filter(p => !p.model.deprecated);
     if (active.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const pts = active.map(p => ({id: p.model.id, x: p.x, y: p.y}));
-    const levelPts = this.plottedEffortPoints()
+    const levelPts = this.allEffortPoints()
       .filter(c => !c.model.deprecated)
       .flatMap(c => c.points.filter(p => !p.current).map(p => ({id: effortVariantId(c.model.id, p.effort), x: p.x, y: p.y})));
     const plotDef = this.currentPlotDef();
@@ -179,12 +200,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.isLogX(plotType) && x > 0 ? Math.log2(x) : x;
   }
 
-  private readonly usefulIds = computed(() =>
-    this.state.plotType() === 'price' ? this.state.usefulPriceModelIds() : this.state.usefulModelIds());
-
   readonly plotData = computed(() => {
     const plotted = this.plotted();
-    const showUseful = this.state.showUsefulModels();
     const plotType = this.state.plotType();
     const useful = this.usefulIds();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
@@ -206,7 +223,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       let color = m.localModel ? colors.local : colors.api;
       let pointStyle: string | HTMLImageElement = m.localModel ? 'triangle' : 'circle';
       let radius = 7;
-      const isUseful = showUseful && useful.has(m.id);
+      const isUseful = useful.has(m.id);
       if (isUseful) color = colors.useful;
       if (axisBestIds.has(m.id)) {
         pointStyle = starIcon;
@@ -229,8 +246,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly effortCurves = computed<EffortCurve[]>(() => {
     const plotType = this.state.plotType();
     const colors = getPlotColors(this.themeState.theme());
-    const useful = this.state.showUsefulModels() ? this.usefulIds() : new Set<string>();
+    const useful = this.usefulIds();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
+    const shownIds = new Set(this.plotted().map(p => p.model.id));
     return this.plottedEffortPoints().map(({model: m, points}) => ({
       model: m,
       color: m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api,
@@ -239,6 +257,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         return {
           ...p,
           px: this.transformX(p.x, plotType),
+          label: shownIds.has(m.id) ? shortEffortLabel(p.effort) : `${m.publicName} ${shortEffortLabel(p.effort)}`,
           useful: !p.current && useful.has(id),
           axisBest: !p.current && axisBestIds.has(id),
           balanced: !p.current && balancedId === id,
@@ -432,7 +451,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             // The current level sits under the model point, which has its own label.
             if (p.current) continue;
             ctx.fillStyle = p.balanced ? colors.balanced : p.axisBest ? colors.axisBest : p.useful ? colors.useful : curve.color;
-            ctx.fillText(shortEffortLabel(p.effort), xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.y) + 8);
+            ctx.fillText(p.label, xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.y) + 8);
           }
         }
         ctx.restore();

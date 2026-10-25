@@ -192,6 +192,24 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return useful;
   });
 
+  /** The plotted models, only the Pareto set of the three axes while the Pareto filter is on. */
+  readonly shownModels = computed(() => {
+    if (!this.state.showOnlyPareto()) return this.plotModels();
+    const useful = this.useful3d();
+    return this.plotModels().filter(m => useful.has(m.id));
+  });
+
+  /** The effort curves, only the Pareto levels and only curves with such a level while the Pareto filter is on. */
+  readonly shownEffortCurves = computed<{ model: AiModel; points: AiModel[] }[]>(() => {
+    const curves = this.effortCurves();
+    if (!this.state.showOnlyPareto()) return curves;
+    const useful = this.useful3d();
+    return curves.flatMap(c => {
+      const points = c.points.filter(p => useful.has(p.id));
+      return points.some(p => p !== c.model) ? [{model: c.model, points}] : [];
+    });
+  });
+
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
     const models = this.plotModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
@@ -269,8 +287,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   }
 
   readonly traces = computed(() => {
-    const models = this.plotModels();
-    const showUseful = this.state.showUsefulModels();
+    const models = this.shownModels();
     const useful = this.useful3d();
     const xDef = this.defOf(this.state.scatter3dX());
     const yDef = this.defOf(this.state.scatter3dY());
@@ -294,7 +311,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       if (m.deprecated) groups.deprecated.push(m);
       else if (m.id === balancedId) groups.balanced.push(m);
       else if (axisBestIds.has(m.id)) groups.axisBest.push(m);
-      else if (showUseful && useful.has(m.id)) groups.useful.push(m);
+      else if (useful.has(m.id)) groups.useful.push(m);
       else if (m.localModel) groups.local.push(m);
       else groups.api.push(m);
     }
@@ -359,9 +376,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       );
     }
 
-    const effortTraces = this.effortCurves().map(({model, points}) => {
+    const shownIds = new Set(models.map(m => m.id));
+    const effortTraces = this.shownEffortCurves().map(({model, points}) => {
       const lineColor = model.deprecated ? colors.deprecated : model.localModel ? colors.local : colors.api;
-      const isUseful = (p: AiModel) => p !== model && showUseful && useful.has(p.id);
+      const isUseful = (p: AiModel) => p !== model && useful.has(p.id);
       const isBalanced = (p: AiModel) => p !== model && p.id === balancedId;
       const isAxisBest = (p: AiModel) => p !== model && !isBalanced(p) && axisBestIds.has(p.id);
       return {
@@ -372,7 +390,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         x: points.map(p => this.toPlotVal(xDef.get(p)!, xLog)),
         y: points.map(p => this.toPlotVal(yDef.get(p)!, yLog)),
         z: points.map(p => this.toPlotVal(zDef.get(p)!, zLog)),
-        text: points.map(p => p === model ? '' : shortEffortLabel(p.effort!)),
+        text: points.map(p => p === model ? ''
+          : shownIds.has(model.id) ? shortEffortLabel(p.effort!) : `${model.publicName} ${shortEffortLabel(p.effort!)}`),
         textposition: 'middle right',
         textfont: {size: 9, color: lineColor},
         hovertext: points.map(p => buildModelTooltipLines(p).join('<br>')),

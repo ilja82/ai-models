@@ -8,8 +8,8 @@
       class="search-input"
     />
     <label class="toggle-label">
-      <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)"/>
-      Highlight most relevant models
+      <input type="checkbox" [checked]="state.showOnlyPareto()" (change)="state.showOnlyPareto.update(v => !v)"/>
+      Pareto only
     </label>
     <label class="toggle-label">
       <input type="checkbox" [checked]="showHistogram()" (change)="showHistogram.update(v => !v)"/>

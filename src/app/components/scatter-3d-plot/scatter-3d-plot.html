@@ -30,9 +30,7 @@
     <div class="legend">
       <span class="legend-item"><span class="shape circle api"></span>API</span>
       <span class="legend-item"><span class="shape diamond"></span>Local</span>
-      @if (state.showUsefulModels()) {
-        <span class="legend-item"><span class="shape circle useful"></span>Pareto efficient</span>
-      }
+      <span class="legend-item"><span class="shape circle useful"></span>Pareto efficient</span>
       <span class="legend-item"><span class="shape diamond-open axis-best"></span>Best per axis</span>
       <span class="legend-item"><span class="shape square balanced"></span>Best balanced</span>
       @if (state.showEfforts() && hasEfforts()) {
@@ -52,8 +50,8 @@
         </label>
       }
       <label class="toggle-label">
-        <input type="checkbox" [checked]="state.showUsefulModels()" (change)="state.showUsefulModels.update(v => !v)"/>
-        Highlight Pareto-efficient
+        <input type="checkbox" [checked]="state.showOnlyPareto()" (change)="state.showOnlyPareto.update(v => !v)"/>
+        Pareto only
       </label>
     </div>
   </div>

@@ -112,6 +112,11 @@ export class DataTableComponent {
 
     let models = this.state.filteredModels();
 
+    if (this.state.showOnlyPareto()) {
+      const pareto = this.state.usefulModelIds();
+      models = models.filter(m => pareto.has(m.id));
+    }
+
     if (search) {
       models = models.filter(m =>
         m.publicName.toLowerCase().includes(search) ||
@@ -239,7 +244,7 @@ export class DataTableComponent {
   }
 
   isUseful(id: string): boolean {
-    return this.state.showUsefulModels() && this.state.usefulModelIds().has(id);
+    return this.state.usefulModelIds().has(id);
   }
 
   cellStyle(model: AiModel, col: NumericCol): Record<string, string> | null {
