@@ -1,7 +1,7 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, IntelligenceMetric, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
@@ -17,8 +17,8 @@ interface AxisDef {
   higherIsBetter: boolean;
   /** suggested log scale (cost, context window) */
   logCandidate: boolean;
-  /** value extractor; metric used only when key === 'intelligence'; null = not measured */
-  get: (m: AiModel, metric: IntelligenceMetric) => number | null;
+  /** value extractor; null = not measured */
+  get: (m: AiModel) => number | null;
   /** axis tick formatter */
   format: (v: number) => string;
 }
@@ -53,21 +53,8 @@ const AXIS_DEFS: AxisDef[] = [
     get: m => m.minVramRequirement, format: v => `${v}GB`
   },
   {
-    key: 'intelligence', label: 'Intelligence (current metric)', higherIsBetter: true, logCandidate: false,
-    get: (m, metric) => metric === 'coding' ? m.codingIntelligence : metric === 'agentic' ? m.agenticIntelligence : m.overallIntelligence,
-    format: v => `${v}`
-  },
-  {
-    key: 'overallIntelligence', label: 'Overall Intelligence', higherIsBetter: true, logCandidate: false,
+    key: 'intelligence', label: 'Overall Intelligence', higherIsBetter: true, logCandidate: false,
     get: m => m.overallIntelligence, format: v => `${v}`
-  },
-  {
-    key: 'codingIntelligence', label: 'Coding Intelligence', higherIsBetter: true, logCandidate: false,
-    get: m => m.codingIntelligence, format: v => `${v}`
-  },
-  {
-    key: 'agenticIntelligence', label: 'Agentic Intelligence', higherIsBetter: true, logCandidate: false,
-    get: m => m.agenticIntelligence, format: v => `${v}`
   },
   {
     key: 'tokensPerSecond', label: 'Speed (tok/s)', higherIsBetter: true, logCandidate: false,
@@ -139,9 +126,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   /** The filtered models that have a value on all three axes. */
   readonly plotModels = computed(() => {
-    const metric = this.state.intelligenceMetric();
     const axes = this.axes();
-    return this.state.filteredModels().filter(m => axes.every(a => a.get(m, metric) !== null));
+    return this.state.filteredModels().filter(m => axes.every(a => a.get(m) !== null));
   });
 
   readonly missingModels = computed(() => {
@@ -152,10 +138,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   /** Pareto-useful model IDs for the currently selected 3 axes. */
   readonly useful3d = computed<Set<string>>(() => {
     const models = this.plotModels().filter(m => !m.deprecated);
-    const metric = this.state.intelligenceMetric();
     const axes = this.axes();
 
-    const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m, metric)!)}));
+    const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m)!)}));
     const useful = new Set<string>();
 
     for (const p of points) {
@@ -190,7 +175,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
     const models = this.plotModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
-    const metric = this.state.intelligenceMetric();
     const axes = this.axes();
 
     const axisBestIds = new Set<string>();
@@ -198,7 +182,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       let bestModel: AiModel | null = null;
       let bestVal = a.higherIsBetter ? -Infinity : Infinity;
       for (const m of models) {
-        const v = a.get(m, metric);
+        const v = a.get(m);
         if (v === null || !Number.isFinite(v)) continue;
         if (a.higherIsBetter ? v > bestVal : v < bestVal) {
           bestVal = v;
@@ -210,14 +194,14 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const balancedId = bestBalancedId(
       models,
-      axes.map(a => ({get: (m: AiModel) => a.get(m, metric)!, higherIsBetter: a.higherIsBetter})),
+      axes.map(a => ({get: (m: AiModel) => a.get(m)!, higherIsBetter: a.higherIsBetter})),
     );
     return {axisBestIds, balancedId};
   });
 
-  private computeAxisExtent(models: AiModel[], def: AxisDef, metric: IntelligenceMetric, log: boolean): AxisExtent | null {
+  private computeAxisExtent(models: AiModel[], def: AxisDef, log: boolean): AxisExtent | null {
     if (models.length === 0) return null;
-    const values = models.map(m => def.get(m, metric)).filter((v): v is number => v !== null && Number.isFinite(v));
+    const values = models.map(m => def.get(m)).filter((v): v is number => v !== null && Number.isFinite(v));
     if (values.length === 0) return null;
     let min = Math.min(...values);
     let max = Math.max(...values);
@@ -261,7 +245,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   readonly traces = computed(() => {
     const models = this.plotModels();
-    const metric = this.state.intelligenceMetric();
     const showUseful = this.state.showUsefulModels();
     const useful = this.useful3d();
     const xDef = this.defOf(this.state.scatter3dX());
@@ -295,21 +278,21 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       type: 'scatter3d',
       mode: 'markers+text',
       name,
-      x: items.map(m => this.toPlotVal(xDef.get(m, metric)!, xLog)),
-      y: items.map(m => this.toPlotVal(yDef.get(m, metric)!, yLog)),
-      z: items.map(m => this.toPlotVal(zDef.get(m, metric)!, zLog)),
+      x: items.map(m => this.toPlotVal(xDef.get(m)!, xLog)),
+      y: items.map(m => this.toPlotVal(yDef.get(m)!, yLog)),
+      z: items.map(m => this.toPlotVal(zDef.get(m)!, zLog)),
       text: items.map(m => m.publicName),
       textposition: 'top center',
       textfont: {size: 10, color: '#bbb'},
-      hovertext: items.map(m => buildModelTooltipLines(m, metric).join('<br>')),
+      hovertext: items.map(m => buildModelTooltipLines(m).join('<br>')),
       hoverinfo: 'text',
       marker: {color, size, symbol, line: {color: 'rgba(0,0,0,0.4)', width: 0.5}, opacity: 0.95},
     });
 
     const allModels = this.state.allModels();
-    const xExt = this.computeAxisExtent(allModels, xDef, metric, logScale && xDef.logCandidate);
-    const yExt = this.computeAxisExtent(allModels, yDef, metric, logScale && yDef.logCandidate);
-    const zExt = this.computeAxisExtent(allModels, zDef, metric, logScale && zDef.logCandidate);
+    const xExt = this.computeAxisExtent(allModels, xDef, logScale && xDef.logCandidate);
+    const yExt = this.computeAxisExtent(allModels, yDef, logScale && yDef.logCandidate);
+    const zExt = this.computeAxisExtent(allModels, zDef, logScale && zDef.logCandidate);
 
     const regionTraces: any[] = [];
     if (xExt && yExt && zExt) {
@@ -361,7 +344,6 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const yDef = this.defOf(this.state.scatter3dY());
     const zDef = this.defOf(this.state.scatter3dZ());
     const models = this.state.allModels();
-    const metric = this.state.intelligenceMetric();
 
     const axisCfg = (def: AxisDef): any => {
       const base: any = {
@@ -373,7 +355,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         tickfont: {color: '#888', size: 10},
       };
       if (!this.isLogAxis(def)) {
-        const ext = this.computeAxisExtent(models, def, metric, false);
+        const ext = this.computeAxisExtent(models, def, false);
         if (!ext) {
           base.autorange = def.higherIsBetter ? true : 'reversed';
           return base;
@@ -382,7 +364,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         base.autorange = false;
         return base;
       }
-      const ext = this.computeAxisExtent(models, def, metric, true);
+      const ext = this.computeAxisExtent(models, def, true);
       if (!ext || ext.min <= 0) {
         base.autorange = def.higherIsBetter ? true : 'reversed';
         return base;

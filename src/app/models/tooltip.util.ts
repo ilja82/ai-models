@@ -1,19 +1,13 @@
-import {AiModel, effectiveCutoffDate, IntelligenceMetric, responseTimeOf} from './ai-model.model';
+import {AiModel, effectiveCutoffDate, responseTimeOf} from './ai-model.model';
 
 const MISSING = 'no data';
 
-export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetric): string[] {
-  const intel = metric === 'coding' ? model.codingIntelligence
-    : metric === 'agentic' ? model.agenticIntelligence
-      : model.overallIntelligence;
-  const metricLabel = metric === 'coding' ? 'Coding Intelligence'
-    : metric === 'agentic' ? 'Agentic Intelligence'
-      : 'Overall Intelligence';
+export function buildModelTooltipLines(model: AiModel): string[] {
   const responseTime = responseTimeOf(model);
   return [
     `${model.publicName}`,
     model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
-    `★ ${metricLabel}: ${intel}`,
+    `★ Overall Intelligence: ${model.overallIntelligence}`,
     model.effort ? `★ Effort: ${model.effort}${model.efforts.length > 1 ? ` (${model.efforts.length} levels measured)` : ''}` : '',
     `★ Speed: ${model.tokensPerSecond === null ? MISSING : `${model.tokensPerSecond} tok/s`}`,
     responseTime === null

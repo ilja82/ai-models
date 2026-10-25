@@ -36,8 +36,6 @@
           <th (click)="sort('releaseDate')" class="sortable">Released {{ sortIcon('releaseDate') }}</th>
           <th (click)="sort('cutoffDate')" class="sortable">Cutoff {{ sortIcon('cutoffDate') }}</th>
           <th (click)="sort('overallIntelligence')" class="sortable">Overall {{ sortIcon('overallIntelligence') }}</th>
-          <th (click)="sort('codingIntelligence')" class="sortable">Coding {{ sortIcon('codingIntelligence') }}</th>
-          <th (click)="sort('agenticIntelligence')" class="sortable">Agentic {{ sortIcon('agenticIntelligence') }}</th>
           <th (click)="sort('reasoning')" class="sortable">Reasoning {{ sortIcon('reasoning') }}</th>
           <th (click)="sort('tokensPerSecond')" class="sortable">Tok/s {{ sortIcon('tokensPerSecond') }}</th>
           <th (click)="sort('inputProcessingTime')" class="sortable">Input Time {{ sortIcon('inputProcessingTime') }}</th>
@@ -74,8 +72,6 @@
             <td class="center">{{ model.releaseDate }}</td>
             <td class="center">{{ model.cutoffDate ?? '—' }}</td>
             <td class="num intel hist" [style]="cellStyle(model, 'overallIntelligence')">{{ model.overallIntelligence }}</td>
-            <td class="num intel hist" [style]="cellStyle(model, 'codingIntelligence')">{{ model.codingIntelligence }}</td>
-            <td class="num intel hist" [style]="cellStyle(model, 'agenticIntelligence')">{{ model.agenticIntelligence }}</td>
             <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
             <td class="num hist" [style]="cellStyle(model, 'tokensPerSecond')">{{ formatSpeed(model.tokensPerSecond) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'inputProcessingTime')">{{ formatTime(model.inputProcessingTime) }}</td>

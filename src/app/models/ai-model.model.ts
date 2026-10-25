@@ -11,8 +11,6 @@ export interface AiModel {
   localModel: boolean;
   minVramRequirement: number;
   overallIntelligence: number;
-  codingIntelligence: number;
-  agenticIntelligence: number;
   releaseDate: string;
   cutoffDate: string | null;
   reasoning: boolean;
@@ -51,8 +49,6 @@ export interface ModelEfforts {
   effort: string | null;
   levels: EffortLevelInput[];
 }
-
-export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';
 
 export function computeCostsToRun(totalSpend: number, totalTokens: number, tokensPerRun: number | null): number | null {
   if (tokensPerRun === null) return null;

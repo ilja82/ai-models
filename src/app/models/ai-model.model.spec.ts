@@ -17,9 +17,13 @@ describe('missing measurements', () => {
 
   it('says "no data" in the tooltip', () => {
     const lines = buildModelTooltipLines(
-      testModel({tokensPerSecond: null, outputTime: null, costsToRun: null}), 'overall');
+      testModel({tokensPerSecond: null, outputTime: null, costsToRun: null}));
     expect(lines).toContain('★ Speed: no data');
     expect(lines).toContain('★ Response time: no data');
     expect(lines).toContain('★ Run cost: no data');
+  });
+
+  it('shows the overall intelligence in the tooltip', () => {
+    expect(buildModelTooltipLines(testModel())).toContain('★ Overall Intelligence: 40');
   });
 });

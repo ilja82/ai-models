@@ -12,7 +12,7 @@ export class ModelToggleComponent {
 
   readonly sortedModels = computed(() =>
     [...this.state.availableModels()].sort(
-      (a, b) => this.state.getIntelligence(b) - this.state.getIntelligence(a)
+      (a, b) => b.overallIntelligence - a.overallIntelligence
     )
   );
 }

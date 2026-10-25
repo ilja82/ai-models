@@ -34,4 +34,22 @@ describe('App', () => {
     expect(link?.getAttribute('href')).toBe('https://artificialanalysis.ai/');
     expect(link?.textContent).toContain('Artificial Analysis');
   });
+
+  it('shows no intelligence metric switcher', async () => {
+    TestBed.inject(AppState).activeTab.set('table');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.app-header .group-label')]
+      .map(l => l.textContent?.trim());
+    expect(labels).not.toContain('Intelligence');
+  });
+
+  it('shows only the overall intelligence column in the table', async () => {
+    TestBed.inject(AppState).activeTab.set('table');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const headers = [...(fixture.nativeElement as HTMLElement).querySelectorAll('th')].map(h => h.textContent ?? '');
+    expect(headers.some(h => h.includes('Overall'))).toBe(true);
+    expect(headers.some(h => h.includes('Coding') || h.includes('Agentic'))).toBe(false);
+  });
 });

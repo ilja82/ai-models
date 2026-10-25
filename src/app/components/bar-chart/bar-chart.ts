@@ -81,7 +81,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
   private getTotalValue(m: AiModel, metric: BarMetric): number | null {
     switch (metric) {
       case 'intelligence':
-        return this.state.getIntelligence(m);
+        return m.overallIntelligence;
       case 'costsToRun':
         return m.costsToRun;
       case 'inputCosts':

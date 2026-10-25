@@ -10,21 +10,6 @@
 
   <div class="controls">
     <div class="control-group">
-      <label class="group-label">Intelligence</label>
-      <div class="btn-group">
-        <button
-          [class.active]="state.intelligenceMetric() === 'overall'"
-          (click)="setMetric('overall')">Overall</button>
-        <button
-          [class.active]="state.intelligenceMetric() === 'coding'"
-          (click)="setMetric('coding')">Coding</button>
-        <button
-          [class.active]="state.intelligenceMetric() === 'agentic'"
-          (click)="setMetric('agentic')">Agentic</button>
-      </div>
-    </div>
-
-    <div class="control-group">
       <label class="group-label">Availability</label>
       <div class="btn-group">
         <button

@@ -1,4 +1,3 @@
-import {IntelligenceMetric} from '../models/ai-model.model';
 import {AXIS_FIELD_KEYS, AxisField, BAR_METRIC_KEYS, BarMetric, PLOT_TYPE_KEYS, PlotType, VIEW_TABS, ViewTab,} from '../models/view-types';
 
 export interface UrlState {
@@ -8,7 +7,6 @@ export interface UrlState {
   scatter3dX?: AxisField;
   scatter3dY?: AxisField;
   scatter3dZ?: AxisField;
-  intel?: IntelligenceMetric;
   showAPI?: boolean;
   showLocal?: boolean;
   showDeprecated?: boolean;
@@ -25,7 +23,6 @@ export interface UrlSnapshot {
   scatter3dX: AxisField;
   scatter3dY: AxisField;
   scatter3dZ: AxisField;
-  intel: IntelligenceMetric;
   showAPI: boolean;
   showLocal: boolean;
   showDeprecated: boolean;
@@ -34,8 +31,6 @@ export interface UrlSnapshot {
   logScale3d: boolean;
   showUseful: boolean;
 }
-
-const INTEL_VALUES: readonly IntelligenceMetric[] = ['overall', 'coding', 'agentic'];
 
 export function parseHash(hash: string): UrlState | null {
   if (!hash || hash.length < 2) return null;
@@ -68,11 +63,6 @@ export function parseHash(hash: string): UrlState | null {
     if (x && (AXIS_FIELD_KEYS as readonly string[]).includes(x)) out.scatter3dX = x as AxisField;
     if (y && (AXIS_FIELD_KEYS as readonly string[]).includes(y)) out.scatter3dY = y as AxisField;
     if (z && (AXIS_FIELD_KEYS as readonly string[]).includes(z)) out.scatter3dZ = z as AxisField;
-  }
-
-  const intel = params.get('intel');
-  if (intel && (INTEL_VALUES as readonly string[]).includes(intel)) {
-    out.intel = intel as IntelligenceMetric;
   }
 
   const avail = params.get('avail');
@@ -122,8 +112,6 @@ export function serializeHash(s: UrlSnapshot): string {
     if (s.scatter3dY !== 'costsToRun') params.set('y', s.scatter3dY);
     if (s.scatter3dZ !== 'intelligence') params.set('z', s.scatter3dZ);
   }
-
-  if (s.intel !== 'overall') params.set('intel', s.intel);
 
   // availability defaults: showAPI=true, showLocal=false → omit
   if (!(s.showAPI && !s.showLocal)) {

@@ -1,7 +1,7 @@
-import {Component, computed, effect, inject, signal} from '@angular/core';
+import {Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AppState} from '../../state/app.state';
-import {AiModel, IntelligenceMetric, latencyOf, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, latencyOf, responseTimeOf} from '../../models/ai-model.model';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime';
@@ -11,7 +11,7 @@ type NumericCol =
   | 'inputCosts' | 'outputCosts' | 'costsToRun'
   | 'contextWindow' | 'maxInputTokens' | 'maxOutputTokens'
   | 'minVramRequirement'
-  | 'overallIntelligence' | 'codingIntelligence' | 'agenticIntelligence'
+  | 'overallIntelligence'
   | 'tokensPerSecond'
   | 'inputProcessingTime' | 'thinkingTime' | 'outputTime'
   | 'latency' | 'responseTime';
@@ -66,8 +66,6 @@ const COL_META: Record<NumericCol, ColMeta> = {
   maxOutputTokens: {higherIsBetter: true, log: false, get: m => m.maxOutputTokens, bounds: niceLinearBounds},
   minVramRequirement: {higherIsBetter: false, log: true, get: m => m.minVramRequirement, nullIfZeroOrNeg: true, bounds: decadeBounds},
   overallIntelligence: {higherIsBetter: true, log: false, get: m => m.overallIntelligence, bounds: staticBounds(0, 100)},
-  codingIntelligence: {higherIsBetter: true, log: false, get: m => m.codingIntelligence, bounds: staticBounds(0, 100)},
-  agenticIntelligence: {higherIsBetter: true, log: false, get: m => m.agenticIntelligence, bounds: staticBounds(0, 100)},
   tokensPerSecond: {higherIsBetter: true, log: false, get: m => m.tokensPerSecond, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
   inputProcessingTime: {higherIsBetter: false, log: false, get: m => m.inputProcessingTime, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
   thinkingTime: {higherIsBetter: false, log: false, get: m => m.thinkingTime, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
@@ -88,12 +86,6 @@ const BAR_COLOR_BEST = [120, 220, 130] as const;
 const BAR_ALPHA = 0.32;
 const BAR_MIN_T = 0.06;
 
-const METRIC_TO_SORT_KEY: Record<IntelligenceMetric, SortKey> = {
-  overall: 'overallIntelligence',
-  coding: 'codingIntelligence',
-  agentic: 'agenticIntelligence',
-};
-
 @Component({
   selector: 'app-data-table',
   standalone: true,
@@ -106,18 +98,9 @@ export class DataTableComponent {
 
   readonly searchText = signal('');
   readonly showHistogram = signal(true);
-  readonly sortKey = signal<SortKey | null>(METRIC_TO_SORT_KEY[this.state.intelligenceMetric()]);
+  readonly sortKey = signal<SortKey | null>('overallIntelligence');
   readonly computedSortKey = signal<ComputedSortKey | null>(null);
   readonly sortDir = signal<SortDir>('desc');
-
-  constructor() {
-    effect(() => {
-      const metric = this.state.intelligenceMetric();
-      this.sortKey.set(METRIC_TO_SORT_KEY[metric]);
-      this.computedSortKey.set(null);
-      this.sortDir.set('desc');
-    });
-  }
 
   readonly tableModels = computed(() => {
     const search = this.searchText().toLowerCase();

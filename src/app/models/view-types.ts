@@ -11,7 +11,7 @@ export type PlotType =
 export type AxisField =
   | 'costsToRun' | 'inputCosts' | 'outputCosts'
   | 'contextWindow' | 'maxInputTokens' | 'maxOutputTokens' | 'minVramRequirement'
-  | 'intelligence' | 'overallIntelligence' | 'codingIntelligence' | 'agenticIntelligence'
+  | 'intelligence'
   | 'tokensPerSecond' | 'inputProcessingTime' | 'thinkingTime' | 'outputTime' | 'responseTime'
   | 'releaseDate';
 
@@ -30,7 +30,7 @@ export const PLOT_TYPE_KEYS: readonly PlotType[] = [
 export const AXIS_FIELD_KEYS: readonly AxisField[] = [
   'costsToRun', 'inputCosts', 'outputCosts',
   'contextWindow', 'maxInputTokens', 'maxOutputTokens', 'minVramRequirement',
-  'intelligence', 'overallIntelligence', 'codingIntelligence', 'agenticIntelligence',
+  'intelligence',
   'tokensPerSecond', 'inputProcessingTime', 'thinkingTime', 'outputTime', 'responseTime',
   'releaseDate',
 ];

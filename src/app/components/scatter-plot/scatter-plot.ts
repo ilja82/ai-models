@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, IntelligenceMetric, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
@@ -73,10 +73,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => PLOT_TYPES.find(p => p.key === this.state.plotType())!);
 
-  private getXY(m: AiModel, plotType: PlotType, metric: IntelligenceMetric): { x: number | null; y: number | null } {
-    const intel = metric === 'coding' ? m.codingIntelligence
-      : metric === 'agentic' ? m.agenticIntelligence
-        : m.overallIntelligence;
+  private getXY(m: AiModel, plotType: PlotType): { x: number | null; y: number | null } {
+    const intel = m.overallIntelligence;
     const responseTime = responseTimeOf(m);
 
     switch (plotType) {
@@ -95,17 +93,16 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     }
   }
 
-  private plotXY(m: AiModel, plotType: PlotType, metric: IntelligenceMetric): { x: number; y: number } | null {
-    const {x, y} = this.getXY(m, plotType, metric);
+  private plotXY(m: AiModel, plotType: PlotType): { x: number; y: number } | null {
+    const {x, y} = this.getXY(m, plotType);
     return x === null || y === null ? null : {x, y};
   }
 
   /** The filtered models that have both values of the current plot type, in chart order. */
   readonly plotted = computed(() => {
-    const metric = this.state.intelligenceMetric();
     const plotType = this.state.plotType();
     return this.state.filteredModels().flatMap(m => {
-      const xy = this.plotXY(m, plotType, metric);
+      const xy = this.plotXY(m, plotType);
       return xy ? [{model: m, ...xy}] : [];
     });
   });
@@ -222,9 +219,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   private readonly allAxisData = computed(() => {
     const models = this.state.allModels();
-    const metric = this.state.intelligenceMetric();
     const plotType = this.state.plotType();
-    const main = models.flatMap(m => this.plotXY(m, plotType, metric) ?? []);
+    const main = models.flatMap(m => this.plotXY(m, plotType) ?? []);
     if (!this.state.showEfforts()) return main;
     return main.concat(models.flatMap(m => effortPoints(m, plotType).map(p => ({x: p.x, y: p.y}))));
   });
@@ -547,7 +543,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (datasetIndex > 0) return this.buildEffortTooltipLines(datasetIndex - 1, dataIndex);
     const model = this.plotted()[dataIndex]?.model;
     if (!model) return [];
-    return buildModelTooltipLines(model, this.state.intelligenceMetric());
+    return buildModelTooltipLines(model);
   }
 
   private buildEffortTooltipLines(curveIndex: number, pointIndex: number): string[] {

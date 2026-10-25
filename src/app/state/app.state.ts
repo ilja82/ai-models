@@ -1,7 +1,7 @@
 import {computed, effect, Injectable, signal} from '@angular/core';
-import {AiModel, IntelligenceMetric} from '../models/ai-model.model';
+import {AiModel} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
-import {AxisField, BarMetric, PlotType, ViewTab} from '../models/view-types';
+import {AXIS_FIELD_KEYS, AxisField, BarMetric, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, serializeHash} from './url-sync';
 
 const KEY = (k: string) => `ai-models.${k}`;
@@ -11,7 +11,6 @@ export class AppState {
   readonly allModels = signal<AiModel[]>(AI_MODELS);
   readonly disabledModelIds = signal<Set<string>>(this.loadDisabledIds());
 
-  readonly intelligenceMetric = signal<IntelligenceMetric>(this.loadStr('metric', 'overall') as IntelligenceMetric);
   readonly showAPI = signal(this.loadBool('showAPI', true));
   readonly showLocal = signal(this.loadBool('showLocal', false));
   readonly maxVram = signal<number | null>(this.loadMaxVram());
@@ -24,9 +23,9 @@ export class AppState {
   readonly activeTab = signal<ViewTab>(this.loadStr('activeTab', 'scatter') as ViewTab);
   readonly barMetric = signal<BarMetric>(this.loadStr('barMetric', 'intelligence') as BarMetric);
   readonly plotType = signal<PlotType>(this.loadStr('plotType', 'cost') as PlotType);
-  readonly scatter3dX = signal<AxisField>(this.loadStr('scatter3d.x', 'tokensPerSecond') as AxisField);
-  readonly scatter3dY = signal<AxisField>(this.loadStr('scatter3d.y', 'costsToRun') as AxisField);
-  readonly scatter3dZ = signal<AxisField>(this.loadStr('scatter3d.z', 'intelligence') as AxisField);
+  readonly scatter3dX = signal<AxisField>(this.loadAxis('scatter3d.x', 'tokensPerSecond'));
+  readonly scatter3dY = signal<AxisField>(this.loadAxis('scatter3d.y', 'costsToRun'));
+  readonly scatter3dZ = signal<AxisField>(this.loadAxis('scatter3d.z', 'intelligence'));
 
   // While true, the localStorage effects skip their writes.
   private hydrating = true;
@@ -36,11 +35,6 @@ export class AppState {
       const v = this.maxVram();
       if (this.hydrating) return;
       localStorage.setItem(KEY('maxVram'), v === null ? '' : String(v));
-    });
-    effect(() => {
-      const v = this.intelligenceMetric();
-      if (this.hydrating) return;
-      localStorage.setItem(KEY('metric'), v);
     });
     effect(() => {
       const v = this.showAPI();
@@ -122,7 +116,6 @@ export class AppState {
         scatter3dX: this.scatter3dX(),
         scatter3dY: this.scatter3dY(),
         scatter3dZ: this.scatter3dZ(),
-        intel: this.intelligenceMetric(),
         showAPI: this.showAPI(),
         showLocal: this.showLocal(),
         showDeprecated: this.showDeprecated(),
@@ -163,7 +156,6 @@ export class AppState {
     this.scatter3dX.set(parsed.scatter3dX ?? 'tokensPerSecond');
     this.scatter3dY.set(parsed.scatter3dY ?? 'costsToRun');
     this.scatter3dZ.set(parsed.scatter3dZ ?? 'intelligence');
-    this.intelligenceMetric.set(parsed.intel ?? 'overall');
     this.showAPI.set(parsed.showAPI ?? true);
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
@@ -175,6 +167,11 @@ export class AppState {
 
   private loadStr(key: string, fallback: string): string {
     return localStorage.getItem(KEY(key)) ?? fallback;
+  }
+
+  private loadAxis(key: string, fallback: AxisField): AxisField {
+    const v = localStorage.getItem(KEY(key));
+    return (AXIS_FIELD_KEYS as readonly string[]).includes(v ?? '') ? v as AxisField : fallback;
   }
 
   private loadBool(key: string, fallback: boolean): boolean {
@@ -221,18 +218,11 @@ export class AppState {
   });
 
   readonly usefulModelIds = computed(() => {
-    const metric = this.intelligenceMetric();
     const models = this.filteredModels().filter(m => !m.deprecated && m.costsToRun !== null);
-
-    const getIntelligence = (m: AiModel) => {
-      if (metric === 'coding') return m.codingIntelligence;
-      if (metric === 'agentic') return m.agenticIntelligence;
-      return m.overallIntelligence;
-    };
 
     // Sort by intelligence descending, then by cost ascending for tiebreaking
     const sorted = [...models].sort((a, b) => {
-      const diff = getIntelligence(b) - getIntelligence(a);
+      const diff = b.overallIntelligence - a.overallIntelligence;
       return diff !== 0 ? diff : a.costsToRun! - b.costsToRun!;
     });
 
@@ -259,12 +249,5 @@ export class AppState {
       }
       return next;
     });
-  }
-
-  getIntelligence(model: AiModel): number {
-    const metric = this.intelligenceMetric();
-    if (metric === 'coding') return model.codingIntelligence;
-    if (metric === 'agentic') return model.agenticIntelligence;
-    return model.overallIntelligence;
   }
 }

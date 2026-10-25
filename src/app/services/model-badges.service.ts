@@ -2,11 +2,9 @@ import {Injectable} from '@angular/core';
 import {AiModel, responseTimeOf} from '../models/ai-model.model';
 import {Badge, ProfileEntry} from '../models/profile.model';
 
-/** The best-balanced model id per intelligence metric (closest-to-ideal in cost-vs-intelligence space). */
+/** The best-balanced model id (closest-to-ideal in cost-vs-intelligence space). */
 export interface BalancedIds {
   overall: string | null;
-  coding: string | null;
-  agentic: string | null;
 }
 
 const CURRENT_DATE = new Date();
@@ -16,8 +14,6 @@ const MS_PER_MONTH = MS_PER_DAY * 30.4375;
 interface Thresholds {
   intelTop: number;
   intelBottom: number;
-  codingTop: number;
-  agenticTop: number;
   speedTop: number;
   speedTopHigh: number;
   speedBottom: number;
@@ -36,10 +32,6 @@ interface Thresholds {
 interface BestSets {
   overall: Set<string>;
   overallBest: Set<string>;
-  coding: Set<string>;
-  codingBest: Set<string>;
-  agentic: Set<string>;
-  agenticBest: Set<string>;
 }
 
 interface ModelMetrics {
@@ -91,8 +83,6 @@ function metricsFor(model: AiModel): ModelMetrics {
 
 function buildThresholds(baseline: AiModel[]): Thresholds {
   const intel = baseline.map(m => m.overallIntelligence);
-  const coding = baseline.map(m => m.codingIntelligence);
-  const agentic = baseline.map(m => m.agenticIntelligence);
   const speed = baseline.map(m => m.tokensPerSecond ?? 0).filter(v => v > 0);
   const latencies = baseline.map(latency).filter(v => v > 0);
   const contexts = baseline.map(m => m.contextWindow).filter(v => v > 0);
@@ -105,8 +95,6 @@ function buildThresholds(baseline: AiModel[]): Thresholds {
   return {
     intelTop: percentile(intel, 0.8),
     intelBottom: percentile(intel, 0.2),
-    codingTop: percentile(coding, 0.8),
-    agenticTop: percentile(agentic, 0.8),
     speedTop: percentile(speed, 0.8),
     speedTopHigh: percentile(speed, 0.95),
     speedBottom: percentile(speed, 0.2),
@@ -130,15 +118,9 @@ function buildBestSets(baseline: AiModel[]): BestSets {
     return {top: new Set(ids), best: new Set(ids.slice(0, 1))};
   };
   const o = ranked(m => m.overallIntelligence);
-  const c = ranked(m => m.codingIntelligence);
-  const a = ranked(m => m.agenticIntelligence);
   return {
     overall: o.top,
     overallBest: o.best,
-    coding: c.top,
-    codingBest: c.best,
-    agentic: a.top,
-    agenticBest: a.best,
   };
 }
 
@@ -169,84 +151,12 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
       },
     },
     {
-      when: best.codingBest.has(model.id),
-      badge: {
-        id: 'best-coding',
-        icon: '💻',
-        label: 'Best at coding',
-        tooltip: `#1 by coding intelligence (${model.codingIntelligence})`,
-      },
-    },
-    {
-      when: best.coding.has(model.id) && !best.codingBest.has(model.id),
-      badge: {
-        id: 'top-coding',
-        icon: '💻',
-        label: 'Top-tier coder',
-        tooltip: `Top 3 by coding intelligence (${model.codingIntelligence})`,
-      },
-    },
-    {
-      when: best.agenticBest.has(model.id),
-      badge: {
-        id: 'best-agentic',
-        icon: '🤖',
-        label: 'Best at agents',
-        tooltip: `#1 by agentic intelligence (${model.agenticIntelligence})`,
-      },
-    },
-    {
-      when: best.agentic.has(model.id) && !best.agenticBest.has(model.id),
-      badge: {
-        id: 'top-agentic',
-        icon: '🤖',
-        label: 'Top-tier agent',
-        tooltip: `Top 3 by agentic intelligence (${model.agenticIntelligence})`,
-      },
-    },
-    {
-      when: model.codingIntelligence >= t.codingTop && !best.coding.has(model.id),
-      badge: {
-        id: 'strong-coding',
-        icon: '💻',
-        label: 'Strong at coding',
-        tooltip: `Top 20% coding intelligence (${model.codingIntelligence})`,
-      },
-    },
-    {
-      when: model.agenticIntelligence >= t.agenticTop && !best.agentic.has(model.id),
-      badge: {
-        id: 'strong-agentic',
-        icon: '🤖',
-        label: 'Strong at agents',
-        tooltip: `Top 20% agentic intelligence (${model.agenticIntelligence})`,
-      },
-    },
-    {
       when: model.id === balancedIds.overall,
       badge: {
         id: 'best-balanced-overall',
         icon: '🎯',
         label: 'Best balanced at overall',
         tooltip: 'Closest to the ideal of low cost and high overall intelligence',
-      },
-    },
-    {
-      when: model.id === balancedIds.coding,
-      badge: {
-        id: 'best-balanced-coding',
-        icon: '🎯',
-        label: 'Best balanced at coding',
-        tooltip: 'Closest to the ideal of low cost and high coding intelligence',
-      },
-    },
-    {
-      when: model.id === balancedIds.agentic,
-      badge: {
-        id: 'best-balanced-agentic',
-        icon: '🎯',
-        label: 'Best balanced at agentic',
-        tooltip: 'Closest to the ideal of low cost and high agentic intelligence',
       },
     },
     {

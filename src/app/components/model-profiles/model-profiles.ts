@@ -19,14 +19,12 @@ export class ModelProfilesComponent {
   private readonly badges = inject(ModelBadgesService);
   readonly searchText = signal('');
 
-  /** The "best balanced" model id per intelligence metric: closest-to-ideal in (cost ↓, intelligence ↑). */
+  /** The "best balanced" model id: closest-to-ideal in (cost ↓, intelligence ↑). */
   readonly balancedIds = computed(() => {
     const models = this.state.filteredModels().filter(m => !m.deprecated && m.costsToRun !== null);
     const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun!, higherIsBetter: false};
     return {
       overall: bestBalancedId(models, [cost, {get: m => m.overallIntelligence, higherIsBetter: true}]),
-      coding: bestBalancedId(models, [cost, {get: m => m.codingIntelligence, higherIsBetter: true}]),
-      agentic: bestBalancedId(models, [cost, {get: m => m.agenticIntelligence, higherIsBetter: true}]),
     };
   });
 
@@ -50,7 +48,7 @@ export class ModelProfilesComponent {
   readonly shownCount = computed(() => this.profiles().length);
 
   tooltipFor(entry: ProfileEntry): string {
-    return buildModelTooltipLines(entry.model, this.state.intelligenceMetric()).join('\n');
+    return buildModelTooltipLines(entry.model).join('\n');
   }
 
   strengths(entry: ProfileEntry) {
