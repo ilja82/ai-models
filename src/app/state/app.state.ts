@@ -2,7 +2,7 @@ import {computed, effect, Injectable, signal} from '@angular/core';
 import {AiModel, blendedPriceOf} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
 import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
-import {parseHash, serializeHash} from './url-sync';
+import {parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
 import {effortPrice, effortVariantId, otherEffortVariants} from '../models/effort.util';
 import {fitTokenFactors} from '../models/token-factors.util';
 
@@ -40,14 +40,14 @@ export class AppState {
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
   readonly showEfforts = signal(this.loadBool('showEfforts', true));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
-  readonly logScale3d = signal(this.loadBool('logScale3d', false));
+  readonly logScale3d = signal(this.loadBool('logScale3d', SCATTER3D_DEFAULTS.log));
 
   readonly activeTab = signal<ViewTab>(this.loadStr('activeTab', 'scatter') as ViewTab);
   readonly barMetric = signal<BarMetric>(this.loadStr('barMetric', 'intelligence') as BarMetric);
   readonly plotType = signal<PlotType>(this.loadPlotType());
-  readonly scatter3dX = signal<AxisField>(this.loadAxis('scatter3d.x', 'tokensPerSecond'));
-  readonly scatter3dY = signal<AxisField>(this.loadAxis('scatter3d.y', 'costsToRun'));
-  readonly scatter3dZ = signal<AxisField>(this.loadAxis('scatter3d.z', 'intelligence'));
+  readonly scatter3dX = signal<AxisField>(this.loadAxis('scatter3d.x', SCATTER3D_DEFAULTS.x));
+  readonly scatter3dY = signal<AxisField>(this.loadAxis('scatter3d.y', SCATTER3D_DEFAULTS.y));
+  readonly scatter3dZ = signal<AxisField>(this.loadAxis('scatter3d.z', SCATTER3D_DEFAULTS.z));
 
   // While true, the localStorage effects skip their writes.
   private hydrating = true;
@@ -175,15 +175,15 @@ export class AppState {
     this.activeTab.set(parsed.view);
     this.barMetric.set(parsed.barMetric ?? 'intelligence');
     this.plotType.set(parsed.plotType ?? 'price');
-    this.scatter3dX.set(parsed.scatter3dX ?? 'tokensPerSecond');
-    this.scatter3dY.set(parsed.scatter3dY ?? 'costsToRun');
-    this.scatter3dZ.set(parsed.scatter3dZ ?? 'intelligence');
+    this.scatter3dX.set(parsed.scatter3dX ?? SCATTER3D_DEFAULTS.x);
+    this.scatter3dY.set(parsed.scatter3dY ?? SCATTER3D_DEFAULTS.y);
+    this.scatter3dZ.set(parsed.scatter3dZ ?? SCATTER3D_DEFAULTS.z);
     this.showAPI.set(parsed.showAPI ?? true);
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
     this.showEfforts.set(parsed.showEfforts ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
-    this.logScale3d.set(parsed.logScale3d ?? false);
+    this.logScale3d.set(parsed.logScale3d ?? SCATTER3D_DEFAULTS.log);
     this.showOnlyPareto.set(parsed.onlyPareto ?? false);
   }
 

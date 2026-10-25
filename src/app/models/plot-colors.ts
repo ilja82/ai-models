@@ -11,7 +11,7 @@ export interface PlotColors {
   unattractiveFill: string;
   attractiveLabel: string;
   unattractiveLabel: string;
-  /** Solid RGB for Plotly mesh3d cuboid (opacity applied separately). */
+  /** Solid RGB for the edges of a Plotly 3D cuboid (opacity applied separately). */
   attractiveCuboid: string;
   unattractiveCuboid: string;
 }

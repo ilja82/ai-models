@@ -1,5 +1,9 @@
 import {AXIS_FIELD_KEYS, AxisField, BAR_METRIC_KEYS, BarMetric, PLOT_TYPE_KEYS, PlotType, VIEW_TABS, ViewTab,} from '../models/view-types';
 
+export const SCATTER3D_DEFAULTS: { x: AxisField; y: AxisField; z: AxisField; log: boolean } = {
+  x: 'responseTime', y: 'costsToRun', z: 'intelligence', log: true,
+};
+
 export interface UrlState {
   view: ViewTab;
   barMetric?: BarMetric;
@@ -108,9 +112,9 @@ export function serializeHash(s: UrlSnapshot): string {
   if (s.view === 'bar' && s.barMetric !== 'intelligence') params.set('metric', s.barMetric);
   if (s.view === 'scatter' && s.plotType !== 'price') params.set('metric', s.plotType);
   if (s.view === 'scatter3d') {
-    if (s.scatter3dX !== 'tokensPerSecond') params.set('x', s.scatter3dX);
-    if (s.scatter3dY !== 'costsToRun') params.set('y', s.scatter3dY);
-    if (s.scatter3dZ !== 'intelligence') params.set('z', s.scatter3dZ);
+    if (s.scatter3dX !== SCATTER3D_DEFAULTS.x) params.set('x', s.scatter3dX);
+    if (s.scatter3dY !== SCATTER3D_DEFAULTS.y) params.set('y', s.scatter3dY);
+    if (s.scatter3dZ !== SCATTER3D_DEFAULTS.z) params.set('z', s.scatter3dZ);
   }
 
   // availability defaults: showAPI=true, showLocal=false → omit
@@ -124,9 +128,8 @@ export function serializeHash(s: UrlSnapshot): string {
   if (s.showDeprecated) params.set('deprecated', '1');
   if (!s.showEfforts) params.set('efforts', '0');
 
-  // log default: scatter true, scatter3d false
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');
-  if (s.view === 'scatter3d' && s.logScale3d) params.set('log', '1');
+  if (s.view === 'scatter3d' && s.logScale3d !== SCATTER3D_DEFAULTS.log) params.set('log', s.logScale3d ? '1' : '0');
 
   if (s.onlyPareto) params.set('pareto', '1');
 

@@ -24,7 +24,7 @@ interface AxisDef {
   format: (v: number) => string;
 }
 
-const AXIS_DEFS: AxisDef[] = [
+export const AXIS_DEFS: AxisDef[] = [
   {
     key: 'costsToRun', label: 'Cost per Index Run (USD)', higherIsBetter: false, logCandidate: true,
     get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, format: v => `$${v.toFixed(2)}`
@@ -62,19 +62,19 @@ const AXIS_DEFS: AxisDef[] = [
     get: m => m.tokensPerSecond, format: v => `${v.toFixed(0)}`
   },
   {
-    key: 'inputProcessingTime', label: 'Input Processing (s)', higherIsBetter: false, logCandidate: false,
+    key: 'inputProcessingTime', label: 'Input Processing (s)', higherIsBetter: false, logCandidate: true,
     get: m => m.inputProcessingTime, format: v => `${v.toFixed(1)}s`
   },
   {
-    key: 'thinkingTime', label: 'Thinking Time (s)', higherIsBetter: false, logCandidate: false,
+    key: 'thinkingTime', label: 'Thinking Time (s)', higherIsBetter: false, logCandidate: true,
     get: m => m.thinkingTime, format: v => `${v.toFixed(1)}s`
   },
   {
-    key: 'outputTime', label: 'Output Time (s)', higherIsBetter: false, logCandidate: false,
+    key: 'outputTime', label: 'Output Time (s)', higherIsBetter: false, logCandidate: true,
     get: m => m.outputTime, format: v => `${v.toFixed(1)}s`
   },
   {
-    key: 'responseTime', label: 'Response Time (s)', higherIsBetter: false, logCandidate: false,
+    key: 'responseTime', label: 'Response Time (s)', higherIsBetter: false, logCandidate: true,
     get: m => responseTimeOf(m), format: v => `${v.toFixed(1)}s`
   },
   {
@@ -237,7 +237,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const balancedId = bestBalancedId(
       candidates,
-      axes.map(a => ({get: (m: AiModel) => a.get(m)!, higherIsBetter: a.higherIsBetter})),
+      axes.map(a => ({get: (m: AiModel) => a.get(m)!, higherIsBetter: a.higherIsBetter, log: this.isLogAxis(a)})),
     );
     return {axisBestIds, balancedId};
   });
@@ -269,18 +269,22 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     color: string, opacity: number, name: string,
   ): any {
     const [x0, x1] = xr, [y0, y1] = yr, [z0, z1] = zr;
+    const corners: [number, number, number][] = [
+      [x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+      [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1],
+    ];
+    const edges = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
+    const path = edges.flatMap(([a, b]) => [corners[a], corners[b], null]);
     return {
-      type: 'mesh3d',
+      type: 'scatter3d',
+      mode: 'lines',
       name,
-      x: [x0, x1, x1, x0, x0, x1, x1, x0],
-      y: [y0, y0, y1, y1, y0, y0, y1, y1],
-      z: [z0, z0, z0, z0, z1, z1, z1, z1],
-      i: [0, 0, 4, 4, 0, 0, 3, 3, 0, 0, 1, 1],
-      j: [1, 2, 5, 6, 1, 5, 2, 6, 3, 7, 2, 6],
-      k: [2, 3, 6, 7, 5, 4, 6, 7, 7, 4, 6, 5],
-      color,
+      x: path.map(p => p?.[0] ?? null),
+      y: path.map(p => p?.[1] ?? null),
+      z: path.map(p => p?.[2] ?? null),
+      connectgaps: false,
+      line: {color, width: 4},
       opacity,
-      flatshading: true,
       hoverinfo: 'skip',
       showlegend: false,
     };
@@ -359,8 +363,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       const unZ = halfRange(zExt, false, zDef.higherIsBetter, zLog);
 
       regionTraces.push(
-        this.buildCuboid(attrX, attrY, attrZ, colors.attractiveCuboid, 0.35, 'Most attractive'),
-        this.buildCuboid(unX, unY, unZ, colors.unattractiveCuboid, 0.22, 'Least attractive'),
+        this.buildCuboid(attrX, attrY, attrZ, colors.attractiveCuboid, 0.8, 'Most attractive'),
+        this.buildCuboid(unX, unY, unZ, colors.unattractiveCuboid, 0.6, 'Least attractive'),
         {
           type: 'scatter3d',
           mode: 'text',
@@ -398,7 +402,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         hoverinfo: 'text',
         line: {color: lineColor, width: 2, dash: 'dash'},
         marker: {
-          size: points.map(p => isBalanced(p) || isAxisBest(p) ? 8 : isUseful(p) ? 6 : 3),
+          size: points.map(p => isBalanced(p) ? 16 : isAxisBest(p) ? 10 : isUseful(p) ? 4 : 2),
+          sizeref: 0.5,
           color: points.map(p => isBalanced(p) ? colors.balanced : isAxisBest(p) ? colors.axisBest : isUseful(p) ? colors.useful : lineColor),
           symbol: points.map(p => isBalanced(p) ? 'square' : isAxisBest(p) ? 'diamond-open' : 'circle'),
         },
@@ -413,7 +418,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       buildTrace(groups.local, 'Local', colors.local, 'diamond', 5),
       buildTrace(groups.useful, 'Pareto efficient', colors.useful, 'circle', 8),
       buildTrace(groups.axisBest, 'Best per axis', colors.axisBest, 'diamond-open', 10),
-      buildTrace(groups.balanced, 'Best balanced', colors.balanced, 'square', 10),
+      buildTrace(groups.balanced, 'Best balanced', colors.balanced, 'square', 16),
     ];
   });
 

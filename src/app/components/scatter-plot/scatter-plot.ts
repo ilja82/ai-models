@@ -75,7 +75,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private chart?: Chart;
 
   private readonly starIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22));
-  private readonly effortStarIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 18));
 
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => plotTypeDef(this.state.plotType()));
@@ -191,7 +190,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (by) axisBestIds.add(by);
 
     const balancedId = bestBalancedId(candidates, [
-      {get: p => p.x, higherIsBetter: higherXIsBetter},
+      {get: p => p.x, higherIsBetter: higherXIsBetter, log: this.isLogX(this.state.plotType())},
       {get: p => p.y, higherIsBetter: higherYIsBetter},
     ]);
 
@@ -239,7 +238,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       if (m.id === balancedId) {
         pointStyle = 'rectRot';
         color = colors.balanced;
-        radius = 10;
+        radius = 15;
       }
 
       const hollow = plotType === 'cost' && m.tokensPerRunEstimated;
@@ -469,8 +468,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const {useful, balanced, axisBest} = getPlotColors(this.themeState.theme());
     const pointColor = (c: EffortCurve, p: EffortCurve['points'][number]) =>
       p.balanced ? balanced : p.axisBest ? axisBest : p.useful ? useful : c.color;
-    const pointRadius = (p: EffortCurve['points'][number]) => p.balanced ? 8 : p.axisBest ? 9 : p.useful ? 5 : 3;
-    const starIcon = this.effortStarIcon();
+    const pointRadius = (p: EffortCurve['points'][number]) => p.balanced ? 13 : p.axisBest ? 11 : p.useful ? 5 : 3;
+    const starIcon = this.starIcon();
     return curves.map(c => ({
       label: c.model.publicName,
       data: c.points.map(p => ({x: p.px, y: p.y})),

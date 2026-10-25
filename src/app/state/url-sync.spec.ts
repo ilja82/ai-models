@@ -1,9 +1,9 @@
 import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 
 const DEFAULTS: UrlSnapshot = {
-  view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'tokensPerSecond',
+  view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'responseTime',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
-  showDeprecated: false, showEfforts: true, logScaleX: true, logScale3d: false, onlyPareto: false,
+  showDeprecated: false, showEfforts: true, logScaleX: true, logScale3d: true, onlyPareto: false,
 };
 
 describe('url-sync effort levels', () => {
@@ -43,5 +43,19 @@ describe('url-sync show only Pareto best', () => {
     expect(hash).toBe('#/scatter?pareto=1');
     expect(parseHash(hash)?.onlyPareto).toBe(true);
     expect(parseHash('#/scatter?pareto=0')?.onlyPareto).toBe(false);
+  });
+});
+
+describe('url-sync 3D scatter', () => {
+  const view3d: UrlSnapshot = {...DEFAULTS, view: 'scatter3d'};
+
+  it('omits the default axes and the default log scale', () => {
+    expect(serializeHash(view3d)).toBe('#/scatter3d');
+  });
+
+  it('round-trips the speed axis and the linear scale', () => {
+    const hash = serializeHash({...view3d, scatter3dX: 'tokensPerSecond', logScale3d: false});
+    expect(hash).toBe('#/scatter3d?x=tokensPerSecond&log=0');
+    expect(parseHash(hash)).toEqual({view: 'scatter3d', scatter3dX: 'tokensPerSecond', logScale3d: false});
   });
 });

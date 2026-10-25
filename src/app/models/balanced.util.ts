@@ -5,11 +5,14 @@ export interface BalancedAxis<T = AiModel> {
   get: (m: T) => number;
   /** true = larger value is better (e.g. intelligence); false = smaller is better (e.g. cost) */
   higherIsBetter: boolean;
+  /** true = normalize log2 of the value, as on a log axis; a value <= 0 counts as 0.001 */
+  log?: boolean;
 }
 
 /**
  * The single "best balanced" model: the one closest to the ideal corner in
- * normalized axis space. Each axis is normalized linearly to [0,1] with 1 = best;
+ * normalized axis space. Each axis is normalized linearly to [0,1] with 1 = best,
+ * on log2 of the values for a log axis;
  * the winner minimizes the squared distance to the all-best corner.
  *
  * Iterates in input order with a strict `<` comparison, so ties keep the first model.
@@ -18,8 +21,14 @@ export interface BalancedAxis<T = AiModel> {
 export function bestBalancedId<T extends { id: string }>(models: T[], axes: BalancedAxis<T>[]): string | null {
   if (models.length === 0 || axes.length === 0) return null;
 
+  const valueOf = (a: BalancedAxis<T>, m: T): number => {
+    const v = a.get(m);
+    if (!a.log || !Number.isFinite(v)) return v;
+    return Math.log2(v > 0 ? v : 0.001);
+  };
+
   const bounds = axes.map(a => {
-    const values = models.map(m => a.get(m)).filter(v => Number.isFinite(v));
+    const values = models.map(m => valueOf(a, m)).filter(v => Number.isFinite(v));
     if (values.length === 0) return null;
     return {min: Math.min(...values), max: Math.max(...values)};
   });
@@ -37,7 +46,7 @@ export function bestBalancedId<T extends { id: string }>(models: T[], axes: Bala
     let sumSq = 0;
     let ok = true;
     for (let i = 0; i < axes.length; i++) {
-      const v = axes[i].get(m);
+      const v = valueOf(axes[i], m);
       if (!Number.isFinite(v)) {
         ok = false;
         break;

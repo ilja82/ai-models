@@ -82,14 +82,14 @@ describe('show only Pareto best', () => {
     const markers = () => [c2.specialMarkers2d().balancedId, [...c2.specialMarkers2d().axisBestIds].sort(),
       c3.specialMarkers3d().balancedId, [...c3.specialMarkers3d().axisBestIds].sort()];
     const off = markers();
-    expect(off[0]).toBe('e');
+    expect(off[0]).toBe('e@low');
     state.showOnlyPareto.set(true);
     expect(markers()).toEqual(off);
 
     const [e, , , f] = state.allModels();
     state.allModels.set([{...e, efforts: [...e.efforts, level('xhigh', 39, 100)]}, f]);
     const withLevel = markers();
-    expect([withLevel[0], withLevel[2]]).toEqual(['e', 'e']);
+    expect([withLevel[0], withLevel[2]]).toEqual(['e@low', 'e@low']);
     state.showOnlyPareto.set(false);
     expect(markers()).toEqual(withLevel);
   });
