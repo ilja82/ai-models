@@ -21,8 +21,8 @@ export class ModelProfilesComponent {
 
   /** The "best balanced" model id per intelligence metric: closest-to-ideal in (cost ↓, intelligence ↑). */
   readonly balancedIds = computed(() => {
-    const models = this.state.filteredModels().filter(m => !m.deprecated);
-    const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, higherIsBetter: false};
+    const models = this.state.filteredModels().filter(m => !m.deprecated && m.costsToRun !== null);
+    const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun!, higherIsBetter: false};
     return {
       overall: bestBalancedId(models, [cost, {get: m => m.overallIntelligence, higherIsBetter: true}]),
       coding: bestBalancedId(models, [cost, {get: m => m.codingIntelligence, higherIsBetter: true}]),

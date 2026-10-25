@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {AiModel} from '../models/ai-model.model';
+import {AiModel, responseTimeOf} from '../models/ai-model.model';
 import {Badge, ProfileEntry} from '../models/profile.model';
 
 /** The best-balanced model id per intelligence metric (closest-to-ideal in cost-vs-intelligence space). */
@@ -62,8 +62,9 @@ function percentile(values: number[], p: number): number {
 
 const median = (values: number[]) => percentile(values, 0.5);
 
+// Badges treat 0 as "no value", so a missing measurement maps to 0.
 function latency(m: AiModel): number {
-  return m.inputProcessingTime + m.thinkingTime + m.outputTime;
+  return responseTimeOf(m) ?? 0;
 }
 
 function monthsAgo(date: string | null): number {
@@ -75,10 +76,10 @@ function monthsAgo(date: string | null): number {
 
 function metricsFor(model: AiModel): ModelMetrics {
   const intel = model.overallIntelligence;
-  const cost = model.costsToRun;
+  const cost = model.costsToRun ?? 0;
   return {
     intel,
-    speed: model.tokensPerSecond,
+    speed: model.tokensPerSecond ?? 0,
     lat: latency(model),
     ctx: model.contextWindow,
     cost,
@@ -92,13 +93,13 @@ function buildThresholds(baseline: AiModel[]): Thresholds {
   const intel = baseline.map(m => m.overallIntelligence);
   const coding = baseline.map(m => m.codingIntelligence);
   const agentic = baseline.map(m => m.agenticIntelligence);
-  const speed = baseline.map(m => m.tokensPerSecond).filter(v => v > 0);
+  const speed = baseline.map(m => m.tokensPerSecond ?? 0).filter(v => v > 0);
   const latencies = baseline.map(latency).filter(v => v > 0);
   const contexts = baseline.map(m => m.contextWindow).filter(v => v > 0);
-  const costs = baseline.map(m => m.costsToRun).filter(v => v > 0);
+  const costs = baseline.map(m => m.costsToRun ?? 0).filter(v => v > 0);
   const values = baseline
-    .filter(m => m.costsToRun > 0)
-    .map(m => m.overallIntelligence / m.costsToRun);
+    .filter(m => (m.costsToRun ?? 0) > 0)
+    .map(m => m.overallIntelligence / m.costsToRun!);
   const ages = baseline.map(m => monthsAgo(m.releaseDate)).filter(v => Number.isFinite(v));
 
   return {

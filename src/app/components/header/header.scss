@@ -16,9 +16,22 @@
       color: var(--accent);
       line-height: 1.2;
     }
-    .subtitle {
+
+    .subtitle,
+    .attribution {
+      display: block;
       font-size: 0.75rem;
       color: var(--text-muted);
+    }
+
+    .attribution a {
+      color: var(--accent);
+      text-decoration: none;
+
+      &:hover,
+      &:focus-visible {
+        text-decoration: underline;
+      }
     }
   }
 

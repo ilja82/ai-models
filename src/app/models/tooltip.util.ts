@@ -1,4 +1,6 @@
-import {AiModel, effectiveCutoffDate, IntelligenceMetric} from './ai-model.model';
+import {AiModel, effectiveCutoffDate, IntelligenceMetric, responseTimeOf} from './ai-model.model';
+
+const MISSING = 'no data';
 
 export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetric): string[] {
   const intel = metric === 'coding' ? model.codingIntelligence
@@ -7,15 +9,17 @@ export function buildModelTooltipLines(model: AiModel, metric: IntelligenceMetri
   const metricLabel = metric === 'coding' ? 'Coding Intelligence'
     : metric === 'agentic' ? 'Agentic Intelligence'
       : 'Overall Intelligence';
-  const responseTime = model.inputProcessingTime + model.thinkingTime + model.outputTime;
+  const responseTime = responseTimeOf(model);
   return [
     `${model.publicName}`,
     model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
     `★ ${metricLabel}: ${intel}`,
     model.effort ? `★ Effort: ${model.effort}${model.efforts.length > 1 ? ` (${model.efforts.length} levels measured)` : ''}` : '',
-    `★ Speed: ${model.tokensPerSecond} tok/s`,
-    `★ Response time: ${responseTime.toFixed(1)}s (in: ${model.inputProcessingTime}s, think: ${model.thinkingTime}s, out: ${model.outputTime}s)`,
-    `★ Run cost: $${model.costsToRun.toFixed(2)}`,
+    `★ Speed: ${model.tokensPerSecond === null ? MISSING : `${model.tokensPerSecond} tok/s`}`,
+    responseTime === null
+      ? `★ Response time: ${MISSING}`
+      : `★ Response time: ${responseTime.toFixed(1)}s (in: ${model.inputProcessingTime}s, think: ${model.thinkingTime}s, out: ${model.outputTime}s)`,
+    `★ Run cost: ${model.costsToRun === null ? MISSING : `$${model.costsToRun.toFixed(2)}`}`,
     `★ Release: ${model.releaseDate}`,
     `─────────────────`,
     `Type: ${model.localModel ? 'Local' : 'API'}`,

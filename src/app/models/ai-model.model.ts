@@ -7,7 +7,7 @@ export interface AiModel {
   contextWindow: number;
   maxInputTokens: number;
   maxOutputTokens: number;
-  costsToRun: number;
+  costsToRun: number | null;
   localModel: boolean;
   minVramRequirement: number;
   overallIntelligence: number;
@@ -18,12 +18,12 @@ export interface AiModel {
   reasoning: boolean;
   totalTokens: number;
   totalSpend: number;
-  tokensPerRun: number;
+  tokensPerRun: number | null;
   usesCache: boolean;
-  tokensPerSecond: number;
-  inputProcessingTime: number;
-  thinkingTime: number;
-  outputTime: number;
+  tokensPerSecond: number | null;
+  inputProcessingTime: number | null;
+  thinkingTime: number | null;
+  outputTime: number | null;
   deprecated: boolean;
   deprecationInfo: string;
   /** Effort level of the values above, or null if the source names none. */
@@ -54,9 +54,21 @@ export interface ModelEfforts {
 
 export type IntelligenceMetric = 'overall' | 'coding' | 'agentic';
 
-export function computeCostsToRun(totalSpend: number, totalTokens: number, tokensPerRun: number): number {
+export function computeCostsToRun(totalSpend: number, totalTokens: number, tokensPerRun: number | null): number | null {
+  if (tokensPerRun === null) return null;
   if (totalTokens <= 0) return 0;
   return (totalSpend / totalTokens) * tokensPerRun * 1_000_000;
+}
+
+/** Input processing plus thinking time, or null if one of them is not measured. */
+export function latencyOf(m: Pick<AiModel, 'inputProcessingTime' | 'thinkingTime'>): number | null {
+  return m.inputProcessingTime === null || m.thinkingTime === null ? null : m.inputProcessingTime + m.thinkingTime;
+}
+
+/** Input processing, thinking and output time, or null if one of them is not measured. */
+export function responseTimeOf(m: Pick<AiModel, 'inputProcessingTime' | 'thinkingTime' | 'outputTime'>): number | null {
+  const latency = latencyOf(m);
+  return latency === null || m.outputTime === null ? null : latency + m.outputTime;
 }
 
 /** Returns the known cutoffDate, or an estimate of releaseDate minus 12 months. */

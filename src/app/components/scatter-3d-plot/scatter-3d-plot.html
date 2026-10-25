@@ -49,6 +49,7 @@
     </div>
   </div>
 
+  <app-missing-data-hint [models]="missingModels()"/>
   <div class="plot-wrap">
     @if (loading()) {
       <div class="status">Loading 3D library…</div>

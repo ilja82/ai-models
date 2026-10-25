@@ -25,4 +25,13 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('AI Models');
   });
+
+  it('should credit Artificial Analysis with a link', async () => {
+    TestBed.inject(AppState).activeTab.set('table');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('.attribution a');
+    expect(link?.getAttribute('href')).toBe('https://artificialanalysis.ai/');
+    expect(link?.textContent).toContain('Artificial Analysis');
+  });
 });

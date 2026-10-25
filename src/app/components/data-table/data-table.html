@@ -77,13 +77,13 @@
             <td class="num intel hist" [style]="cellStyle(model, 'codingIntelligence')">{{ model.codingIntelligence }}</td>
             <td class="num intel hist" [style]="cellStyle(model, 'agenticIntelligence')">{{ model.agenticIntelligence }}</td>
             <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'tokensPerSecond')">{{ model.tokensPerSecond > 0 ? model.tokensPerSecond : '—' }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'tokensPerSecond')">{{ formatSpeed(model.tokensPerSecond) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'inputProcessingTime')">{{ formatTime(model.inputProcessingTime) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'thinkingTime')">{{ formatTime(model.thinkingTime) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'outputTime')">{{ formatTime(model.outputTime) }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'latency')">{{ formatTime(model.inputProcessingTime + model.thinkingTime) }}</td>
+            <td class="num hist" [style]="cellStyle(model, 'latency')">{{ formatTime(latency(model)) }}</td>
             <td class="num hist"
-                [style]="cellStyle(model, 'responseTime')">{{ formatTime(model.inputProcessingTime + model.thinkingTime + model.outputTime) }}
+                [style]="cellStyle(model, 'responseTime')">{{ formatTime(responseTime(model)) }}
             </td>
           </tr>
         }

@@ -1,7 +1,7 @@
 import {Component, computed, effect, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AppState} from '../../state/app.state';
-import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
+import {AiModel, IntelligenceMetric, latencyOf, responseTimeOf} from '../../models/ai-model.model';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime';
@@ -21,7 +21,7 @@ type BoundsFn = (rawMin: number, rawMax: number) => [number, number];
 interface ColMeta {
   higherIsBetter: boolean;
   log: boolean;
-  get: (m: AiModel) => number;
+  get: (m: AiModel) => number | null;
   nullIfZeroOrNeg?: boolean;
   bounds: BoundsFn;
 }
@@ -72,11 +72,11 @@ const COL_META: Record<NumericCol, ColMeta> = {
   inputProcessingTime: {higherIsBetter: false, log: false, get: m => m.inputProcessingTime, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
   thinkingTime: {higherIsBetter: false, log: false, get: m => m.thinkingTime, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
   outputTime: {higherIsBetter: false, log: false, get: m => m.outputTime, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
-  latency: {higherIsBetter: false, log: false, get: m => m.inputProcessingTime + m.thinkingTime, nullIfZeroOrNeg: true, bounds: niceLinearBounds},
+  latency: {higherIsBetter: false, log: false, get: m => latencyOf(m), nullIfZeroOrNeg: true, bounds: niceLinearBounds},
   responseTime: {
     higherIsBetter: false,
     log: false,
-    get: m => m.inputProcessingTime + m.thinkingTime + m.outputTime,
+    get: m => responseTimeOf(m),
     nullIfZeroOrNeg: true,
     bounds: niceLinearBounds
   },
@@ -135,9 +135,13 @@ export class DataTableComponent {
     }
 
     return [...models].sort((a, b) => {
+      const rawA = computedKey ? this.computedValue(a, computedKey) : key ? a[key] : 0;
+      const rawB = computedKey ? this.computedValue(b, computedKey) : key ? b[key] : 0;
+      // Missing values go last in both directions.
+      if (rawA === null || rawB === null) return rawA === rawB ? 0 : rawA === null ? 1 : -1;
       let cmp = 0;
       if (computedKey) {
-        cmp = this.computedValue(a, computedKey) - this.computedValue(b, computedKey);
+        cmp = (rawA as number) - (rawB as number);
       } else if (key) {
         const av = a[key] ?? '';
         const bv = b[key] ?? '';
@@ -161,6 +165,7 @@ export class DataTableComponent {
       let rawMin = Infinity, rawMax = -Infinity;
       for (const m of models) {
         const v = meta.get(m);
+        if (v === null) continue;
         if (meta.nullIfZeroOrNeg && v <= 0) continue;
         if (!Number.isFinite(v)) continue;
         if (v < rawMin) rawMin = v;
@@ -206,19 +211,31 @@ export class DataTableComponent {
     return this.sortDir() === 'asc' ? '↑' : '↓';
   }
 
-  private computedValue(model: AiModel, key: ComputedSortKey): number {
-    if (key === 'latency') return model.inputProcessingTime + model.thinkingTime;
-    return model.inputProcessingTime + model.thinkingTime + model.outputTime;
+  private computedValue(model: AiModel, key: ComputedSortKey): number | null {
+    return key === 'latency' ? latencyOf(model) : responseTimeOf(model);
   }
 
-  formatCost(value: number): string {
+  latency(model: AiModel): number | null {
+    return latencyOf(model);
+  }
+
+  responseTime(model: AiModel): number | null {
+    return responseTimeOf(model);
+  }
+
+  formatCost(value: number | null): string {
+    if (value === null) return '—';
     if (value === 0) return 'Free';
     return `$${value.toFixed(2)}`;
   }
 
-  formatTime(value: number): string {
-    if (value <= 0) return '—';
+  formatTime(value: number | null): string {
+    if (value === null || value <= 0) return '—';
     return `${value.toFixed(1)}s`;
+  }
+
+  formatSpeed(value: number | null): string {
+    return value === null || value <= 0 ? '—' : String(value);
   }
 
   isUseful(id: string): boolean {
@@ -230,6 +247,7 @@ export class DataTableComponent {
     const meta = COL_META[col];
     const ext = this.colExtents()[col];
     const v = meta.get(model);
+    if (v === null) return null;
     if (meta.nullIfZeroOrNeg && v <= 0) return null;
     if (!Number.isFinite(v) || !Number.isFinite(ext.min) || !Number.isFinite(ext.max)) return null;
     if (ext.max === ext.min) return null;

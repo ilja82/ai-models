@@ -14,12 +14,13 @@ import {
 } from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
+import {AiModel, IntelligenceMetric, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 import {EffortPoint, effortPoints, effortResponseTime, shortEffortLabel} from '../../models/effort.util';
+import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -56,6 +57,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
 @Component({
   selector: 'app-scatter-plot',
   standalone: true,
+  imports: [MissingDataHintComponent],
   templateUrl: './scatter-plot.html',
   styleUrl: './scatter-plot.scss',
 })
@@ -71,11 +73,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => PLOT_TYPES.find(p => p.key === this.state.plotType())!);
 
-  private getXY(m: AiModel, plotType: PlotType, metric: IntelligenceMetric): { x: number; y: number } {
+  private getXY(m: AiModel, plotType: PlotType, metric: IntelligenceMetric): { x: number | null; y: number | null } {
     const intel = metric === 'coding' ? m.codingIntelligence
       : metric === 'agentic' ? m.agenticIntelligence
         : m.overallIntelligence;
-    const responseTime = m.inputProcessingTime + m.thinkingTime + m.outputTime;
+    const responseTime = responseTimeOf(m);
 
     switch (plotType) {
       case 'release':
@@ -93,16 +95,35 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     }
   }
 
-  readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const models = this.state.filteredModels().filter(m => !m.deprecated);
-    if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
+  private plotXY(m: AiModel, plotType: PlotType, metric: IntelligenceMetric): { x: number; y: number } | null {
+    const {x, y} = this.getXY(m, plotType, metric);
+    return x === null || y === null ? null : {x, y};
+  }
+
+  /** The filtered models that have both values of the current plot type, in chart order. */
+  readonly plotted = computed(() => {
     const metric = this.state.intelligenceMetric();
     const plotType = this.state.plotType();
+    return this.state.filteredModels().flatMap(m => {
+      const xy = this.plotXY(m, plotType, metric);
+      return xy ? [{model: m, ...xy}] : [];
+    });
+  });
+
+  readonly missingModels = computed(() => {
+    const shown = new Set(this.plotted().map(p => p.model.id));
+    return this.state.filteredModels().filter(m => !shown.has(m.id));
+  });
+
+  readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
+    const active = this.plotted().filter(p => !p.model.deprecated);
+    if (active.length === 0) return {axisBestIds: new Set(), balancedId: null};
+    const models = active.map(p => p.model);
+    const pts = active.map(p => ({id: p.model.id, x: p.x, y: p.y}));
+    const byId = new Map(pts.map(p => [p.id, p]));
     const plotDef = this.currentPlotDef();
     const higherXIsBetter = !plotDef.reverseX;
     const higherYIsBetter = true;
-
-    const pts = models.map(m => ({id: m.id, ...this.getXY(m, plotType, metric)}));
 
     const bestOn = (key: 'x' | 'y', higherIsBetter: boolean): string | null => {
       let bestId: string | null = null;
@@ -125,8 +146,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (by) axisBestIds.add(by);
 
     const balancedId = bestBalancedId(models, [
-      {get: m => this.getXY(m, plotType, metric).x, higherIsBetter: higherXIsBetter},
-      {get: m => this.getXY(m, plotType, metric).y, higherIsBetter: higherYIsBetter},
+      {get: m => byId.get(m.id)!.x, higherIsBetter: higherXIsBetter},
+      {get: m => byId.get(m.id)!.y, higherIsBetter: higherYIsBetter},
     ]);
 
     return {axisBestIds, balancedId};
@@ -141,8 +162,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   readonly plotData = computed(() => {
-    const models = this.state.filteredModels();
-    const metric = this.state.intelligenceMetric();
+    const plotted = this.plotted();
     const useful = this.state.usefulModelIds();
     const showUseful = this.state.showUsefulModels();
     const plotType = this.state.plotType();
@@ -150,9 +170,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const colors = getPlotColors(this.themeState.theme());
     const starIcon = this.starIcon();
 
-    return models.map(m => {
+    return plotted.map(({model: m, x, y}) => {
       if (m.deprecated) {
-        const {x, y} = this.getXY(m, plotType, metric);
         return {
           x: this.transformX(x, plotType), y, label: m.publicName,
           color: colors.deprecated,
@@ -178,7 +197,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         radius = 10;
       }
 
-      const {x, y} = this.getXY(m, plotType, metric);
       return {x: this.transformX(x, plotType), y, label: m.publicName, color, pointStyle, radius, isUseful};
     });
   });
@@ -190,7 +208,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const plotType = this.state.plotType();
     const colors = getPlotColors(this.themeState.theme());
     const curves: EffortCurve[] = [];
-    for (const m of this.state.filteredModels()) {
+    for (const {model: m} of this.plotted()) {
       const points = effortPoints(m, plotType);
       if (points.length < 2) continue;
       curves.push({
@@ -206,7 +224,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const models = this.state.allModels();
     const metric = this.state.intelligenceMetric();
     const plotType = this.state.plotType();
-    const main = models.map(m => this.getXY(m, plotType, metric));
+    const main = models.flatMap(m => this.plotXY(m, plotType, metric) ?? []);
     if (!this.state.showEfforts()) return main;
     return main.concat(models.flatMap(m => effortPoints(m, plotType).map(p => ({x: p.x, y: p.y}))));
   });
@@ -527,7 +545,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   private buildTooltipLines(datasetIndex: number, dataIndex: number, _plotType: PlotType): string[] {
     if (datasetIndex > 0) return this.buildEffortTooltipLines(datasetIndex - 1, dataIndex);
-    const model = this.state.filteredModels()[dataIndex];
+    const model = this.plotted()[dataIndex]?.model;
     if (!model) return [];
     return buildModelTooltipLines(model, this.state.intelligenceMetric());
   }

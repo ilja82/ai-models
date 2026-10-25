@@ -1,8 +1,9 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {BarController, BarElement, CategoryScale, Chart, ChartConfiguration, Legend, LinearScale, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
-import {AiModel} from '../../models/ai-model.model';
+import {AiModel, latencyOf, responseTimeOf} from '../../models/ai-model.model';
 import {BarMetric} from '../../models/view-types';
+import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -35,6 +36,7 @@ interface ChartDataResult {
   yMin: number;
   metricDef: MetricDef;
   models: AiModel[];
+  missing: AiModel[];
 }
 
 const DEPRECATED_BAR_COLOR = 'rgba(150,150,150,0.75)';
@@ -61,6 +63,7 @@ const METRICS: MetricDef[] = [
 @Component({
   selector: 'app-bar-chart',
   standalone: true,
+  imports: [MissingDataHintComponent],
   templateUrl: './bar-chart.html',
   styleUrl: './bar-chart.scss',
 })
@@ -75,7 +78,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
   });
   private chart?: Chart;
 
-  private getTotalValue(m: AiModel, metric: BarMetric): number {
+  private getTotalValue(m: AiModel, metric: BarMetric): number | null {
     switch (metric) {
       case 'intelligence':
         return this.state.getIntelligence(m);
@@ -94,9 +97,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
       case 'tokensPerSecond':
         return m.tokensPerSecond;
       case 'latency':
-        return m.inputProcessingTime + m.thinkingTime;
+        return latencyOf(m);
       case 'responseTime':
-        return m.inputProcessingTime + m.thinkingTime + m.outputTime;
+        return responseTimeOf(m);
     }
   }
 
@@ -104,9 +107,11 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const metric = this.state.barMetric();
     const metricDef = METRICS.find(x => x.key === metric)!;
 
-    const models = [...this.state.filteredModels()].sort((a, b) => {
-      const va = this.getTotalValue(a, metric);
-      const vb = this.getTotalValue(b, metric);
+    const all = this.state.filteredModels();
+    const missing = all.filter(m => this.getTotalValue(m, metric) === null);
+    const models = all.filter(m => this.getTotalValue(m, metric) !== null).sort((a, b) => {
+      const va = this.getTotalValue(a, metric)!;
+      const vb = this.getTotalValue(b, metric)!;
       return metricDef.sortAsc ? va - vb : vb - va;
     });
 
@@ -118,13 +123,14 @@ export class BarChartComponent implements OnInit, OnDestroy {
       return {
         labels,
         segments: [
-          {label: 'Input Processing', color: stackColor(SEG_COLOR_1), baseColor: SEG_COLOR_1, values: models.map(m => m.inputProcessingTime)},
-          {label: 'Thinking', color: stackColor(SEG_COLOR_2), baseColor: SEG_COLOR_2, values: models.map(m => m.thinkingTime)},
+          {label: 'Input Processing', color: stackColor(SEG_COLOR_1), baseColor: SEG_COLOR_1, values: models.map(m => m.inputProcessingTime!)},
+          {label: 'Thinking', color: stackColor(SEG_COLOR_2), baseColor: SEG_COLOR_2, values: models.map(m => m.thinkingTime!)},
         ],
         isStacked: true,
         yMin: 0,
         metricDef,
         models,
+        missing,
       };
     }
 
@@ -132,18 +138,19 @@ export class BarChartComponent implements OnInit, OnDestroy {
       return {
         labels,
         segments: [
-          {label: 'Input Processing', color: stackColor(SEG_COLOR_1), baseColor: SEG_COLOR_1, values: models.map(m => m.inputProcessingTime)},
-          {label: 'Thinking', color: stackColor(SEG_COLOR_2), baseColor: SEG_COLOR_2, values: models.map(m => m.thinkingTime)},
-          {label: 'Output', color: stackColor(SEG_COLOR_3), baseColor: SEG_COLOR_3, values: models.map(m => m.outputTime)},
+          {label: 'Input Processing', color: stackColor(SEG_COLOR_1), baseColor: SEG_COLOR_1, values: models.map(m => m.inputProcessingTime!)},
+          {label: 'Thinking', color: stackColor(SEG_COLOR_2), baseColor: SEG_COLOR_2, values: models.map(m => m.thinkingTime!)},
+          {label: 'Output', color: stackColor(SEG_COLOR_3), baseColor: SEG_COLOR_3, values: models.map(m => m.outputTime!)},
         ],
         isStacked: true,
         yMin: 0,
         metricDef,
         models,
+        missing,
       };
     }
 
-    const values = models.map(m => this.getTotalValue(m, metric));
+    const values = models.map(m => this.getTotalValue(m, metric)!);
     const maxVal = values.length ? Math.max(...values) : 0;
     let yMax: number | undefined;
     if (metric === 'intelligence') {
@@ -166,6 +173,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
       yMin: 0,
       metricDef,
       models,
+      missing,
     };
   });
 

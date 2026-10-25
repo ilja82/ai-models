@@ -222,7 +222,7 @@ export class AppState {
 
   readonly usefulModelIds = computed(() => {
     const metric = this.intelligenceMetric();
-    const models = this.filteredModels().filter(m => !m.deprecated);
+    const models = this.filteredModels().filter(m => !m.deprecated && m.costsToRun !== null);
 
     const getIntelligence = (m: AiModel) => {
       if (metric === 'coding') return m.codingIntelligence;
@@ -233,16 +233,16 @@ export class AppState {
     // Sort by intelligence descending, then by cost ascending for tiebreaking
     const sorted = [...models].sort((a, b) => {
       const diff = getIntelligence(b) - getIntelligence(a);
-      return diff !== 0 ? diff : a.costsToRun - b.costsToRun;
+      return diff !== 0 ? diff : a.costsToRun! - b.costsToRun!;
     });
 
     const useful: string[] = [];
     let minCostSoFar = Infinity;
 
     for (const model of sorted) {
-      if (model.costsToRun < minCostSoFar) {
+      if (model.costsToRun! < minCostSoFar) {
         useful.push(model.id);
-        minCostSoFar = model.costsToRun;
+        minCostSoFar = model.costsToRun!;
       }
     }
 

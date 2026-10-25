@@ -1,4 +1,4 @@
-import {AiModel, EffortLevel} from './ai-model.model';
+import {AiModel, EffortLevel, responseTimeOf} from './ai-model.model';
 import {PlotType} from './view-types';
 
 export interface EffortPoint {
@@ -21,8 +21,7 @@ export function shortEffortLabel(effort: string): string {
 }
 
 export function effortResponseTime(level: EffortLevel): number | null {
-  const {inputProcessingTime: i, thinkingTime: t, outputTime: o} = level;
-  return i === null || t === null || o === null ? null : i + t + o;
+  return responseTimeOf(level);
 }
 
 function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType): { x: number | null; y: number | null } {

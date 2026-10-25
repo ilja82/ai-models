@@ -1,11 +1,12 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, IntelligenceMetric} from '../../models/ai-model.model';
+import {AiModel, IntelligenceMetric, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {AxisField} from '../../models/view-types';
+import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
 
@@ -16,8 +17,8 @@ interface AxisDef {
   higherIsBetter: boolean;
   /** suggested log scale (cost, context window) */
   logCandidate: boolean;
-  /** value extractor; metric used only when key === 'intelligence' */
-  get: (m: AiModel, metric: IntelligenceMetric) => number;
+  /** value extractor; metric used only when key === 'intelligence'; null = not measured */
+  get: (m: AiModel, metric: IntelligenceMetric) => number | null;
   /** axis tick formatter */
   format: (v: number) => string;
 }
@@ -86,7 +87,7 @@ const AXIS_DEFS: AxisDef[] = [
   },
   {
     key: 'responseTime', label: 'Response Time (s)', higherIsBetter: false, logCandidate: false,
-    get: m => m.inputProcessingTime + m.thinkingTime + m.outputTime, format: v => `${v.toFixed(1)}s`
+    get: m => responseTimeOf(m), format: v => `${v.toFixed(1)}s`
   },
   {
     key: 'releaseDate', label: 'Release Date', higherIsBetter: true, logCandidate: false,
@@ -105,6 +106,7 @@ interface AxisExtent {
 @Component({
   selector: 'app-scatter-3d-plot',
   standalone: true,
+  imports: [MissingDataHintComponent],
   templateUrl: './scatter-3d-plot.html',
   styleUrl: './scatter-3d-plot.scss',
 })
@@ -132,13 +134,28 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return v > 0 ? Math.log2(v) : Math.log2(0.001);
   }
 
+  private readonly axes = computed(() =>
+    [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())]);
+
+  /** The filtered models that have a value on all three axes. */
+  readonly plotModels = computed(() => {
+    const metric = this.state.intelligenceMetric();
+    const axes = this.axes();
+    return this.state.filteredModels().filter(m => axes.every(a => a.get(m, metric) !== null));
+  });
+
+  readonly missingModels = computed(() => {
+    const shown = new Set(this.plotModels().map(m => m.id));
+    return this.state.filteredModels().filter(m => !shown.has(m.id));
+  });
+
   /** Pareto-useful model IDs for the currently selected 3 axes. */
   readonly useful3d = computed<Set<string>>(() => {
-    const models = this.state.filteredModels().filter(m => !m.deprecated);
+    const models = this.plotModels().filter(m => !m.deprecated);
     const metric = this.state.intelligenceMetric();
-    const axes = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
+    const axes = this.axes();
 
-    const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m, metric))}));
+    const points = models.map(m => ({id: m.id, vals: axes.map(a => a.get(m, metric)!)}));
     const useful = new Set<string>();
 
     for (const p of points) {
@@ -171,10 +188,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   });
 
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const models = this.state.filteredModels().filter(m => !m.deprecated);
+    const models = this.plotModels().filter(m => !m.deprecated);
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const metric = this.state.intelligenceMetric();
-    const axes = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
+    const axes = this.axes();
 
     const axisBestIds = new Set<string>();
     for (const a of axes) {
@@ -182,7 +199,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       let bestVal = a.higherIsBetter ? -Infinity : Infinity;
       for (const m of models) {
         const v = a.get(m, metric);
-        if (!Number.isFinite(v)) continue;
+        if (v === null || !Number.isFinite(v)) continue;
         if (a.higherIsBetter ? v > bestVal : v < bestVal) {
           bestVal = v;
           bestModel = m;
@@ -193,14 +210,14 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const balancedId = bestBalancedId(
       models,
-      axes.map(a => ({get: (m: AiModel) => a.get(m, metric), higherIsBetter: a.higherIsBetter})),
+      axes.map(a => ({get: (m: AiModel) => a.get(m, metric)!, higherIsBetter: a.higherIsBetter})),
     );
     return {axisBestIds, balancedId};
   });
 
   private computeAxisExtent(models: AiModel[], def: AxisDef, metric: IntelligenceMetric, log: boolean): AxisExtent | null {
     if (models.length === 0) return null;
-    const values = models.map(m => def.get(m, metric)).filter(v => Number.isFinite(v));
+    const values = models.map(m => def.get(m, metric)).filter((v): v is number => v !== null && Number.isFinite(v));
     if (values.length === 0) return null;
     let min = Math.min(...values);
     let max = Math.max(...values);
@@ -243,7 +260,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   }
 
   readonly traces = computed(() => {
-    const models = this.state.filteredModels();
+    const models = this.plotModels();
     const metric = this.state.intelligenceMetric();
     const showUseful = this.state.showUsefulModels();
     const useful = this.useful3d();
@@ -278,9 +295,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       type: 'scatter3d',
       mode: 'markers+text',
       name,
-      x: items.map(m => this.toPlotVal(xDef.get(m, metric), xLog)),
-      y: items.map(m => this.toPlotVal(yDef.get(m, metric), yLog)),
-      z: items.map(m => this.toPlotVal(zDef.get(m, metric), zLog)),
+      x: items.map(m => this.toPlotVal(xDef.get(m, metric)!, xLog)),
+      y: items.map(m => this.toPlotVal(yDef.get(m, metric)!, yLog)),
+      z: items.map(m => this.toPlotVal(zDef.get(m, metric)!, zLog)),
       text: items.map(m => m.publicName),
       textposition: 'top center',
       textfont: {size: 10, color: '#bbb'},
