@@ -6,7 +6,7 @@ export type BarMetric =
   | 'tokensPerSecond' | 'latency' | 'responseTime';
 
 export type PlotType =
-  | 'price' | 'cost' | 'release' | 'context' | 'speed' | 'responseVsIntel' | 'responseVsSpeed';
+  | 'price' | 'cost' | 'release' | 'context' | 'speed' | 'responseVsIntel' | 'responseVsSpeed' | 'costVsResponse';
 
 export type AxisField =
   | 'costsToRun' | 'inputCosts' | 'outputCosts'
@@ -24,7 +24,7 @@ export const BAR_METRIC_KEYS: readonly BarMetric[] = [
 ];
 
 export const PLOT_TYPE_KEYS: readonly PlotType[] = [
-  'price', 'cost', 'release', 'context', 'speed', 'responseVsIntel', 'responseVsSpeed',
+  'price', 'cost', 'release', 'context', 'speed', 'responseVsIntel', 'responseVsSpeed', 'costVsResponse',
 ];
 
 export const AXIS_FIELD_KEYS: readonly AxisField[] = [

@@ -69,6 +69,8 @@ function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType, factor
       return {x: effortResponseTime(level), y: level.tokensPerSecond};
     case 'cost':
       return {x: level.effort === model.effort ? model.costsToRun : level.costsToRun, y: intel};
+    case 'costVsResponse':
+      return {x: level.effort === model.effort ? model.costsToRun : level.costsToRun, y: effortResponseTime(level)};
     default: {
       const price = effortPrice(model, level, factors);
       return price ? {x: price.price, y: intel, price} : {x: null, y: intel};

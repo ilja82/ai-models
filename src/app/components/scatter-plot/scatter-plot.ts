@@ -10,6 +10,7 @@ import {
   Plugin,
   PointElement,
   ScatterController,
+  Ticks,
   Tooltip
 } from 'chart.js';
 import {AppState} from '../../state/app.state';
@@ -27,7 +28,7 @@ Chart.register(ScatterController, PointElement, LineElement, LinearScale, Logari
 interface EffortCurve {
   model: AiModel;
   color: string;
-  points: (EffortPoint & { px: number; label: string; useful: boolean; axisBest: boolean; balanced: boolean })[];
+  points: (EffortPoint & { px: number; py: number; label: string; useful: boolean; axisBest: boolean; balanced: boolean })[];
 }
 
 function makeStarImage(color: string, size: number): HTMLImageElement {
@@ -43,21 +44,36 @@ interface PlotTypeDef {
   label: string;
   supportsLogX: boolean;
   reverseX: boolean;
+  reverseY: boolean;
+  logY: boolean;
   showsEfforts: boolean;
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, showsEfforts: true},
-  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, showsEfforts: true},
-  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false, showsEfforts: false},
-  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false, showsEfforts: false},
-  {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false, showsEfforts: true},
-  {key: 'responseVsIntel', label: 'Response Time vs Intelligence', supportsLogX: true, reverseX: true, showsEfforts: true},
-  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: true, reverseX: true, showsEfforts: true},
+  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true},
+  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true},
+  {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false, reverseY: false, logY: false, showsEfforts: false},
+  {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false, reverseY: false, logY: false, showsEfforts: false},
+  {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false, reverseY: false, logY: false, showsEfforts: true},
+  {
+    key: 'responseVsIntel',
+    label: 'Response Time vs Intelligence',
+    supportsLogX: true,
+    reverseX: true,
+    reverseY: false,
+    logY: false,
+    showsEfforts: true
+  },
+  {key: 'responseVsSpeed', label: 'Response Time vs Speed', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true},
+  {key: 'costVsResponse', label: 'Cost vs Response Time', supportsLogX: true, reverseX: true, reverseY: true, logY: true, showsEfforts: true},
 ];
 
 function plotTypeDef(plotType: PlotType): PlotTypeDef {
   return PLOT_TYPES.find(p => p.key === plotType)!;
+}
+
+function hasRunCostX(plotType: PlotType): boolean {
+  return plotType === 'cost' || plotType === 'costVsResponse';
 }
 
 @Component({
@@ -99,6 +115,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         return {x: responseTime, y: m.tokensPerSecond};
       case 'cost':
         return {x: m.costsToRun === 0 ? 0.001 : m.costsToRun, y: intel};
+      case 'costVsResponse':
+        return {x: m.costsToRun === 0 ? 0.001 : m.costsToRun, y: responseTime};
       default: { // price
         const price = blendedPriceOf(m);
         return {x: price === 0 ? 0.001 : price, y: intel};
@@ -166,7 +184,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       .flatMap(c => c.points.filter(p => !p.current).map(p => ({id: effortVariantId(c.model.id, p.effort), x: p.x, y: p.y})));
     const plotDef = this.currentPlotDef();
     const higherXIsBetter = !plotDef.reverseX;
-    const higherYIsBetter = true;
+    const higherYIsBetter = !plotDef.reverseY;
 
     const candidates = pts.concat(levelPts);
     const bestOn = (key: 'x' | 'y', higherIsBetter: boolean): string | null => {
@@ -191,7 +209,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     const balancedId = bestBalancedId(candidates, [
       {get: p => p.x, higherIsBetter: higherXIsBetter, log: this.isLogX(this.state.plotType())},
-      {get: p => p.y, higherIsBetter: higherYIsBetter},
+      {get: p => p.y, higherIsBetter: higherYIsBetter, log: plotDef.logY},
     ]);
 
     return {axisBestIds, balancedId};
@@ -205,6 +223,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.isLogX(plotType) && x > 0 ? Math.log2(x) : x;
   }
 
+  private transformY(y: number, plotType: PlotType): number {
+    return plotTypeDef(plotType).logY && y > 0 ? Math.log2(y) : y;
+  }
+
   readonly plotData = computed(() => {
     const plotted = this.plotted();
     const plotType = this.state.plotType();
@@ -216,12 +238,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return plotted.map(({model: m, x, y}) => {
       if (m.deprecated) {
         return {
-          x: this.transformX(x, plotType), y, label: m.publicName,
+          x: this.transformX(x, plotType), y: this.transformY(y, plotType), label: m.publicName,
           color: colors.deprecated,
           pointStyle: (m.localModel ? 'triangle' : 'circle') as string | HTMLImageElement,
           radius: 6,
           isUseful: false,
-          hollow: plotType === 'cost' && m.tokensPerRunEstimated,
+          hollow: hasRunCostX(plotType) && m.tokensPerRunEstimated,
         };
       }
 
@@ -241,8 +263,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         radius = 15;
       }
 
-      const hollow = plotType === 'cost' && m.tokensPerRunEstimated;
-      return {x: this.transformX(x, plotType), y, label: m.publicName, color, pointStyle, radius, isUseful, hollow};
+      const hollow = hasRunCostX(plotType) && m.tokensPerRunEstimated;
+      return {x: this.transformX(x, plotType), y: this.transformY(y, plotType), label: m.publicName, color, pointStyle, radius, isUseful, hollow};
     });
   });
 
@@ -262,6 +284,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         return {
           ...p,
           px: this.transformX(p.x, plotType),
+          py: this.transformY(p.y, plotType),
           label: shownIds.has(m.id) ? shortEffortLabel(p.effort) : `${m.publicName} ${shortEffortLabel(p.effort)}`,
           useful: !p.current && useful.has(id),
           axisBest: !p.current && axisBestIds.has(id),
@@ -282,7 +305,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   readonly yBounds = computed(() => {
     const plotType = this.state.plotType();
-    const models = this.state.allModels();
+
+    if (plotTypeDef(plotType).logY) {
+      const ys = this.allAxisData().map(d => d.y).filter(y => y > 0);
+      if (ys.length === 0) return {min: 0, max: 8};
+      return {min: Math.floor(Math.log2(Math.min(...ys))), max: Math.ceil(Math.log2(Math.max(...ys)))};
+    }
 
     if (plotType === 'responseVsSpeed') {
       const ys = this.allAxisData().map(d => d.y);
@@ -456,7 +484,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             // The current level sits under the model point, which has its own label.
             if (p.current) continue;
             ctx.fillStyle = p.balanced ? colors.balanced : p.axisBest ? colors.axisBest : p.useful ? colors.useful : curve.color;
-            ctx.fillText(p.label, xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.y) + 8);
+            ctx.fillText(p.label, xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.py) + 8);
           }
         }
         ctx.restore();
@@ -472,7 +500,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const starIcon = this.starIcon();
     return curves.map(c => ({
       label: c.model.publicName,
-      data: c.points.map(p => ({x: p.px, y: p.y})),
+      data: c.points.map(p => ({x: p.px, y: p.py})),
       showLine: true,
       borderColor: c.color,
       backgroundColor: c.points.map(p => p.estimated ? 'transparent' : pointColor(c, p)),
@@ -523,6 +551,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         axisType = 'linear';
         break;
       case 'cost':
+      case 'costVsResponse':
         title = 'Cost per Index Run (USD), hollow: estimated tokens';
         tickCallback = (v: any) => +v >= 100 ? `$${(+v).toFixed(0)}` : `$${(+v).toFixed(2)}`;
         axisType = 'linear';
@@ -553,7 +582,20 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   private yAxisLabel(plotType: PlotType): string {
+    if (plotType === 'costVsResponse') return 'Response Time until first 500 tokens (s)';
     return plotType === 'responseVsSpeed' ? 'Tokens Per Second' : 'Intelligence Score';
+  }
+
+  private yTickCallback(plotType: PlotType): any {
+    if (plotType !== 'costVsResponse') return Ticks.formatters.numeric;
+    return (v: any) => {
+      const seconds = Math.pow(2, +v);
+      return seconds >= 1 ? `${seconds.toFixed(0)}s` : `${seconds}s`;
+    };
+  }
+
+  private yStepSize(plotType: PlotType): number | undefined {
+    return plotTypeDef(plotType).logY ? 1 : undefined;
   }
 
   private initChart(): void {
@@ -599,8 +641,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           y: {
             min: bounds.min,
             max: bounds.max,
+            reverse: this.currentPlotDef().reverseY,
             title: {display: true, text: this.yAxisLabel(plotType), color: '#888', font: {size: 13}},
-            ticks: {color: '#888', font: {size: 10}},
+            ticks: {color: '#888', font: {size: 10}, callback: this.yTickCallback(plotType), stepSize: this.yStepSize(plotType)},
             grid: {color: 'rgba(128,128,128,0.1)'},
           },
         },
@@ -682,7 +725,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const yScale = this.chart.options.scales!['y'] as any;
     yScale.min = bounds.min;
     yScale.max = bounds.max;
+    yScale.reverse = this.currentPlotDef().reverseY;
     yScale.title.text = this.yAxisLabel(plotType);
+    yScale.ticks.callback = this.yTickCallback(plotType);
+    yScale.ticks.stepSize = this.yStepSize(plotType);
 
     (this.chart.options.plugins!.tooltip as any).callbacks = {
       label: (ctx: any) => this.buildTooltipLines(ctx.datasetIndex, ctx.dataIndex, plotType),
