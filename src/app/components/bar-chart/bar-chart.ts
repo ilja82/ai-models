@@ -36,6 +36,8 @@ interface ChartDataResult {
   isStacked: boolean;
   yMax?: number;
   yMin: number;
+  /** Largest value before the Pareto filter, so the axis stays when "Pareto only" is toggled. */
+  ySuggestedMax?: number;
   metricDef: MetricDef;
   models: AiModel[];
   missing: AiModel[];
@@ -112,7 +114,12 @@ export class BarChartComponent implements OnInit, OnDestroy {
 
     const all = this.state.filteredModels();
     const missing = all.filter(m => this.getTotalValue(m, metric) === null);
-    const models = all.filter(m => this.getTotalValue(m, metric) !== null).sort((a, b) => {
+    const withValue = all.filter(m => this.getTotalValue(m, metric) !== null);
+    const allValues = withValue.map(m => this.getTotalValue(m, metric)!);
+    const ySuggestedMax = allValues.length ? Math.max(...allValues) : undefined;
+    const useful = this.state.usefulModelIds();
+    const shown = this.state.showOnlyPareto() ? withValue.filter(m => useful.has(m.id)) : withValue;
+    const models = shown.sort((a, b) => {
       const va = this.getTotalValue(a, metric)!;
       const vb = this.getTotalValue(b, metric)!;
       return metricDef.sortAsc ? va - vb : vb - va;
@@ -131,6 +138,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
         ],
         isStacked: true,
         yMin: 0,
+        ySuggestedMax,
         metricDef,
         models,
         missing,
@@ -147,6 +155,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
         ],
         isStacked: true,
         yMin: 0,
+        ySuggestedMax,
         metricDef,
         models,
         missing,
@@ -156,10 +165,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const values = models.map(m => this.getTotalValue(m, metric)!);
     const solid = models.map(m => m.deprecated ? DEPRECATED_BAR_COLOR : m.localModel ? LOCAL_COLOR : API_COLOR);
     const estimated = models.map(m => metric === 'costsToRun' && m.tokensPerRunEstimated);
-    const maxVal = values.length ? Math.max(...values) : 0;
     let yMax: number | undefined;
     if (metric === 'intelligence') {
-      yMax = Math.min(100, Math.ceil(maxVal) + 5);
+      yMax = Math.min(100, Math.ceil(ySuggestedMax ?? 0) + 5);
     }
 
     return {
@@ -175,6 +183,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
       isStacked: false,
       yMax,
       yMin: 0,
+      ySuggestedMax,
       metricDef,
       models,
       missing,
@@ -320,6 +329,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
             stacked: data.isStacked,
             min: data.yMin,
             max: data.yMax,
+            suggestedMax: data.ySuggestedMax,
             title: {
               display: true,
               text: data.metricDef.axisLabel,
@@ -354,6 +364,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
     (this.chart.options.scales!['y'] as any).stacked = data.isStacked;
     (this.chart.options.scales!['y'] as any).min = data.yMin;
     (this.chart.options.scales!['y'] as any).max = data.yMax;
+    (this.chart.options.scales!['y'] as any).suggestedMax = data.ySuggestedMax;
     (this.chart.options.scales!['y'] as any).title = {
       display: true,
       text: data.metricDef.axisLabel,

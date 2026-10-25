@@ -8,7 +8,7 @@ import {bestBalancedId} from '../../models/balanced.util';
 import {AxisField} from '../../models/view-types';
 import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
-import {effortSeries, otherEffortVariants, shortEffortLabel} from '../../models/effort.util';
+import {effortSeries, shortEffortLabel} from '../../models/effort.util';
 
 type PlotlyModule = typeof import('plotly.js-dist-min');
 
@@ -149,11 +149,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     });
   });
 
-  /** All models, plus their other effort levels while those are shown. The axis ranges use them. */
-  private readonly axisModels = computed(() => {
-    const models = this.state.allModels();
-    return this.state.showEfforts() ? models.concat(models.flatMap(otherEffortVariants)) : models;
-  });
+  /** The filtered models and effort levels before the Pareto filter. The axis ranges and the regions fit them. */
+  private readonly axisModels = computed(() =>
+    this.plotModels().concat(this.effortCurves().flatMap(c => c.points.filter(p => p !== c.model))));
 
   /** Pareto-useful IDs for the currently selected 3 axes. Effort levels have the id `<model id>@<effort>`. */
   readonly useful3d = computed<Set<string>>(() => {

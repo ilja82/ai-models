@@ -16,7 +16,7 @@ import {
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
 import {AiModel, blendedPriceOf, priceBlendLabel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
-import {buildModelTooltipLines, formatUsd} from '../../models/tooltip.util';
+import {buildModelTooltipLines, formatUsd, formatUsdTick} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
@@ -71,6 +71,12 @@ const PLOT_TYPES: PlotTypeDef[] = [
 
 function plotTypeDef(plotType: PlotType): PlotTypeDef {
   return PLOT_TYPES.find(p => p.key === plotType)!;
+}
+
+/** Whole powers of two around min and max, at least one apart, so a single value at a power of two gets an axis. */
+function log2Bounds(min: number, max: number): { min: number; max: number } {
+  const lo = Math.floor(Math.log2(min));
+  return {min: lo, max: Math.max(lo + 1, Math.ceil(Math.log2(max)))};
 }
 
 function hasRunCostX(plotType: PlotType): boolean {
@@ -305,26 +311,23 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     }));
   });
 
-  private readonly allAxisData = computed(() => {
-    const models = this.state.allModels();
-    const plotType = this.state.plotType();
-    const main = models.flatMap(m => this.plotXY(m, plotType) ?? []);
-    if (!this.effortsShown()) return main;
-    const factors = this.state.tokenFactors();
-    return main.concat(models.flatMap(m => effortPoints(m, plotType, factors).map(p => ({x: p.x, y: p.y}))));
+  /** The raw values of the filtered model and effort points before the Pareto filter; the axes fit them. */
+  private readonly shownAxisData = computed(() => {
+    const main = this.plottable().map(({x, y}) => ({x, y}));
+    return main.concat(this.allEffortPoints().flatMap(c => c.points.map(({x, y}) => ({x, y}))));
   });
 
   readonly yBounds = computed(() => {
     const plotType = this.state.plotType();
 
     if (plotTypeDef(plotType).logY) {
-      const ys = this.allAxisData().map(d => d.y).filter(y => y > 0);
+      const ys = this.shownAxisData().map(d => d.y).filter(y => y > 0);
       if (ys.length === 0) return {min: 0, max: 8};
-      return {min: Math.floor(Math.log2(Math.min(...ys))), max: Math.ceil(Math.log2(Math.max(...ys)))};
+      return log2Bounds(Math.min(...ys), Math.max(...ys));
     }
 
     if (plotType === 'responseVsSpeed') {
-      const ys = this.allAxisData().map(d => d.y);
+      const ys = this.shownAxisData().map(d => d.y);
       if (ys.length === 0) return {min: 0, max: 150};
       const range = Math.max(...ys) - Math.min(...ys) || 1;
       return {
@@ -333,7 +336,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       };
     }
 
-    const ys = this.allAxisData().map(d => d.y);
+    const ys = this.shownAxisData().map(d => d.y);
     if (ys.length === 0) return {min: 0, max: 100};
     const pad = 3;
     return {
@@ -343,7 +346,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   readonly xBounds = computed(() => {
-    const xs = this.allAxisData().map(d => d.x);
+    const xs = this.shownAxisData().map(d => d.x);
     if (xs.length === 0) return {min: undefined, max: undefined};
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
@@ -354,12 +357,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       return {min: minX - range * 0.05, max: Date.now()};
     }
 
-    if (this.isLogX(plotType) && minX > 0) {
-      return {
-        min: Math.floor(Math.log2(minX)),
-        max: Math.ceil(Math.log2(maxX)),
-      };
-    }
+    if (this.isLogX(plotType) && minX > 0) return log2Bounds(minX, maxX);
 
     const range = maxX - minX || 1;
     return {min: Math.max(0, minX - range * 0.05), max: maxX + range * 0.05};
@@ -564,13 +562,13 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       case 'cost':
       case 'costVsResponse':
         title = 'Cost per Index Run (USD), hollow: estimated tokens';
-        tickCallback = (v: any) => +v >= 100 ? `$${(+v).toFixed(0)}` : `$${(+v).toFixed(2)}`;
+        tickCallback = (v: any) => formatUsdTick(+v);
         axisType = 'linear';
         break;
       default: // price
         title = `Blended Price (USD per 1M tokens, usage mix ${priceBlendLabel()})`;
         if (this.state.showEfforts()) title += ', effort levels scaled by tokens per run, hollow: estimated';
-        tickCallback = (v: any) => `$${(+v).toFixed(2)}`;
+        tickCallback = (v: any) => formatUsdTick(+v);
         axisType = 'linear';
     }
 

@@ -34,3 +34,47 @@ describe('Scatter3dPlot regions', () => {
     }
   });
 });
+
+describe('Scatter3dPlot axis ranges', () => {
+  it('fit the shown models when a model is switched off', () => {
+    localStorage.clear();
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'a', costsToRun: 1, overallIntelligence: 40, contextWindow: 100_000}),
+      testModel({id: 'b', costsToRun: 100, overallIntelligence: 50, contextWindow: 1_000_000}),
+      testModel({id: 'c', costsToRun: 50, overallIntelligence: 90, contextWindow: 500_000}),
+    ]);
+    state.disabledModelIds.set(new Set());
+    state.showEfforts.set(false);
+    state.logScale3d.set(false);
+    state.scatter3dX.set('costsToRun');
+    state.scatter3dY.set('intelligence');
+    state.scatter3dZ.set('contextWindow');
+    const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    const yRange = () => (c.layout() as any).scene.yaxis.range as number[];
+    expect(yRange()).toEqual([37.5, 92.5]);
+    state.toggleModel('c');
+    expect(yRange()).toEqual([39.5, 50.5]);
+  });
+
+  it('keep their range when Pareto only is toggled', () => {
+    localStorage.clear();
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'best', costsToRun: 1, overallIntelligence: 90, contextWindow: 1_000_000}),
+      testModel({id: 'worse', costsToRun: 100, overallIntelligence: 40, contextWindow: 100_000}),
+    ]);
+    state.disabledModelIds.set(new Set());
+    state.showEfforts.set(false);
+    state.logScale3d.set(false);
+    state.scatter3dX.set('costsToRun');
+    state.scatter3dY.set('intelligence');
+    state.scatter3dZ.set('contextWindow');
+    const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    const yRange = () => (c.layout() as any).scene.yaxis.range as number[];
+    const before = yRange();
+    state.showOnlyPareto.set(true);
+    expect(c.shownModels().map(m => m.id)).toEqual(['best']);
+    expect(yRange()).toEqual(before);
+  });
+});

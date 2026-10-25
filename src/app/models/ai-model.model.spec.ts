@@ -14,7 +14,7 @@ import {
   runCostOf,
 } from './ai-model.model';
 import {testModel} from '../../testing/model-fixture';
-import {buildModelTooltipLines, formatUsd} from './tooltip.util';
+import {buildModelTooltipLines, formatUsd, formatUsdTick} from './tooltip.util';
 import {AI_MODELS} from './ai-models.data';
 
 const BLEND_7_2_1 = {cache: 7, input: 2, reasoning: 0, output: 1};
@@ -198,5 +198,19 @@ describe('data entries without token output', () => {
       expect(m.outputCosts, m.id).toBeNull();
       expect(m.overallIntelligence, m.id).toBeNull();
     }
+  });
+});
+
+describe('formatUsdTick', () => {
+  it('gives each power-of-two tick of the log price axis its own label', () => {
+    const labels = [3, 2, 1, 0, -1, -2, -3, -4, -8, -9, -10].map(e => formatUsdTick(2 ** e));
+    expect(labels).toEqual(['$8.00', '$4.00', '$2.00', '$1.00', '$0.50', '$0.25', '$0.125', '$0.0625', '$0.00391',
+      '$0.00195', '$0.000977']);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it('shows whole dollars from $100 and $0.00 for zero', () => {
+    expect(formatUsdTick(4096)).toBe('$4096');
+    expect(formatUsdTick(0)).toBe('$0.00');
   });
 });

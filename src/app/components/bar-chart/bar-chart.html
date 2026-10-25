@@ -10,6 +10,10 @@
         </button>
       }
     </div>
+    <label class="toggle-label" title="Only the Pareto set on run cost and intelligence, as in the table">
+      <input type="checkbox" [checked]="state.showOnlyPareto()" (change)="state.showOnlyPareto.update(v => !v)"/>
+      Pareto only
+    </label>
     <div class="legend">
       @for (item of legendItems(); track item.label) {
         <span class="legend-item">

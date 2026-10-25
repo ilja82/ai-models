@@ -28,6 +28,64 @@ describe('ScatterPlotComponent plot types', () => {
     c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
   });
 
+  it('fits the axes to the shown models when a model is switched off', () => {
+    const wide = testModel({id: 'wide', costsToRun: 1, overallIntelligence: 20});
+    const cheap = testModel({id: 'cheap', costsToRun: 4, overallIntelligence: 40});
+    const dear = testModel({id: 'dear', costsToRun: 64, overallIntelligence: 60});
+    state.allModels.set([wide, cheap, dear]);
+    state.showEfforts.set(false);
+    state.plotType.set('cost');
+    expect(c.xBounds()).toEqual({min: 0, max: 6});
+    expect(c.yBounds()).toEqual({min: 17, max: 63});
+    state.toggleModel('wide');
+    expect(c.xBounds()).toEqual({min: 2, max: 6});
+    expect(c.yBounds()).toEqual({min: 37, max: 63});
+  });
+
+  it('keeps the axes when Pareto only is toggled', () => {
+    state.allModels.set([
+      testModel({id: 'best', costsToRun: 2, overallIntelligence: 60}),
+      testModel({id: 'worse', costsToRun: 256, overallIntelligence: 30}),
+    ]);
+    state.showEfforts.set(false);
+    state.plotType.set('cost');
+    expect(c.xBounds()).toEqual({min: 1, max: 8});
+    state.showOnlyPareto.set(true);
+    expect(c.plotted().map(p => p.model.id)).toEqual(['best']);
+    expect(c.xBounds()).toEqual({min: 1, max: 8});
+  });
+
+  it('gives a single model at a power of two a log axis one step wide', () => {
+    state.allModels.set([testModel({id: 'one', costsToRun: 8})]);
+    state.showEfforts.set(false);
+    state.plotType.set('cost');
+    expect(c.xBounds()).toEqual({min: 3, max: 4});
+  });
+
+  it('keeps the shown effort points inside the axes, also a level beyond every model', () => {
+    state.allModels.set([fast, testModel({
+      id: 'deep', effort: 'high', overallIntelligence: 50, inputProcessingTime: 10, thinkingTime: 20, outputTime: 34,
+      efforts: [level('high', 50, 34), level('max', 60, 200)],
+    })]);
+    state.plotType.set('responseVsIntel');
+    const xs = c.effortCurves().flatMap(curve => curve.points.map(p => p.px));
+    const {min, max} = c.xBounds();
+    expect(xs.length).toBeGreaterThan(0);
+    for (const x of xs) {
+      expect(x).toBeGreaterThanOrEqual(min!);
+      expect(x).toBeLessThanOrEqual(max!);
+    }
+  });
+
+  for (const plotType of ['price', 'cost'] as PlotType[]) {
+    it(`labels each log2 tick of the ${plotType} axis below one cent with its own value`, () => {
+      const ticks = c['xAxisConfig'](plotType, true, {min: -10, max: 3}).ticks;
+      const labels = [-10, -9, -8, -3, -1, 0].map(v => ticks.callback(v));
+      expect(labels).toEqual(['$0.000977', '$0.00195', '$0.00391', '$0.125', '$0.50', '$1.00']);
+      expect(ticks.stepSize).toBe(1);
+    });
+  }
+
   for (const plotType of ['release', 'context'] as PlotType[]) {
     it(`shows no effort levels on the ${plotType} plot`, () => {
       state.plotType.set(plotType);

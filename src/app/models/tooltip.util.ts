@@ -39,6 +39,13 @@ function kiloTokens(tokens: number | null): string {
   return tokens < 1000 ? `${tokens} tokens` : `${(tokens / 1000).toFixed(0)}K tokens`;
 }
 
+/** USD for an axis tick: whole dollars from $100, else at least 2 decimals and 3 significant digits ($0.125, $0.00391). */
+export function formatUsdTick(value: number): string {
+  if (value >= 100) return `$${value.toFixed(0)}`;
+  const precise = String(Number(value.toPrecision(3)));
+  return (precise.split('.')[1] ?? '').length > 2 ? `$${precise}` : `$${value.toFixed(2)}`;
+}
+
 export function runCostText(model: Pick<AiModel, 'costsToRun' | 'tokensPerRunEstimated'>): string {
   if (model.costsToRun === null) return MISSING;
   return `${formatUsd(model.costsToRun)} per index run${model.tokensPerRunEstimated ? ' (estimated tokens)' : ''}`;

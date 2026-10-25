@@ -13,3 +13,6 @@ if (typeof window.matchMedia !== 'function') {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// AppState applies a URL hash over the stored values, and components write one; reset it so no test sees another's.
+beforeEach(() => history.replaceState(null, '', window.location.pathname));

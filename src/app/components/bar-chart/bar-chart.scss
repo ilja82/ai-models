@@ -16,6 +16,16 @@
       font-size: 0.9rem;
     }
 
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
     .legend {
       margin-left: auto;
       display: flex;
