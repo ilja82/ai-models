@@ -1,4 +1,4 @@
-import {computeCostsToRun, latencyOf, responseTimeOf} from './ai-model.model';
+import {blendedPriceOf, computeCostsToRun, latencyOf, responseTimeOf} from './ai-model.model';
 import {testModel} from '../../testing/model-fixture';
 import {buildModelTooltipLines} from './tooltip.util';
 
@@ -23,7 +23,29 @@ describe('missing measurements', () => {
     expect(lines).toContain('★ Run cost: no data');
   });
 
+  it('shows the cache price in the tooltip', () => {
+    expect(buildModelTooltipLines(testModel())).toContain('Cache: no cache, input price');
+    expect(buildModelTooltipLines(testModel({cacheCosts: 0.1}))).toContain('Cache: $0.100/M tokens');
+    expect(buildModelTooltipLines(testModel())).toContain(
+      '★ Price: $1.100/M tokens (blended 7:2:1 cache:input:output)');
+  });
+
   it('shows the overall intelligence in the tooltip', () => {
     expect(buildModelTooltipLines(testModel())).toContain('★ Overall Intelligence: 40');
+  });
+});
+
+describe('blendedPriceOf', () => {
+  it('blends cache, input and output price at 7:2:1', () => {
+    expect(blendedPriceOf(testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3}))).toBeCloseTo(2.31);
+  });
+
+  it('uses the input price for cached tokens without a cache price', () => {
+    expect(blendedPriceOf(testModel({inputCosts: 3, outputCosts: 15, cacheCosts: null}))).toBeCloseTo(4.2);
+  });
+
+  it('gives a non-reasoning model the same price, because the reasoning weight is 0', () => {
+    const m = testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3});
+    expect(blendedPriceOf({...m, reasoning: false})).toBeCloseTo(blendedPriceOf(m));
   });
 });

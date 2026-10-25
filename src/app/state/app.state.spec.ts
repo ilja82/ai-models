@@ -11,4 +11,9 @@ describe('AppState stored 3D axes', () => {
     expect(state.scatter3dZ()).toBe('intelligence');
     expect(state.scatter3dX()).toBe('contextWindow');
   });
+
+  it('falls back to the price plot for the removed cost plot', () => {
+    localStorage.setItem('ai-models.plotType', 'cost');
+    expect(TestBed.inject(AppState).plotType()).toBe('price');
+  });
 });

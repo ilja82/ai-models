@@ -1,10 +1,30 @@
 import {computed, effect, Injectable, signal} from '@angular/core';
-import {AiModel} from '../models/ai-model.model';
+import {AiModel, blendedPriceOf} from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
-import {AXIS_FIELD_KEYS, AxisField, BarMetric, PlotType, ViewTab} from '../models/view-types';
+import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab} from '../models/view-types';
 import {parseHash, serializeHash} from './url-sync';
 
 const KEY = (k: string) => `ai-models.${k}`;
+
+/** Ids of the models that no other model beats on both intelligence and cost. Models without a cost are left out. */
+function paretoIds(models: AiModel[], cost: (m: AiModel) => number | null): Set<string> {
+  const priced = models.flatMap(m => {
+    const c = cost(m);
+    return c === null ? [] : [{model: m, cost: c}];
+  });
+  // Sort by intelligence descending, then by cost ascending for tiebreaking
+  priced.sort((a, b) => b.model.overallIntelligence - a.model.overallIntelligence || a.cost - b.cost);
+
+  const useful = new Set<string>();
+  let minCostSoFar = Infinity;
+  for (const {model, cost: c} of priced) {
+    if (c < minCostSoFar) {
+      useful.add(model.id);
+      minCostSoFar = c;
+    }
+  }
+  return useful;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AppState {
@@ -22,7 +42,7 @@ export class AppState {
 
   readonly activeTab = signal<ViewTab>(this.loadStr('activeTab', 'scatter') as ViewTab);
   readonly barMetric = signal<BarMetric>(this.loadStr('barMetric', 'intelligence') as BarMetric);
-  readonly plotType = signal<PlotType>(this.loadStr('plotType', 'cost') as PlotType);
+  readonly plotType = signal<PlotType>(this.loadPlotType());
   readonly scatter3dX = signal<AxisField>(this.loadAxis('scatter3d.x', 'tokensPerSecond'));
   readonly scatter3dY = signal<AxisField>(this.loadAxis('scatter3d.y', 'costsToRun'));
   readonly scatter3dZ = signal<AxisField>(this.loadAxis('scatter3d.z', 'intelligence'));
@@ -152,7 +172,7 @@ export class AppState {
     // Missing fields fall back to defaults, not to persisted values.
     this.activeTab.set(parsed.view);
     this.barMetric.set(parsed.barMetric ?? 'intelligence');
-    this.plotType.set(parsed.plotType ?? 'cost');
+    this.plotType.set(parsed.plotType ?? 'price');
     this.scatter3dX.set(parsed.scatter3dX ?? 'tokensPerSecond');
     this.scatter3dY.set(parsed.scatter3dY ?? 'costsToRun');
     this.scatter3dZ.set(parsed.scatter3dZ ?? 'intelligence');
@@ -167,6 +187,11 @@ export class AppState {
 
   private loadStr(key: string, fallback: string): string {
     return localStorage.getItem(KEY(key)) ?? fallback;
+  }
+
+  private loadPlotType(): PlotType {
+    const v = localStorage.getItem(KEY('plotType'));
+    return (PLOT_TYPE_KEYS as readonly string[]).includes(v ?? '') ? v as PlotType : 'price';
   }
 
   private loadAxis(key: string, fallback: AxisField): AxisField {
@@ -217,27 +242,12 @@ export class AppState {
     return this.availableModels().filter(m => !disabled.has(m.id));
   });
 
-  readonly usefulModelIds = computed(() => {
-    const models = this.filteredModels().filter(m => !m.deprecated && m.costsToRun !== null);
+  readonly usefulModelIds = computed(() =>
+    paretoIds(this.filteredModels().filter(m => !m.deprecated), m => m.costsToRun));
 
-    // Sort by intelligence descending, then by cost ascending for tiebreaking
-    const sorted = [...models].sort((a, b) => {
-      const diff = b.overallIntelligence - a.overallIntelligence;
-      return diff !== 0 ? diff : a.costsToRun! - b.costsToRun!;
-    });
-
-    const useful: string[] = [];
-    let minCostSoFar = Infinity;
-
-    for (const model of sorted) {
-      if (model.costsToRun! < minCostSoFar) {
-        useful.push(model.id);
-        minCostSoFar = model.costsToRun!;
-      }
-    }
-
-    return new Set(useful);
-  });
+  /** Pareto set on the blended price, for the price plot. */
+  readonly usefulPriceModelIds = computed(() =>
+    paretoIds(this.filteredModels().filter(m => !m.deprecated), blendedPriceOf));
 
   toggleModel(id: string): void {
     this.disabledModelIds.update(set => {

@@ -106,7 +106,7 @@ export function serializeHash(s: UrlSnapshot): string {
   const params = new URLSearchParams();
 
   if (s.view === 'bar' && s.barMetric !== 'intelligence') params.set('metric', s.barMetric);
-  if (s.view === 'scatter' && s.plotType !== 'cost') params.set('metric', s.plotType);
+  if (s.view === 'scatter' && s.plotType !== 'price') params.set('metric', s.plotType);
   if (s.view === 'scatter3d') {
     if (s.scatter3dX !== 'tokensPerSecond') params.set('x', s.scatter3dX);
     if (s.scatter3dY !== 'costsToRun') params.set('y', s.scatter3dY);

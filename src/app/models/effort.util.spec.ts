@@ -21,18 +21,18 @@ function model(efforts: EffortLevel[], effort: string | null = 'high'): AiModel 
 }
 
 describe('effortPoints', () => {
-  it('maps each level to cost and intelligence and marks the current level', () => {
-    const m = model([level('low', {overallIntelligence: 30, costsToRun: 2}), level('high', {costsToRun: 9})]);
-    const points = effortPoints(m, 'cost');
+  it('maps each level to the model price and the level intelligence and marks the current level', () => {
+    const m = model([level('low', {overallIntelligence: 30}), level('high')]);
+    const points = effortPoints(m, 'price');
     expect(points.map(p => [p.effort, p.x, p.y, p.current])).toEqual([
-      ['low', 2, 30, false],
-      ['high', 9, 40, true],
+      ['low', 1.1, 30, false],
+      ['high', 1.1, 40, true],
     ]);
   });
 
   it('skips a level without a value on the x axis', () => {
-    const m = model([level('low', {costsToRun: null}), level('high')]);
-    expect(effortPoints(m, 'cost').map(p => p.effort)).toEqual(['high']);
+    const m = model([level('low', {tokensPerSecond: null}), level('high')]);
+    expect(effortPoints(m, 'speed').map(p => p.effort)).toEqual(['high']);
   });
 
   it('uses the summed response time and the level speed', () => {
@@ -52,7 +52,7 @@ describe('effortPoints', () => {
   });
 
   it('returns nothing for a model without effort levels', () => {
-    expect(effortPoints(model([], null), 'cost')).toEqual([]);
+    expect(effortPoints(model([], null), 'price')).toEqual([]);
   });
 });
 

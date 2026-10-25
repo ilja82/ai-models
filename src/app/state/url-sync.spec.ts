@@ -1,7 +1,7 @@
 import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 
 const DEFAULTS: UrlSnapshot = {
-  view: 'scatter', barMetric: 'intelligence', plotType: 'cost', scatter3dX: 'tokensPerSecond',
+  view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'tokensPerSecond',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
   showDeprecated: false, showEfforts: false, logScaleX: true, logScale3d: false, showUseful: true,
 };
@@ -17,6 +17,14 @@ describe('url-sync effort levels', () => {
     expect(hash).toBe('#/scatter?efforts=1');
     expect(parseHash(hash)?.showEfforts).toBe(true);
     expect(parseHash('#/scatter?efforts=0')?.showEfforts).toBe(false);
+  });
+});
+
+describe('url-sync plot types', () => {
+  it('omits the default price plot and ignores the removed cost plot', () => {
+    expect(serializeHash(DEFAULTS)).toBe('#/scatter');
+    expect(serializeHash({...DEFAULTS, plotType: 'speed'})).toBe('#/scatter?metric=speed');
+    expect(parseHash('#/scatter?metric=cost')).toEqual({view: 'scatter'});
   });
 });
 

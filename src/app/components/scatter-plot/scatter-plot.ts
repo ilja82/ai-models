@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, blendedPriceOf, PRICE_BLEND, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
@@ -46,7 +46,7 @@ interface PlotTypeDef {
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true},
+  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true},
   {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false},
   {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false},
   {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false},
@@ -88,8 +88,10 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         return {x: responseTime, y: intel};
       case 'responseVsSpeed':
         return {x: responseTime, y: m.tokensPerSecond};
-      default: // cost
-        return {x: m.costsToRun === 0 ? 0.001 : m.costsToRun, y: intel};
+      default: { // price
+        const price = blendedPriceOf(m);
+        return {x: price === 0 ? 0.001 : price, y: intel};
+      }
     }
   }
 
@@ -151,7 +153,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   private isLogX(plotType: PlotType): boolean {
-    return this.state.logScaleX() && (plotType === 'cost' || plotType === 'context');
+    return this.state.logScaleX() && (plotType === 'price' || plotType === 'context');
   }
 
   private transformX(x: number, plotType: PlotType): number {
@@ -160,9 +162,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
   readonly plotData = computed(() => {
     const plotted = this.plotted();
-    const useful = this.state.usefulModelIds();
     const showUseful = this.state.showUsefulModels();
     const plotType = this.state.plotType();
+    const useful = plotType === 'price' ? this.state.usefulPriceModelIds() : this.state.usefulModelIds();
     const {axisBestIds, balancedId} = this.specialMarkers2d();
     const colors = getPlotColors(this.themeState.theme());
     const starIcon = this.starIcon();
@@ -458,14 +460,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         tickCallback = (v: any) => `${(+v).toFixed(1)}s`;
         axisType = 'linear';
         break;
-      default: // cost
-        title = 'Total Usage Cost ($)';
-        tickCallback = (v: any) => `${(+v).toFixed(1)}`;
+      default: // price
+        title = `Blended Price (USD per 1M tokens, ${PRICE_BLEND.cache}:${PRICE_BLEND.input}:${PRICE_BLEND.output} cache:input:output)`;
+        tickCallback = (v: any) => `$${(+v).toFixed(2)}`;
         axisType = 'linear';
     }
 
     let stepSize: number | undefined;
-    if (logScale && (plotType === 'cost' || plotType === 'context')) {
+    if (logScale && (plotType === 'price' || plotType === 'context')) {
       const baseCallback = tickCallback;
       tickCallback = (v: any) => baseCallback(Math.pow(2, +v));
       stepSize = 1;

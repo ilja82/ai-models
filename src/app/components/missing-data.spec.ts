@@ -24,9 +24,9 @@ describe('charts with missing measurements', () => {
 
   it('scatter plot leaves out models without a value on an axis', () => {
     const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
-    state.plotType.set('cost');
-    expect(ids(c.plotted().map(p => p.model))).toEqual(['full', 'no-times']);
-    expect(ids(c.missingModels())).toEqual(['no-tokens']);
+    state.plotType.set('price');
+    expect(ids(c.plotted().map(p => p.model))).toEqual(['full', 'no-tokens', 'no-times']);
+    expect(c.missingModels()).toEqual([]);
     state.plotType.set('responseVsSpeed');
     expect(ids(c.missingModels())).toEqual(['no-times']);
     state.plotType.set('context');
@@ -53,6 +53,14 @@ describe('charts with missing measurements', () => {
 
   it('Pareto set ignores models without a run cost', () => {
     expect(state.usefulModelIds().has('no-tokens')).toBe(false);
+  });
+
+  it('price Pareto set keeps models without a run cost', () => {
+    state.allModels.set([full, testModel({
+      id: 'cheap', overallIntelligence: 30, inputCosts: 0.1, outputCosts: 0.2,
+      tokensPerRun: null, costsToRun: null
+    }), testModel({id: 'worse', overallIntelligence: 20})]);
+    expect([...state.usefulPriceModelIds()]).toEqual(['full', 'cheap']);
   });
 
   it('table sorts missing values last in both directions', () => {

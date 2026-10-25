@@ -1,4 +1,4 @@
-import {AiModel, EffortLevel, responseTimeOf} from './ai-model.model';
+import {AiModel, blendedPriceOf, EffortLevel, responseTimeOf} from './ai-model.model';
 import {PlotType} from './view-types';
 
 export interface EffortPoint {
@@ -38,7 +38,7 @@ function effortXY(model: AiModel, level: EffortLevel, plotType: PlotType): { x: 
     case 'responseVsSpeed':
       return {x: effortResponseTime(level), y: level.tokensPerSecond};
     default:
-      return {x: level.costsToRun === null ? null : level.costsToRun === 0 ? 0.001 : level.costsToRun, y: intel};
+      return {x: blendedPriceOf(model), y: intel};
   }
 }
 
