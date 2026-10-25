@@ -14,8 +14,8 @@ import {
 } from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, blendedPriceOf, PRICE_BLEND, responseTimeOf} from '../../models/ai-model.model';
-import {buildModelTooltipLines} from '../../models/tooltip.util';
+import {AiModel, blendedPriceOf, priceBlendLabel, responseTimeOf} from '../../models/ai-model.model';
+import {buildModelTooltipLines, formatUsd} from '../../models/tooltip.util';
 import {getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
@@ -45,8 +45,11 @@ interface PlotTypeDef {
   reverseX: boolean;
 }
 
+const LOG_X_PLOTS: ReadonlySet<PlotType> = new Set<PlotType>(['price', 'cost', 'context']);
+
 const PLOT_TYPES: PlotTypeDef[] = [
   {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true},
+  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true},
   {key: 'release', label: 'Release vs Intelligence', supportsLogX: false, reverseX: false},
   {key: 'context', label: 'Context vs Intelligence', supportsLogX: true, reverseX: false},
   {key: 'speed', label: 'Tokens/s vs Intelligence', supportsLogX: false, reverseX: false},
@@ -89,6 +92,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         return {x: responseTime, y: intel};
       case 'responseVsSpeed':
         return {x: responseTime, y: m.tokensPerSecond};
+      case 'cost':
+        return {x: m.costsToRun === 0 ? 0.001 : m.costsToRun, y: intel};
       default: { // price
         const price = blendedPriceOf(m);
         return {x: price === 0 ? 0.001 : price, y: intel};
@@ -167,7 +172,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   private isLogX(plotType: PlotType): boolean {
-    return this.state.logScaleX() && (plotType === 'price' || plotType === 'context');
+    return this.state.logScaleX() && LOG_X_PLOTS.has(plotType);
   }
 
   private transformX(x: number, plotType: PlotType): number {
@@ -194,6 +199,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           pointStyle: (m.localModel ? 'triangle' : 'circle') as string | HTMLImageElement,
           radius: 6,
           isUseful: false,
+          hollow: plotType === 'cost' && m.tokensPerRunEstimated,
         };
       }
 
@@ -213,7 +219,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         radius = 10;
       }
 
-      return {x: this.transformX(x, plotType), y, label: m.publicName, color, pointStyle, radius, isUseful};
+      const hollow = plotType === 'cost' && m.tokensPerRunEstimated;
+      return {x: this.transformX(x, plotType), y, label: m.publicName, color, pointStyle, radius, isUseful, hollow};
     });
   });
 
@@ -491,15 +498,20 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         tickCallback = (v: any) => `${(+v).toFixed(1)}s`;
         axisType = 'linear';
         break;
+      case 'cost':
+        title = 'Cost per Index Run (USD), hollow: estimated tokens';
+        tickCallback = (v: any) => +v >= 100 ? `$${(+v).toFixed(0)}` : `$${(+v).toFixed(2)}`;
+        axisType = 'linear';
+        break;
       default: // price
-        title = `Blended Price (USD per 1M tokens, ${PRICE_BLEND.cache}:${PRICE_BLEND.input}:${PRICE_BLEND.output} cache:input:output)`;
+        title = `Blended Price (USD per 1M tokens, usage mix ${priceBlendLabel()})`;
         if (this.state.showEfforts()) title += ', effort levels scaled by tokens per run, hollow: estimated';
         tickCallback = (v: any) => `$${(+v).toFixed(2)}`;
         axisType = 'linear';
     }
 
     let stepSize: number | undefined;
-    if (logScale && (plotType === 'price' || plotType === 'context')) {
+    if (logScale && LOG_X_PLOTS.has(plotType)) {
       const baseCallback = tickCallback;
       tickCallback = (v: any) => baseCallback(Math.pow(2, +v));
       stepSize = 1;
@@ -535,8 +547,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         datasets: [{
           label: 'Models',
           data: data.map(d => ({x: d.x, y: d.y})),
-          backgroundColor: data.map(d => d.color),
+          backgroundColor: data.map(d => d.hollow ? 'transparent' : d.color),
           borderColor: data.map(d => d.color),
+          pointBorderWidth: data.map(d => d.hollow ? 1.5 : 1),
           pointStyle: data.map(d => d.pointStyle) as any,
           pointRadius: data.map(d => d.radius),
           pointHoverRadius: data.map(d => d.radius + 3),
@@ -600,13 +613,22 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         ? `★ Price: $${point.x.toFixed(2)} (${point.tokenRatio!.toFixed(2)}x the tokens per run of ${curve.model.effort}`
         + `${point.estimated ? ', estimated from the effort names' : ''})`
         : '',
-      l.costsToRun !== null ? `★ Run cost: $${l.costsToRun.toFixed(2)}` : '',
+      l.costsToRun !== null ? `★ Run cost: ${formatUsd(l.costsToRun)} per index run` : '',
       l.tokensPerRun !== null ? `Tokens per run: ${l.tokensPerRun}M` : '',
     ].filter(Boolean);
   }
 
   private updateChart(
-    data: { x: number; y: number; label: string; color: string; pointStyle: string | HTMLImageElement; radius: number; isUseful: boolean }[],
+    data: {
+      x: number;
+      y: number;
+      label: string;
+      color: string;
+      pointStyle: string | HTMLImageElement;
+      radius: number;
+      isUseful: boolean;
+      hollow: boolean
+    }[],
     curves: EffortCurve[],
     logScale: boolean,
     bounds: { min: number; max: number },
@@ -616,8 +638,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (!this.chart) return;
 
     this.chart.data.datasets[0].data = data.map(d => ({x: d.x, y: d.y}));
-    (this.chart.data.datasets[0] as any).backgroundColor = data.map(d => d.color);
+    (this.chart.data.datasets[0] as any).backgroundColor = data.map(d => d.hollow ? 'transparent' : d.color);
     (this.chart.data.datasets[0] as any).borderColor = data.map(d => d.color);
+    (this.chart.data.datasets[0] as any).pointBorderWidth = data.map(d => d.hollow ? 1.5 : 1);
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
     (this.chart.data.datasets[0] as any).pointRadius = data.map(d => d.radius);
     (this.chart.data.datasets[0] as any).pointHoverRadius = data.map(d => d.radius + 3);

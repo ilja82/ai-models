@@ -21,6 +21,8 @@ interface StackSegment {
   color: string | string[];
   baseColor: string;
   values: number[];
+  borderColor?: string[];
+  borderWidth?: number[];
 }
 
 interface LegendItem {
@@ -46,10 +48,11 @@ const LOCAL_COLOR = 'rgba(70,180,180,0.75)';
 const SEG_COLOR_1 = 'rgba(99,140,210,0.82)';
 const SEG_COLOR_2 = 'rgba(180,100,210,0.82)';
 const SEG_COLOR_3 = 'rgba(70,180,180,0.82)';
+const ESTIMATED_FILL_ALPHA = '0.15)';
 
 const METRICS: MetricDef[] = [
   {key: 'intelligence', label: 'Intelligence', unit: '', axisLabel: 'Intelligence Score', sortAsc: false, stacked: false},
-  {key: 'costsToRun', label: 'Run Cost', unit: '$', axisLabel: 'Total Usage Cost ($)', sortAsc: false, stacked: false},
+  {key: 'costsToRun', label: 'Run Cost', unit: '$', axisLabel: 'Cost per Index Run (USD), hollow: estimated tokens', sortAsc: false, stacked: false},
   {key: 'inputCosts', label: 'Input Cost', unit: '$/M', axisLabel: 'Input Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'outputCosts', label: 'Output Cost', unit: '$/M', axisLabel: 'Output Cost ($/M tokens)', sortAsc: false, stacked: false},
   {key: 'contextWindow', label: 'Context', unit: 'K tokens', axisLabel: 'Context Window (K tokens)', sortAsc: false, stacked: false},
@@ -151,6 +154,8 @@ export class BarChartComponent implements OnInit, OnDestroy {
     }
 
     const values = models.map(m => this.getTotalValue(m, metric)!);
+    const solid = models.map(m => m.deprecated ? DEPRECATED_BAR_COLOR : m.localModel ? LOCAL_COLOR : API_COLOR);
+    const estimated = models.map(m => metric === 'costsToRun' && m.tokensPerRunEstimated);
     const maxVal = values.length ? Math.max(...values) : 0;
     let yMax: number | undefined;
     if (metric === 'intelligence') {
@@ -161,12 +166,11 @@ export class BarChartComponent implements OnInit, OnDestroy {
       labels,
       segments: [{
         label: metricDef.label,
-        color: models.map(m =>
-          m.deprecated ? DEPRECATED_BAR_COLOR
-            : m.localModel ? LOCAL_COLOR
-              : API_COLOR),
+        color: solid.map((c, i) => estimated[i] ? c.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA) : c),
         baseColor: API_COLOR,
         values,
+        borderColor: solid,
+        borderWidth: estimated.map(e => e ? 1.5 : 0),
       }],
       isStacked: false,
       yMax,
@@ -190,6 +194,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
     }
     if (data.models.some(m => m.deprecated)) {
       items.push({label: 'Deprecated', color: DEPRECATED_BAR_COLOR});
+    }
+    if (data.metricDef.key === 'costsToRun' && data.models.some(m => m.tokensPerRunEstimated)) {
+      items.push({label: 'Estimated tokens (hollow)', color: API_COLOR.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA)});
     }
     return items;
   });
@@ -256,7 +263,10 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const afterBody = (items: any[]): string | string[] => {
       if (!items.length) return '';
       const m = data.models[items[0].dataIndex];
-      return m?.deprecated ? `⚠️ Deprecated: ${m.deprecationInfo}` : '';
+      return [
+        data.metricDef.key === 'costsToRun' && m?.tokensPerRunEstimated ? 'Estimated: no measured token counts' : '',
+        m?.deprecated ? `⚠️ Deprecated: ${m.deprecationInfo}` : '',
+      ].filter(Boolean);
     };
     if (!data.isStacked) return {label, afterBody};
     const afterTitle = (items: any[]): string => {
@@ -281,6 +291,8 @@ export class BarChartComponent implements OnInit, OnDestroy {
           label: seg.label,
           data: seg.values,
           backgroundColor: seg.color as any,
+          borderColor: seg.borderColor,
+          borderWidth: seg.borderWidth,
           borderRadius: 4,
           borderSkipped: false,
         })),
@@ -332,6 +344,8 @@ export class BarChartComponent implements OnInit, OnDestroy {
       label: seg.label,
       data: seg.values,
       backgroundColor: seg.color as any,
+      borderColor: seg.borderColor,
+      borderWidth: seg.borderWidth,
       borderRadius: 4,
       borderSkipped: false,
     }));

@@ -1,13 +1,44 @@
-import {blendedPriceOf, computeCostsToRun, latencyOf, responseTimeOf} from './ai-model.model';
+import {blendedPriceOf, costPerRequestOf, latencyOf, PRICE_BLEND, priceBlendLabel, responseTimeOf, runCostOf} from './ai-model.model';
 import {testModel} from '../../testing/model-fixture';
-import {buildModelTooltipLines} from './tooltip.util';
+import {buildModelTooltipLines, formatUsd} from './tooltip.util';
+import {AI_MODELS} from './ai-models.data';
 
-describe('missing measurements', () => {
-  it('gives no run cost without tokens per run', () => {
-    expect(computeCostsToRun(10, 1_000_000, null)).toBeNull();
-    expect(computeCostsToRun(10, 1_000_000, 2)).toBe(20);
+const BLEND_7_2_1 = {cache: 7, input: 2, reasoning: 0, output: 1};
+
+describe('runCostOf', () => {
+  const prices = {inputCosts: 3, outputCosts: 15, cacheCosts: 0.3};
+  const tokens = {inputTokensPerRun: 100, outputTokensPerRun: 10, cacheHitRate: 0.9};
+
+  it('prices cache hits at the cache price, other input at the input price and output at the output price', () => {
+    expect(runCostOf(prices, tokens)).toBeCloseTo(100 * (0.9 * 0.3 + 0.1 * 3) + 10 * 15);
   });
 
+  it('prices all input at the input price without a cache price or without a cache hit rate', () => {
+    expect(runCostOf({...prices, cacheCosts: null}, tokens)).toBeCloseTo(450);
+    expect(runCostOf(prices, {...tokens, cacheHitRate: null})).toBeCloseTo(450);
+  });
+
+  it('gives no run cost without the token split', () => {
+    expect(runCostOf(prices, {...tokens, inputTokensPerRun: null})).toBeNull();
+    expect(runCostOf(prices, {...tokens, outputTokensPerRun: null})).toBeNull();
+  });
+
+  it('gives each data entry with a token split its run cost in USD', () => {
+    for (const m of AI_MODELS) {
+      expect(m.costsToRun).toEqual(runCostOf(m, m));
+      if (m.tokensPerRun !== null) expect(m.costsToRun).not.toBeNull();
+    }
+  });
+});
+
+describe('costPerRequestOf', () => {
+  it('divides the spend by the requests, and gives null without requests', () => {
+    expect(costPerRequestOf({totalSpend: 12, totalRequests: 400})).toBeCloseTo(0.03);
+    expect(costPerRequestOf({totalSpend: 12, totalRequests: 0})).toBeNull();
+  });
+});
+
+describe('missing measurements', () => {
   it('gives no latency or response time if one part is missing', () => {
     expect(latencyOf(testModel())).toBe(3);
     expect(responseTimeOf(testModel())).toBe(6);
@@ -27,7 +58,29 @@ describe('missing measurements', () => {
     expect(buildModelTooltipLines(testModel())).toContain('Cache: no cache, input price');
     expect(buildModelTooltipLines(testModel({cacheCosts: 0.1}))).toContain('Cache: $0.100/M tokens');
     expect(buildModelTooltipLines(testModel())).toContain(
-      '★ Price: $1.100/M tokens (blended 7:2:1 cache:input:output)');
+      `★ Price: $${blendedPriceOf(testModel()).toFixed(3)}/M tokens (blended by usage: ${priceBlendLabel()})`);
+  });
+
+  it('shows the run cost, the token split and the cost per request in the tooltip', () => {
+    const m = testModel({costsToRun: 207, cacheHitRate: 0.9, totalSpend: 12, totalRequests: 400});
+    const lines = buildModelTooltipLines(m);
+    expect(lines).toContain('★ Run cost: $207.00 per index run');
+    expect(lines).toContain('Tokens per run: 100M (in: 90M, out: 10M, 90% cache hits)');
+    expect(lines).toContain('Cost per request: $0.03 (LiteLLM, 400 requests)');
+    expect(buildModelTooltipLines(testModel()).some(l => l.startsWith('Cost per request'))).toBe(false);
+  });
+
+  it('marks estimated token counts in the tooltip', () => {
+    const lines = buildModelTooltipLines(testModel({tokensPerRunEstimated: true}));
+    expect(lines).toContain('★ Run cost: $10.00 per index run (estimated tokens)');
+    expect(lines).toContain('Tokens per run: 100M (in: 90M, out: 10M) estimated');
+  });
+
+  it('formats small USD values with two significant digits', () => {
+    expect(formatUsd(0.000234)).toBe('$0.00023');
+    expect(formatUsd(0.0135)).toBe('$0.01');
+    expect(formatUsd(12.345)).toBe('$12.35');
+    expect(formatUsd(0)).toBe('$0.00');
   });
 
   it('shows the overall intelligence in the tooltip', () => {
@@ -36,12 +89,18 @@ describe('missing measurements', () => {
 });
 
 describe('blendedPriceOf', () => {
-  it('blends cache, input and output price at 7:2:1', () => {
-    expect(blendedPriceOf(testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3}))).toBeCloseTo(2.31);
+  it('blends cache, input and output price by the weights', () => {
+    expect(blendedPriceOf(testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3}), BLEND_7_2_1)).toBeCloseTo(2.31);
   });
 
   it('uses the input price for cached tokens without a cache price', () => {
-    expect(blendedPriceOf(testModel({inputCosts: 3, outputCosts: 15, cacheCosts: null}))).toBeCloseTo(4.2);
+    expect(blendedPriceOf(testModel({inputCosts: 3, outputCosts: 15, cacheCosts: null}), BLEND_7_2_1)).toBeCloseTo(4.2);
+  });
+
+  it('uses the usage blend by default', () => {
+    const m = testModel({inputCosts: 3, outputCosts: 15, cacheCosts: 0.3});
+    expect(blendedPriceOf(m)).toBeCloseTo(blendedPriceOf(m, PRICE_BLEND));
+    expect(priceBlendLabel(BLEND_7_2_1)).toBe('7% cache, 2% input, 1% output');
   });
 
   it('gives a non-reasoning model the same price, because the reasoning weight is 0', () => {

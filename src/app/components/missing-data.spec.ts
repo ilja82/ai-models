@@ -68,7 +68,17 @@ describe('charts with missing measurements', () => {
     const levels = [
       {effort: 'low', overallIntelligence: 35, costsToRun: 2},
       {effort: 'high', overallIntelligence: 40, costsToRun: 10},
-    ].map(l => ({...l, tokensPerRun: 1, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3}));
+    ].map(l => ({
+      ...l,
+      tokensPerRun: 1,
+      inputTokensPerRun: 1,
+      outputTokensPerRun: 0,
+      cacheHitRate: null,
+      tokensPerSecond: 50,
+      inputProcessingTime: 1,
+      thinkingTime: 2,
+      outputTime: 3
+    }));
     state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
 
     const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance;
@@ -90,7 +100,16 @@ describe('charts with missing measurements', () => {
     const levels = [
       {effort: 'low', overallIntelligence: 38, costsToRun: 2, tokensPerSecond: 80},
       {effort: 'high', overallIntelligence: 40, costsToRun: 10, tokensPerSecond: 50},
-    ].map(l => ({...l, tokensPerRun: 1, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3}));
+    ].map(l => ({
+      ...l,
+      tokensPerRun: 1,
+      inputTokensPerRun: 1,
+      outputTokensPerRun: 0,
+      cacheHitRate: null,
+      inputProcessingTime: 1,
+      thinkingTime: 2,
+      outputTime: 3
+    }));
     state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
 
     const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance;

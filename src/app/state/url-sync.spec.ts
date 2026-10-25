@@ -21,10 +21,11 @@ describe('url-sync effort levels', () => {
 });
 
 describe('url-sync plot types', () => {
-  it('omits the default price plot and ignores the removed cost plot', () => {
+  it('omits the default price plot and round-trips the cost plot', () => {
     expect(serializeHash(DEFAULTS)).toBe('#/scatter');
     expect(serializeHash({...DEFAULTS, plotType: 'speed'})).toBe('#/scatter?metric=speed');
-    expect(parseHash('#/scatter?metric=cost')).toEqual({view: 'scatter'});
+    expect(serializeHash({...DEFAULTS, plotType: 'cost'})).toBe('#/scatter?metric=cost');
+    expect(parseHash('#/scatter?metric=cost')).toEqual({view: 'scatter', plotType: 'cost'});
   });
 });
 

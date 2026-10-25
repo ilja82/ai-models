@@ -1,14 +1,15 @@
 import {Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AppState} from '../../state/app.state';
-import {AiModel, latencyOf, responseTimeOf} from '../../models/ai-model.model';
+import {AiModel, costPerRequestOf, latencyOf, responseTimeOf} from '../../models/ai-model.model';
+import {formatUsd} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
-type ComputedSortKey = 'latency' | 'responseTime';
+type ComputedSortKey = 'latency' | 'responseTime' | 'costPerRequest';
 type SortDir = 'asc' | 'desc';
 
 type NumericCol =
-  | 'inputCosts' | 'outputCosts' | 'costsToRun'
+  | 'inputCosts' | 'outputCosts' | 'costsToRun' | 'costPerRequest'
   | 'contextWindow' | 'maxInputTokens' | 'maxOutputTokens'
   | 'minVramRequirement'
   | 'overallIntelligence'
@@ -61,6 +62,7 @@ const COL_META: Record<NumericCol, ColMeta> = {
   inputCosts: {higherIsBetter: false, log: true, get: m => m.inputCosts, bounds: decadeBounds},
   outputCosts: {higherIsBetter: false, log: true, get: m => m.outputCosts, bounds: decadeBounds},
   costsToRun: {higherIsBetter: false, log: true, get: m => m.costsToRun, bounds: decadeBounds},
+  costPerRequest: {higherIsBetter: false, log: true, get: m => costPerRequestOf(m), bounds: decadeBounds},
   contextWindow: {higherIsBetter: true, log: false, get: m => m.contextWindow, bounds: niceLinearBounds},
   maxInputTokens: {higherIsBetter: true, log: false, get: m => m.maxInputTokens, bounds: niceLinearBounds},
   maxOutputTokens: {higherIsBetter: true, log: false, get: m => m.maxOutputTokens, bounds: niceLinearBounds},
@@ -195,7 +197,22 @@ export class DataTableComponent {
   }
 
   private computedValue(model: AiModel, key: ComputedSortKey): number | null {
-    return key === 'latency' ? latencyOf(model) : responseTimeOf(model);
+    switch (key) {
+      case 'latency':
+        return latencyOf(model);
+      case 'responseTime':
+        return responseTimeOf(model);
+      case 'costPerRequest':
+        return costPerRequestOf(model);
+    }
+  }
+
+  costPerRequest(model: AiModel): number | null {
+    return costPerRequestOf(model);
+  }
+
+  runCostTitle(model: AiModel): string | null {
+    return model.tokensPerRunEstimated ? 'Estimated: the benchmark publishes no token counts for this model' : null;
   }
 
   latency(model: AiModel): number | null {
@@ -209,7 +226,7 @@ export class DataTableComponent {
   formatCost(value: number | null): string {
     if (value === null) return '—';
     if (value === 0) return 'Free';
-    return `$${value.toFixed(2)}`;
+    return formatUsd(value);
   }
 
   formatTime(value: number | null): string {

@@ -14,8 +14,13 @@ describe('AppState stored 3D axes', () => {
     expect(state.scatter3dX()).toBe('contextWindow');
   });
 
-  it('falls back to the price plot for the removed cost plot', () => {
+  it('restores a stored cost plot', () => {
     localStorage.setItem('ai-models.plotType', 'cost');
+    expect(TestBed.inject(AppState).plotType()).toBe('cost');
+  });
+
+  it('falls back to the price plot for an unknown plot', () => {
+    localStorage.setItem('ai-models.plotType', 'lorem');
     expect(TestBed.inject(AppState).plotType()).toBe('price');
   });
 });
@@ -25,7 +30,8 @@ describe('AppState effort levels', () => {
 
   function level(effort: string, overallIntelligence: number, costsToRun: number): EffortLevel {
     return {
-      effort, overallIntelligence, costsToRun, tokensPerRun: 1, tokensPerSecond: 50,
+      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
+      cacheHitRate: null, tokensPerSecond: 50,
       inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
     };
   }

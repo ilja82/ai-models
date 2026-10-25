@@ -4,7 +4,8 @@ import {testModel} from '../../testing/model-fixture';
 
 function level(effort: string, tokensPerRun: number | null): EffortLevel {
   return {
-    effort, overallIntelligence: 40, tokensPerRun, tokensPerSecond: 50,
+    effort, overallIntelligence: 40, tokensPerRun, inputTokensPerRun: null, outputTokensPerRun: null, cacheHitRate: null,
+    tokensPerSecond: 50,
     inputProcessingTime: 1, thinkingTime: 2, outputTime: 3, costsToRun: 1,
   };
 }

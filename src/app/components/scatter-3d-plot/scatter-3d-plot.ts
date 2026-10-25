@@ -26,7 +26,7 @@ interface AxisDef {
 
 const AXIS_DEFS: AxisDef[] = [
   {
-    key: 'costsToRun', label: 'Total Usage Cost ($)', higherIsBetter: false, logCandidate: true,
+    key: 'costsToRun', label: 'Cost per Index Run (USD)', higherIsBetter: false, logCandidate: true,
     get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun, format: v => `$${v.toFixed(2)}`
   },
   {
@@ -299,6 +299,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       else groups.api.push(m);
     }
 
+    const costAxis = [xDef, yDef, zDef].some(d => d.key === 'costsToRun');
+    const symbolOf = (m: AiModel, symbol: string) =>
+      costAxis && m.tokensPerRunEstimated && !symbol.endsWith('-open') ? `${symbol}-open` : symbol;
     const buildTrace = (items: AiModel[], name: string, color: string, symbol: string, size: number) => ({
       type: 'scatter3d',
       mode: 'markers+text',
@@ -311,7 +314,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       textfont: {size: 10, color: '#bbb'},
       hovertext: items.map(m => buildModelTooltipLines(m).join('<br>')),
       hoverinfo: 'text',
-      marker: {color, size, symbol, line: {color: 'rgba(0,0,0,0.4)', width: 0.5}, opacity: 0.95},
+      marker: {
+        color, size, symbol: items.map(m => symbolOf(m, symbol)), line: {color: 'rgba(0,0,0,0.4)', width: 0.5},
+        opacity: 0.95,
+      },
     });
 
     const allModels = this.axisModels();

@@ -1,4 +1,4 @@
-import {AiModel, EffortLevel} from './ai-model.model';
+import {AiModel, blendedPriceOf, EffortLevel} from './ai-model.model';
 import {
   effortPoints,
   effortPrice,
@@ -12,11 +12,16 @@ import {
 import {testModel} from '../../testing/model-fixture';
 import {fitTokenFactors} from './token-factors.util';
 
+const PRICE = blendedPriceOf(testModel());
+
 function level(effort: string, overrides: Partial<EffortLevel> = {}): EffortLevel {
   return {
     effort,
     overallIntelligence: 40,
     tokensPerRun: 100,
+    inputTokensPerRun: 90,
+    outputTokensPerRun: 10,
+    cacheHitRate: null,
     tokensPerSecond: 50,
     inputProcessingTime: 1,
     thinkingTime: 2,
@@ -35,7 +40,7 @@ describe('effortPoints', () => {
     const m = model([level('low', {overallIntelligence: 30, tokensPerRun: 25}), level('high'), level('max', {tokensPerRun: 300})]);
     const points = effortPoints(m, 'price');
     expect(points.map(p => [p.effort, p.y, p.current])).toEqual([['low', 30, false], ['high', 40, true], ['max', 40, false]]);
-    [0.275, 1.1, 3.3].forEach((x, i) => expect(points[i].x).toBeCloseTo(x));
+    [0.25, 1, 3].forEach((r, i) => expect(points[i].x).toBeCloseTo(r * PRICE));
     expect(points.map(p => p.estimated)).toEqual([false, false, false]);
   });
 
@@ -49,7 +54,7 @@ describe('effortPoints', () => {
     const m = testModel({effort: 'high', tokensPerRun: null, efforts: [level('low', {tokensPerRun: null}), level('high', {tokensPerRun: null})]});
     const points = effortPoints(m, 'price', factors);
     expect(points.map(p => [p.effort, p.estimated])).toEqual([['low', true], ['high', false]]);
-    expect(points[0].x).toBeCloseTo(0.275);
+    expect(points[0].x).toBeCloseTo(0.25 * PRICE);
     expect(points[0].tokenRatio).toBeCloseTo(0.25);
   });
 
@@ -82,7 +87,7 @@ describe('effortPoints', () => {
 describe('effortPrice', () => {
   it('returns the blended price for the level of the model values, also without tokens per run', () => {
     const m = testModel({effort: 'high', tokensPerRun: null});
-    expect(effortPrice(m, level('high', {tokensPerRun: null}))).toEqual({price: 1.1, tokenRatio: 1, estimated: false});
+    expect(effortPrice(m, level('high', {tokensPerRun: null}))).toEqual({price: PRICE, tokenRatio: 1, estimated: false});
   });
 
   it('returns null if the level or the model has no tokens per run and no token factor links the efforts', () => {
@@ -93,7 +98,7 @@ describe('effortPrice', () => {
 
   it('scales the blended price by the token ratio', () => {
     expect(effortPrice(model([]), level('low', {tokensPerRun: 50}))).toMatchObject({tokenRatio: 0.5, estimated: false});
-    expect(effortPrice(model([]), level('low', {tokensPerRun: 50}))!.price).toBeCloseTo(0.55);
+    expect(effortPrice(model([]), level('low', {tokensPerRun: 50}))!.price).toBeCloseTo(0.5 * PRICE);
   });
 
   it('prefers the measured ratio over the token factors', () => {
@@ -108,6 +113,12 @@ describe('effort variants', () => {
     expect(v).toMatchObject({
       id: 'lorem-1@low', effort: 'low', overallIntelligence: 30, tokensPerSecond: 80, costsToRun: 4, inputCosts: 1,
     });
+  });
+
+  it('takes the token split of the level, which is always measured', () => {
+    const m = testModel({tokensPerRunEstimated: true, cacheHitRate: 0.5});
+    const v = effortVariant(m, level('low', {inputTokensPerRun: 40, outputTokensPerRun: 4, cacheHitRate: 0.8}));
+    expect(v).toMatchObject({inputTokensPerRun: 40, outputTokensPerRun: 4, cacheHitRate: 0.8, tokensPerRunEstimated: false});
   });
 
   it('leaves out the current level, which the model itself shows', () => {
