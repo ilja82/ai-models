@@ -14,6 +14,12 @@
       <input type="checkbox" [checked]="state.showOnlyPareto()" (change)="state.showOnlyPareto.update(v => !v)"/>
       Pareto only
     </label>
+    @if (hasEffortBars()) {
+      <label class="toggle-label" title="Show the effort levels of one model side by side, ranked by the best level">
+        <input type="checkbox" [checked]="state.barGroupByModel()" (change)="state.barGroupByModel.update(v => !v)"/>
+        Group by model
+      </label>
+    }
     <div class="legend">
       @for (item of legendItems(); track item.label) {
         <span class="legend-item">

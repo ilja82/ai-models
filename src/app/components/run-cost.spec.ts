@@ -23,9 +23,9 @@ describe('run cost with estimated tokens and cost per request', () => {
     const c = TestBed.createComponent(BarChartComponent).componentInstance;
     state.barMetric.set('costsToRun');
     const seg = c.chartData().segments[0];
-    expect(seg.borderWidth).toEqual([0, 1.5]);
-    expect((seg.color as string[])[1]).toMatch(/0\.15\)$/);
-    expect((seg.color as string[])[0]).toBe(seg.borderColor![0]);
+    expect(seg.borderWidth).toEqual([1.5, 0]);
+    expect((seg.color as string[])[0]).toMatch(/0\.15\)$/);
+    expect((seg.color as string[])[1]).toBe(seg.borderColor![1]);
     expect(c.legendItems().map(i => i.label)).toContain('Estimated tokens (hollow)');
     state.barMetric.set('inputCosts');
     expect(c.chartData().segments[0].borderWidth).toEqual([0, 0]);

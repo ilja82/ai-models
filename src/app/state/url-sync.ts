@@ -17,6 +17,7 @@ export interface UrlState {
   showDeprecated?: boolean;
   hiddenProviders?: Provider[];
   showEfforts?: boolean;
+  groupByModel?: boolean;
   logScaleX?: boolean;
   logScale3d?: boolean;
   onlyPareto?: boolean;
@@ -36,6 +37,7 @@ export interface UrlSnapshot {
   showDeprecated: boolean;
   hiddenProviders: readonly Provider[];
   showEfforts: boolean;
+  groupByModel: boolean;
   logScaleX: boolean;
   logScale3d: boolean;
   onlyPareto: boolean;
@@ -102,6 +104,9 @@ export function parseHash(hash: string): UrlState | null {
   if (efforts === '1') out.showEfforts = true;
   else if (efforts === '0') out.showEfforts = false;
 
+  const group = params.get('group');
+  if (view === 'bar' && (group === '1' || group === '0')) out.groupByModel = group === '1';
+
   const log = params.get('log');
   if (log === '1' || log === '0') {
     const v = log === '1';
@@ -147,6 +152,7 @@ export function serializeHash(s: UrlSnapshot): string {
   if (s.showDeprecated) params.set('deprecated', '1');
   s.hiddenProviders.forEach(p => params.append('hide', p));
   if (!s.showEfforts) params.set('efforts', '0');
+  if (s.view === 'bar' && !s.groupByModel) params.set('group', '0');
 
   if (s.view === 'scatter' && !s.logScaleX) params.set('log', '0');
   if (s.view === 'scatter3d' && s.logScale3d !== SCATTER3D_DEFAULTS.log) params.set('log', s.logScale3d ? '1' : '0');

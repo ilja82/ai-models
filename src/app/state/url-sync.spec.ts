@@ -3,7 +3,7 @@ import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 const DEFAULTS: UrlSnapshot = {
   view: 'scatter', barMetric: 'intelligence', plotType: 'price', scatter3dX: 'responseTime',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
-  showDeprecated: false, hiddenProviders: [], showEfforts: true, logScaleX: true, logScale3d: true, onlyPareto: false,
+  showDeprecated: false, hiddenProviders: [], showEfforts: true, groupByModel: true, logScaleX: true, logScale3d: true, onlyPareto: false,
   inputModalities: [], outputModalities: [],
 };
 
@@ -98,5 +98,16 @@ describe('url-sync providers', () => {
     expect(hash).toBe('#/table?hide=bedrock&hide=tensorx');
     expect(parseHash(hash)).toEqual({view: 'table', hiddenProviders: ['bedrock', 'tensorx']});
     expect(parseHash('#/table?hide=lorem&hide=tensorx')).toEqual({view: 'table', hiddenProviders: ['tensorx']});
+  });
+});
+
+describe('url-sync bar groups', () => {
+  it('writes group=0 on the bar chart only and round-trips it', () => {
+    expect(serializeHash({...DEFAULTS, view: 'bar'})).toBe('#/bar');
+    const hash = serializeHash({...DEFAULTS, view: 'bar', groupByModel: false});
+    expect(hash).toBe('#/bar?group=0');
+    expect(parseHash(hash)).toEqual({view: 'bar', groupByModel: false});
+    expect(serializeHash({...DEFAULTS, groupByModel: false})).toBe('#/scatter');
+    expect(parseHash('#/table?group=0')).toEqual({view: 'table'});
   });
 });

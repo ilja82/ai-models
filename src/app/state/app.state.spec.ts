@@ -154,3 +154,17 @@ describe('AppState provider filter', () => {
     expect(TestBed.inject(AppState).hiddenProviders()).toEqual(['tensorx']);
   });
 });
+
+describe('AppState bar groups', () => {
+  afterEach(() => localStorage.clear());
+
+  it('groups the bars by model by default', () => {
+    localStorage.clear();
+    expect(TestBed.inject(AppState).barGroupByModel()).toBe(true);
+  });
+
+  it('restores a stored choice', () => {
+    localStorage.setItem('ai-models.barGroupByModel', 'false');
+    expect(TestBed.inject(AppState).barGroupByModel()).toBe(false);
+  });
+});

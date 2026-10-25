@@ -30,6 +30,7 @@ export class AppState {
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
   readonly hiddenProviders = signal<Provider[]>(this.loadList('hiddenProviders', PROVIDERS));
   readonly showEfforts = signal(this.loadBool('showEfforts', true));
+  readonly barGroupByModel = signal(this.loadBool('barGroupByModel', true));
   readonly inputModalities = signal<InputModality[]>(this.loadList('inputModalities', INPUT_MODALITIES));
   readonly outputModalities = signal<OutputModality[]>(this.loadList('outputModalities', OUTPUT_MODALITIES));
   readonly logScaleX = signal(this.loadBool('logScaleX', true));
@@ -80,6 +81,11 @@ export class AppState {
       const v = this.showEfforts();
       if (this.hydrating) return;
       localStorage.setItem(KEY('showEfforts'), String(v));
+    });
+    effect(() => {
+      const v = this.barGroupByModel();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('barGroupByModel'), String(v));
     });
     effect(() => {
       const v = this.inputModalities();
@@ -151,6 +157,7 @@ export class AppState {
         showDeprecated: this.showDeprecated(),
         hiddenProviders: this.hiddenProviders(),
         showEfforts: this.showEfforts(),
+        groupByModel: this.barGroupByModel(),
         logScaleX: this.logScaleX(),
         logScale3d: this.logScale3d(),
         onlyPareto: this.showOnlyPareto(),
@@ -194,6 +201,7 @@ export class AppState {
     this.showDeprecated.set(parsed.showDeprecated ?? false);
     this.hiddenProviders.set(parsed.hiddenProviders ?? []);
     this.showEfforts.set(parsed.showEfforts ?? true);
+    this.barGroupByModel.set(parsed.groupByModel ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
     this.logScale3d.set(parsed.logScale3d ?? SCATTER3D_DEFAULTS.log);
     this.showOnlyPareto.set(parsed.onlyPareto ?? false);
