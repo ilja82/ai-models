@@ -164,6 +164,18 @@ describe('providers of the data entries', () => {
       if (m.deprecationInfo.includes('Offered by tensorx.ai')) expect(m.provider, m.id).toBe('tensorx');
     }
   });
+
+  it('keeps only the selected API models active', () => {
+    const active = AI_MODELS.filter(m => !m.localModel && !m.deprecated).map(m => m.id).sort();
+    expect(active).toEqual([
+      'claude-haiku-5.5', 'claude-opus-5.5', 'claude-sonnet-5.5', 'deepseek-v4.1-flash-1017',
+      'glm-5.3', 'glm-5.3-flash', 'kimi-k3',
+    ]);
+  });
+
+  it('gives each deprecated entry a deprecation text', () => {
+    for (const m of AI_MODELS.filter(m => m.deprecated)) expect(m.deprecationInfo, m.id).not.toBe('');
+  });
 });
 
 describe('tooltip modalities', () => {
