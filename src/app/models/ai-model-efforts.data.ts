@@ -6,7 +6,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 11.4,
+        overallIntelligence: 13.1,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -655,7 +655,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 18.4,
+        overallIntelligence: 20.0,
         tokensPerRun: 3_070,
         inputTokensPerRun: 3_030,
         outputTokensPerRun: 40.2,
@@ -667,7 +667,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'max',
-        overallIntelligence: 34.0,
+        overallIntelligence: 35.3,
         tokensPerRun: 5_601,
         inputTokensPerRun: 5_439,
         outputTokensPerRun: 162.9,
@@ -730,7 +730,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'max',
-        overallIntelligence: 43.1,
+        overallIntelligence: 44.2,
         tokensPerRun: 10_491,
         inputTokensPerRun: 10_280,
         outputTokensPerRun: 210.9,
@@ -764,7 +764,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 11.2,
+        overallIntelligence: 12.9,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -781,7 +781,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 19.8,
+        overallIntelligence: 21.4,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -798,7 +798,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 8.8,
+        overallIntelligence: 10.6,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -866,7 +866,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 7.4,
+        overallIntelligence: 9.2,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -878,7 +878,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 12.2,
+        overallIntelligence: 13.9,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -924,7 +924,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 11.1,
+        overallIntelligence: 12.8,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -936,7 +936,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 14.7,
+        overallIntelligence: 16.4,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -982,7 +982,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 11.9,
+        overallIntelligence: 13.6,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -994,7 +994,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 12.7,
+        overallIntelligence: 14.4,
         tokensPerRun: 944,
         inputTokensPerRun: 895,
         outputTokensPerRun: 48.6,
@@ -1202,7 +1202,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'max',
-        overallIntelligence: 39.8,
+        overallIntelligence: 41.0,
         tokensPerRun: 6_662,
         inputTokensPerRun: 6_481,
         outputTokensPerRun: 180.7,
@@ -1219,7 +1219,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'low',
-        overallIntelligence: 32.3,
+        overallIntelligence: 33.6,
         tokensPerRun: 2_165,
         inputTokensPerRun: 2_078,
         outputTokensPerRun: 87.6,
@@ -1231,7 +1231,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'max',
-        overallIntelligence: 42.8,
+        overallIntelligence: 43.9,
         tokensPerRun: 5_615,
         inputTokensPerRun: 5_406,
         outputTokensPerRun: 208.6,
@@ -1277,7 +1277,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'low',
-        overallIntelligence: 8.2,
+        overallIntelligence: 10.0,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1289,7 +1289,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'high',
-        overallIntelligence: 9.6,
+        overallIntelligence: 11.4,
         tokensPerRun: 566,
         inputTokensPerRun: 481,
         outputTokensPerRun: 84.2,
@@ -1335,7 +1335,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 7.1,
+        overallIntelligence: 8.9,
         tokensPerRun: 485,
         inputTokensPerRun: 393,
         outputTokensPerRun: 92.1,
@@ -1352,7 +1352,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'high',
-        overallIntelligence: 9.7,
+        overallIntelligence: 11.5,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1369,7 +1369,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 3.7,
+        overallIntelligence: 5.6,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1386,7 +1386,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 13.6,
+        overallIntelligence: 15.3,
         tokensPerRun: 10_943,
         inputTokensPerRun: 10_766,
         outputTokensPerRun: 176.8,
@@ -1403,7 +1403,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 18.6,
+        overallIntelligence: 20.2,
         tokensPerRun: 8_431,
         inputTokensPerRun: 8_271,
         outputTokensPerRun: 160.0,
@@ -1420,7 +1420,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 23.3,
+        overallIntelligence: 24.8,
         tokensPerRun: 5_322,
         inputTokensPerRun: 5_209,
         outputTokensPerRun: 113.7,
@@ -1437,7 +1437,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'high',
-        overallIntelligence: 9.5,
+        overallIntelligence: 11.3,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1529,7 +1529,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 6.4,
+        overallIntelligence: 8.2,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1546,7 +1546,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 39.1,
+        overallIntelligence: 40.3,
         tokensPerRun: 9_482,
         inputTokensPerRun: 9_259,
         outputTokensPerRun: 222.4,
@@ -1563,7 +1563,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 20.6,
+        overallIntelligence: 22.1,
         tokensPerRun: 4_961,
         inputTokensPerRun: 4_712,
         outputTokensPerRun: 248.5,
@@ -1580,7 +1580,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 22.6,
+        overallIntelligence: 24.1,
         tokensPerRun: 4_316,
         inputTokensPerRun: 4_155,
         outputTokensPerRun: 160.8,
@@ -1631,7 +1631,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 9.5,
+        overallIntelligence: 11.3,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1665,7 +1665,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 35.9,
+        overallIntelligence: 37.1,
         tokensPerRun: 5_782,
         inputTokensPerRun: 5_538,
         outputTokensPerRun: 244.7,
@@ -1682,7 +1682,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 44.3,
+        overallIntelligence: 45.4,
         tokensPerRun: 4_571,
         inputTokensPerRun: 4_428,
         outputTokensPerRun: 143.7,
@@ -1699,7 +1699,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 3.7,
+        overallIntelligence: 5.6,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1716,7 +1716,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 6.7,
+        overallIntelligence: 8.5,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1728,7 +1728,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 6.8,
+        overallIntelligence: 8.6,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1745,7 +1745,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 10.5,
+        overallIntelligence: 12.2,
         tokensPerRun: 1_655,
         inputTokensPerRun: 1_581,
         outputTokensPerRun: 74.1,
@@ -1932,7 +1932,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'high',
-        overallIntelligence: 12.2,
+        overallIntelligence: 13.9,
         tokensPerRun: 1_571,
         inputTokensPerRun: 1_470,
         outputTokensPerRun: 100.7,
@@ -1949,7 +1949,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 7.0,
+        overallIntelligence: 8.8,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -1961,7 +1961,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 9.3,
+        overallIntelligence: 11.1,
         tokensPerRun: 363,
         inputTokensPerRun: 309,
         outputTokensPerRun: 53.9,
@@ -1995,7 +1995,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 31.6,
+        overallIntelligence: 32.9,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2012,7 +2012,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'high',
-        overallIntelligence: 15.5,
+        overallIntelligence: 17.1,
         tokensPerRun: 1_225,
         inputTokensPerRun: 1_166,
         outputTokensPerRun: 58.6,
@@ -2029,7 +2029,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'xhigh',
-        overallIntelligence: 36.9,
+        overallIntelligence: 38.1,
         tokensPerRun: 3_067,
         inputTokensPerRun: 2_961,
         outputTokensPerRun: 106.2,
@@ -2046,7 +2046,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 6.4,
+        overallIntelligence: 8.2,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2080,7 +2080,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 19.4,
+        overallIntelligence: 21.0,
         tokensPerRun: 2_899,
         inputTokensPerRun: 2_670,
         outputTokensPerRun: 228.6,
@@ -2097,7 +2097,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 24.5,
+        overallIntelligence: 26.0,
         tokensPerRun: 2_143,
         inputTokensPerRun: 1_970,
         outputTokensPerRun: 172.3,
@@ -2305,7 +2305,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 4.3,
+        overallIntelligence: 6.2,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2465,7 +2465,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 9.2,
+        overallIntelligence: 11.0,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2499,7 +2499,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 3.4,
+        overallIntelligence: 5.3,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2511,7 +2511,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 4.1,
+        overallIntelligence: 6.0,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2528,7 +2528,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 15.7,
+        overallIntelligence: 17.3,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2540,7 +2540,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 13.6,
+        overallIntelligence: 15.3,
         tokensPerRun: 948,
         inputTokensPerRun: 847,
         outputTokensPerRun: 100.7,
@@ -2557,7 +2557,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 4.2,
+        overallIntelligence: 6.1,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2569,7 +2569,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 4.9,
+        overallIntelligence: 6.8,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2586,7 +2586,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 11.3,
+        overallIntelligence: 13.0,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2598,7 +2598,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 9.2,
+        overallIntelligence: 11.0,
         tokensPerRun: 2_332,
         inputTokensPerRun: 2_117,
         outputTokensPerRun: 215.3,
@@ -2615,7 +2615,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 13.2,
+        overallIntelligence: 14.9,
         tokensPerRun: null,
         inputTokensPerRun: null,
         outputTokensPerRun: null,
@@ -2627,7 +2627,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'reasoning',
-        overallIntelligence: 16.2,
+        overallIntelligence: 17.8,
         tokensPerRun: 1_585,
         inputTokensPerRun: 1_423,
         outputTokensPerRun: 161.2,
@@ -2661,7 +2661,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 37.9,
+        overallIntelligence: 39.1,
         tokensPerRun: 4_705,
         inputTokensPerRun: 4_533,
         outputTokensPerRun: 172.1,
@@ -2731,7 +2731,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'non-reasoning',
-        overallIntelligence: 18.2,
+        overallIntelligence: 19.8,
         tokensPerRun: 11_066,
         inputTokensPerRun: 11_023,
         outputTokensPerRun: 43.0,
@@ -2743,7 +2743,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'low',
-        overallIntelligence: 24.2,
+        overallIntelligence: 25.7,
         tokensPerRun: 4_655,
         inputTokensPerRun: 4_572,
         outputTokensPerRun: 82.4,
@@ -2755,7 +2755,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'medium',
-        overallIntelligence: 25.6,
+        overallIntelligence: 27.0,
         tokensPerRun: 4_767,
         inputTokensPerRun: 4_654,
         outputTokensPerRun: 112.8,
@@ -2767,7 +2767,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
       {
         effort: 'xhigh',
-        overallIntelligence: 31.7,
+        overallIntelligence: 33.0,
         tokensPerRun: 4_331,
         inputTokensPerRun: 4_132,
         outputTokensPerRun: 198.3,
@@ -2801,7 +2801,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 37.8,
+        overallIntelligence: 39.0,
         tokensPerRun: 13_093,
         inputTokensPerRun: 12_848,
         outputTokensPerRun: 244.9,
@@ -2818,7 +2818,7 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
     levels: [
       {
         effort: 'reasoning',
-        overallIntelligence: 41.7,
+        overallIntelligence: 42.8,
         tokensPerRun: 5_627,
         inputTokensPerRun: 5_470,
         outputTokensPerRun: 156.5,
