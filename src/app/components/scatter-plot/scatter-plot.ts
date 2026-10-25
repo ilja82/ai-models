@@ -17,7 +17,7 @@ import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
 import {AiModel, blendedPriceOf, priceBlendLabel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
 import {buildModelTooltipLines, formatUsd, formatUsdTick} from '../../models/tooltip.util';
-import {getPlotColors} from '../../models/plot-colors';
+import {darken, getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEffortLabel} from '../../models/effort.util';
@@ -33,10 +33,35 @@ interface EffortCurve {
   points: (EffortPoint & { px: number; py: number; label: string; useful: boolean; axisBest: boolean; balanced: boolean })[];
 }
 
-function makeStarImage(color: string, size: number): HTMLImageElement {
+const LABEL_FONT = '13px system-ui, sans-serif';
+const BALANCED_LABEL_FONT = 'bold 14px system-ui, sans-serif';
+const EFFORT_LABEL_FONT = '10px system-ui, sans-serif';
+const BALANCED_EFFORT_LABEL_FONT = 'bold 12px system-ui, sans-serif';
+const BALANCED_BORDER_WIDTH = 2.5;
+
+const LABEL_GAP = 3;
+
+/** Candidate text baselines for a centered label: above the marker first, then below, then further out. */
+export function labelBaselines(py: number, radius: number, labelH: number): number[] {
+  const above = py - radius - LABEL_GAP;
+  const below = py + radius + LABEL_GAP + labelH;
+  return [above, above - 14, below, above - 28, below + 14, above - 42, below + 28];
+}
+
+/** Offset of a left-aligned, vertically centered effort label: small points get it below right, large ones beside. */
+export function effortLabelOffset(radius: number): { dx: number; dy: number } {
+  return radius > 5 ? {dx: radius + LABEL_GAP, dy: 0} : {dx: 5, dy: 8};
+}
+
+function effortPointRadius(p: { balanced: boolean; axisBest: boolean; useful: boolean }): number {
+  return p.balanced ? 13 : p.axisBest ? 11 : p.useful ? 5 : 3;
+}
+
+function makeStarImage(color: string, size: number, onLoad: () => void): HTMLImageElement {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">` +
     `<polygon fill="${color}" points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38"/></svg>`;
   const img = new Image(size, size);
+  img.onload = onLoad;
   img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   return img;
 }
@@ -98,7 +123,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly themeState = inject(ThemeState);
   private chart?: Chart;
 
-  private readonly starIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22));
+  private readonly starIcon = computed(() =>
+    makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22, () => this.chart?.update('none')));
 
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => plotTypeDef(this.state.plotType()));
@@ -292,6 +318,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           radius: 6,
           isUseful: false,
           hollow: hasRunCostX(plotType) && m.tokensPerRunEstimated,
+          balanced: false,
         };
       }
 
@@ -312,7 +339,18 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       }
 
       const hollow = hasRunCostX(plotType) && m.tokensPerRunEstimated;
-      return {x: this.transformX(x, plotType), y: this.transformY(y, plotType), label: m.publicName, color, pointStyle, radius, isUseful, hollow};
+      const balanced = m.id === balancedId;
+      return {
+        x: this.transformX(x, plotType),
+        y: this.transformY(y, plotType),
+        label: m.publicName,
+        color,
+        pointStyle,
+        radius,
+        isUseful,
+        hollow,
+        balanced
+      };
     });
   });
 
@@ -414,6 +452,40 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     this.chart?.destroy();
   }
 
+  private zoneMidPixels(chart: Chart): { xMid: number; yMid: number } | null {
+    const xAxis = chart.scales['x'];
+    const yAxis = chart.scales['y'];
+    const split = this.zoneSplit();
+    if (!xAxis || !yAxis || !split) return null;
+    const plotType = this.state.plotType();
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+    return {
+      xMid: clamp(xAxis.getPixelForValue(this.transformX(split.x, plotType)), xAxis.left, xAxis.right),
+      yMid: clamp(yAxis.getPixelForValue(this.transformY(split.y, plotType)), yAxis.top, yAxis.bottom),
+    };
+  }
+
+  /** The label color, darkened by `attractiveTextShade` where the pixel lies in the "Most attractive" zone. */
+  labelColorAt(chart: Chart, color: string, x: number, y: number): string {
+    const mid = this.zoneMidPixels(chart);
+    const shade = getPlotColors(this.themeState.theme()).attractiveTextShade;
+    const inZone = !!mid && x >= mid.xMid && x <= chart.scales['x'].right && y >= chart.scales['y'].top && y <= mid.yMid;
+    return inZone ? darken(color, shade) : color;
+  }
+
+  /** The text color of a model label: the marker color, with `usefulLabel` and `axisBestLabel` for the yellow points. */
+  pointLabelColor(markerColor: string): string {
+    const colors = getPlotColors(this.themeState.theme());
+    if (markerColor === colors.useful) return colors.usefulLabel;
+    if (markerColor === colors.axisBest) return colors.axisBestLabel;
+    return markerColor;
+  }
+
+  effortLabelColor(curve: EffortCurve, p: EffortCurve['points'][number]): string {
+    const colors = getPlotColors(this.themeState.theme());
+    return p.balanced ? colors.balanced : p.axisBest ? colors.axisBestLabel : p.useful ? colors.usefulLabel : curve.color;
+  }
+
   private quadrantPlugin(): Plugin {
     return {
       id: 'quadrantBackground',
@@ -423,15 +495,12 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         const yAxis = chart.scales['y'];
         if (!xAxis || !yAxis) return;
 
-        const split = this.zoneSplit();
-        if (!split) return;
+        const mid = this.zoneMidPixels(chart);
+        if (!mid) return;
 
-        const plotType = this.state.plotType();
         const {left, right} = xAxis;
         const {top, bottom} = yAxis;
-        const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-        const xMid = clamp(xAxis.getPixelForValue(this.transformX(split.x, plotType)), left, right);
-        const yMid = clamp(yAxis.getPixelForValue(this.transformY(split.y, plotType)), top, bottom);
+        const {xMid, yMid} = mid;
         const colors = getPlotColors(this.themeState.theme());
 
         ctx.save();
@@ -472,25 +541,28 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           px: xAxis.getPixelForValue(p.x),
           py: yAxis.getPixelForValue(p.y),
           label: p.label,
-          color: p.color,
+          color: this.pointLabelColor(p.color),
+          balanced: p.balanced,
+          radius: p.radius,
         }));
 
-        const usedRects: { x1: number; y1: number; x2: number; y2: number }[] = [];
+        const usedRects: { x1: number; y1: number; x2: number; y2: number }[] = positions
+          .filter(pos => pos.balanced)
+          .map(pos => ({x1: pos.px - pos.radius, y1: pos.py - pos.radius, x2: pos.px + pos.radius, y2: pos.py + pos.radius}));
 
         ctx.save();
-        ctx.font = '13px system-ui, sans-serif';
         ctx.textAlign = 'center';
 
         for (const pos of positions) {
+          ctx.font = pos.balanced ? BALANCED_LABEL_FONT : LABEL_FONT;
           const labelW = ctx.measureText(pos.label).width + 4;
           const labelH = 12;
           const labelX = pos.px;
           let labelY = pos.py - 10;
 
           let placed = false;
-          const offsets = [0, -14, 14, -28, 28, -42, 42];
-          for (const offset of offsets) {
-            labelY = pos.py - 10 + offset;
+          for (const baseline of labelBaselines(pos.py, pos.radius, labelH)) {
+            labelY = baseline;
             const rect = {x1: labelX - labelW / 2, y1: labelY - labelH, x2: labelX + labelW / 2, y2: labelY};
             const overlaps = usedRects.some(r =>
               !(rect.x2 < r.x1 || rect.x1 > r.x2 || rect.y2 < r.y1 || rect.y1 > r.y2)
@@ -506,7 +578,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
             usedRects.push(rect);
           }
 
-          ctx.fillStyle = pos.color;
+          ctx.fillStyle = this.labelColorAt(chart, pos.color, labelX, labelY - labelH / 2);
           ctx.fillText(pos.label, labelX, labelY);
         }
 
@@ -524,16 +596,19 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         if (!xAxis || !yAxis) return;
         const ctx = chart.ctx;
         ctx.save();
-        ctx.font = '10px system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        const colors = getPlotColors(this.themeState.theme());
         for (const curve of this.effortCurves()) {
           for (const p of curve.points) {
             // The current level sits under the model point, which has its own label.
             if (p.current) continue;
-            ctx.fillStyle = p.balanced ? colors.balanced : p.axisBest ? colors.axisBest : p.useful ? colors.useful : curve.color;
-            ctx.fillText(p.label, xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.py) + 8);
+            const color = this.effortLabelColor(curve, p);
+            ctx.font = p.balanced ? BALANCED_EFFORT_LABEL_FONT : EFFORT_LABEL_FONT;
+            const offset = effortLabelOffset(effortPointRadius(p));
+            const x = xAxis.getPixelForValue(p.px) + offset.dx;
+            const y = yAxis.getPixelForValue(p.py) + offset.dy;
+            ctx.fillStyle = this.labelColorAt(chart, color, x, y);
+            ctx.fillText(p.label, x, y);
           }
         }
         ctx.restore();
@@ -541,11 +616,18 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     };
   }
 
+  private borderColorOf(d: { color: string; hollow: boolean; balanced: boolean }): string {
+    return d.balanced && !d.hollow ? getPlotColors(this.themeState.theme()).balancedRing : d.color;
+  }
+
+  private borderWidthOf(d: { hollow: boolean; balanced: boolean }): number {
+    return d.balanced ? BALANCED_BORDER_WIDTH : d.hollow ? 1.5 : 1;
+  }
+
   private effortDatasets(curves: EffortCurve[]): ChartDataset<'scatter'>[] {
-    const {useful, balanced, axisBest} = getPlotColors(this.themeState.theme());
+    const {useful, balanced, balancedRing, axisBest} = getPlotColors(this.themeState.theme());
     const pointColor = (c: EffortCurve, p: EffortCurve['points'][number]) =>
       p.balanced ? balanced : p.axisBest ? axisBest : p.useful ? useful : c.color;
-    const pointRadius = (p: EffortCurve['points'][number]) => p.balanced ? 13 : p.axisBest ? 11 : p.useful ? 5 : 3;
     const starIcon = this.starIcon();
     return curves.map(c => ({
       label: c.model.publicName,
@@ -553,13 +635,13 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       showLine: true,
       borderColor: c.color,
       backgroundColor: c.points.map(p => p.estimated ? 'transparent' : pointColor(c, p)),
-      pointBorderColor: c.points.map(p => pointColor(c, p)),
-      pointBorderWidth: c.points.map(p => p.estimated ? 1.5 : 1),
+      pointBorderColor: c.points.map(p => p.balanced && !p.estimated ? balancedRing : pointColor(c, p)),
+      pointBorderWidth: c.points.map(p => p.balanced ? BALANCED_BORDER_WIDTH : p.estimated ? 1.5 : 1),
       pointStyle: c.points.map(p => p.balanced ? 'rectRot' : p.axisBest ? starIcon : 'circle'),
       borderWidth: 1.5,
       borderDash: [4, 3],
-      pointRadius: c.points.map(pointRadius),
-      pointHoverRadius: c.points.map(p => pointRadius(p) + 2),
+      pointRadius: c.points.map(effortPointRadius),
+      pointHoverRadius: c.points.map(p => effortPointRadius(p) + 2),
       order: 1,
     }));
   }
@@ -663,8 +745,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           label: 'Models',
           data: data.map(d => ({x: d.x, y: d.y})),
           backgroundColor: data.map(d => d.hollow ? 'transparent' : d.color),
-          borderColor: data.map(d => d.color),
-          pointBorderWidth: data.map(d => d.hollow ? 1.5 : 1),
+          borderColor: data.map(d => this.borderColorOf(d)),
+          pointBorderWidth: data.map(d => this.borderWidthOf(d)),
           pointStyle: data.map(d => d.pointStyle) as any,
           pointRadius: data.map(d => d.radius),
           pointHoverRadius: data.map(d => d.radius + 3),
@@ -743,7 +825,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       pointStyle: string | HTMLImageElement;
       radius: number;
       isUseful: boolean;
-      hollow: boolean
+      hollow: boolean;
+      balanced: boolean
     }[],
     curves: EffortCurve[],
     logScale: boolean,
@@ -755,8 +838,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     this.chart.data.datasets[0].data = data.map(d => ({x: d.x, y: d.y}));
     (this.chart.data.datasets[0] as any).backgroundColor = data.map(d => d.hollow ? 'transparent' : d.color);
-    (this.chart.data.datasets[0] as any).borderColor = data.map(d => d.color);
-    (this.chart.data.datasets[0] as any).pointBorderWidth = data.map(d => d.hollow ? 1.5 : 1);
+    (this.chart.data.datasets[0] as any).borderColor = data.map(d => this.borderColorOf(d));
+    (this.chart.data.datasets[0] as any).pointBorderWidth = data.map(d => this.borderWidthOf(d));
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
     (this.chart.data.datasets[0] as any).pointRadius = data.map(d => d.radius);
     (this.chart.data.datasets[0] as any).pointHoverRadius = data.map(d => d.radius + 3);

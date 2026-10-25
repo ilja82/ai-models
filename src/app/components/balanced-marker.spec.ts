@@ -4,6 +4,8 @@ import {testModel} from '../../testing/model-fixture';
 import {EffortLevel} from '../models/ai-model.model';
 import {ScatterPlotComponent} from './scatter-plot/scatter-plot';
 import {Scatter3dPlotComponent} from './scatter-3d-plot/scatter-3d-plot';
+import {getPlotColors} from '../models/plot-colors';
+import {ThemeState} from '../state/theme.state';
 
 describe('special marker sizes', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
@@ -95,5 +97,66 @@ describe('special marker sizes', () => {
     const index = c3.shownEffortCurves()[0].points.findIndex(p => p.id === 'cheapLevel@low');
     const axisBestTrace = c3.traces().find(t => t.name === 'Best per axis') as any;
     expect(drawnArraySize(levelTrace.marker.size[index], levelTrace.marker.sizeref)).toBe(axisBestTrace.marker.size);
+  });
+
+  it('draws a ring and a bold label in its own color beside the marker', () => {
+    state.allModels.set([cheap, pricey, withLevel]);
+    const colors = getPlotColors(TestBed.inject(ThemeState).theme());
+    const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance as any;
+    c2.state.showEfforts.set(false);
+    const data = c2.plotData();
+    const balanced = data.find((d: any) => d.pointStyle === 'rectRot');
+    expect(balanced.color).toBe(colors.balanced);
+    expect(c2.borderColorOf(balanced)).toBe(colors.balancedRing);
+    const others = data.filter((d: any) => d !== balanced).map((d: any) => c2.borderWidthOf(d));
+    expect(Math.max(...others)).toBeLessThan(c2.borderWidthOf(balanced));
+
+    c2.state.showEfforts.set(true);
+    const points = c2.effortCurves().flatMap((c: any) => c.points);
+    const datasets = c2.effortDatasets(c2.effortCurves());
+    const index = points.findIndex((p: any) => p.balanced);
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(datasets.flatMap((d: any) => d.pointBorderColor)[index]).toBe(colors.balancedRing);
+    const widths = datasets.flatMap((d: any) => d.pointBorderWidth) as number[];
+    expect(Math.max(...widths.filter((_, i) => i !== index))).toBeLessThan(widths[index]);
+
+    state.showEfforts.set(false);
+    const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    const trace = c3.traces().find(t => t.name === 'Best balanced') as any;
+    expect(trace.marker.line.color).toBe(colors.balancedRing);
+    const [label] = (c3.layout() as any).scene.annotations;
+    expect(label).toEqual(expect.objectContaining({text: cheap.publicName, xanchor: 'left'}));
+    expect(label.font).toEqual(expect.objectContaining({color: colors.balanced, weight: 'bold'}));
+    expect(label.xshift).toBeGreaterThan(drawnArraySize(16, 0.5) / 2);
+    expect(trace.textfont.color).toBe('rgba(0,0,0,0)');
+  });
+});
+
+describe('best balanced effort level label in 3D', () => {
+  it('moves the level label from the trace to an annotation beside the marker', () => {
+    localStorage.clear();
+    const state = TestBed.inject(AppState);
+    state.disabledModelIds.set(new Set());
+    state.showEfforts.set(true);
+    state.scatter3dX.set('costsToRun');
+    state.scatter3dY.set('intelligence');
+    state.scatter3dZ.set('contextWindow');
+    const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
+      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
+      cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    });
+    state.allModels.set([
+      testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40}),
+      testModel({id: 'pricey', costsToRun: 1000, overallIntelligence: 50}),
+      testModel({id: 'lv', effort: 'high', costsToRun: 500, overallIntelligence: 45, efforts: [level('low', 49, 2), level('high', 45, 500)]}),
+    ]);
+    const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    expect(c3.specialMarkers3d().balancedId).toBe('lv@low');
+    const levelTrace = c3.traces().find(t => t.name.endsWith('effort levels')) as any;
+    const index = c3.shownEffortCurves()[0].points.findIndex(p => p.id === 'lv@low');
+    expect(levelTrace.textfont.color[index]).toBe('rgba(0,0,0,0)');
+    const [label] = (c3.layout() as any).scene.annotations;
+    expect(label.text).toBe('low');
+    expect(label.x).toBe(levelTrace.x[index]);
   });
 });

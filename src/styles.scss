@@ -18,8 +18,9 @@
   --plot-api: rgba(109, 160, 240, 1);
   --plot-local: rgba(64, 200, 200, 1);
   --plot-useful: rgba(220, 210, 70, 1);
-  --plot-axis-best: #ffd166;
-  --plot-balanced: #e7b94a;
+  --plot-axis-best: #ffd60a;
+  --plot-balanced: #ff6a1a;
+  --plot-balanced-ring: #ffffff;
   --plot-deprecated: rgba(160, 160, 160, 0.8);
 }
 
@@ -39,8 +40,9 @@
   --plot-api: #1e5bc6;
   --plot-local: #0d7a7a;
   --plot-useful: #a67c00;
-  --plot-axis-best: #d97706;
-  --plot-balanced: #a05a00;
+  --plot-axis-best: #eab308;
+  --plot-balanced: #d4400b;
+  --plot-balanced-ring: #1a202c;
   --plot-deprecated: rgba(90, 90, 90, 0.8);
 }
 
@@ -61,8 +63,9 @@
     --plot-api: #1e5bc6;
     --plot-local: #0d7a7a;
     --plot-useful: #a67c00;
-    --plot-axis-best: #d97706;
-    --plot-balanced: #a05a00;
+    --plot-axis-best: #eab308;
+    --plot-balanced: #d4400b;
+    --plot-balanced-ring: #1a202c;
     --plot-deprecated: rgba(90, 90, 90, 0.8);
   }
 }

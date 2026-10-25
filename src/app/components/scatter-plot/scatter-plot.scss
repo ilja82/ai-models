@@ -67,6 +67,7 @@
         &.rect-rot {
           transform: rotate(45deg);
           background: var(--plot-balanced);
+          border: 1.5px solid var(--plot-balanced-ring);
           border-radius: 1px;
         }
 
