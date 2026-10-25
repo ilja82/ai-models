@@ -17,8 +17,10 @@ export interface BalancedAxis<T = AiModel> {
  *
  * Iterates in input order with a strict `<` comparison, so ties keep the first model.
  * Returns null when there are no models or any axis is degenerate (no finite spread).
+ *
+ * @param boundsFrom the items that set the min and max of each axis; defaults to `models`.
  */
-export function bestBalancedId<T extends { id: string }>(models: T[], axes: BalancedAxis<T>[]): string | null {
+export function bestBalancedId<T extends { id: string }>(models: T[], axes: BalancedAxis<T>[], boundsFrom: T[] = models): string | null {
   if (models.length === 0 || axes.length === 0) return null;
 
   const valueOf = (a: BalancedAxis<T>, m: T): number => {
@@ -28,7 +30,7 @@ export function bestBalancedId<T extends { id: string }>(models: T[], axes: Bala
   };
 
   const bounds = axes.map(a => {
-    const values = models.map(m => valueOf(a, m)).filter(v => Number.isFinite(v));
+    const values = boundsFrom.map(m => valueOf(a, m)).filter(v => Number.isFinite(v));
     if (values.length === 0) return null;
     return {min: Math.min(...values), max: Math.max(...values)};
   });

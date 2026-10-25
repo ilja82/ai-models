@@ -22,6 +22,7 @@ import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {paretoIds} from '../../models/pareto.util';
+import {median} from '../../models/median.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
@@ -145,6 +146,18 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
+  /** The median x and y of all models with both values of the current plot type, before any filter. */
+  readonly zoneSplit = computed<{ x: number; y: number } | null>(() => {
+    const plotType = this.state.plotType();
+    const points = this.state.allModels().flatMap(m => {
+      const xy = this.plotXY(m, plotType);
+      return xy ? [xy] : [];
+    });
+    const x = median(points.map(p => p.x));
+    const y = median(points.map(p => p.y));
+    return x === null || y === null ? null : {x, y};
+  });
+
   /** The plottable models, only the Pareto set while the Pareto filter is on. */
   readonly plotted = computed(() => {
     if (!this.state.showOnlyPareto()) return this.plottable();
@@ -158,15 +171,17 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   /** The effort points of each plottable model with two or more, while the effort levels are shown. */
-  private readonly allEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
+  private readonly allEffortPoints = computed(() => this.effortPointsOf(this.plottable().map(p => p.model)));
+
+  private effortPointsOf(models: AiModel[]): { model: AiModel; points: EffortPoint[] }[] {
     if (!this.effortsShown()) return [];
     const plotType = this.state.plotType();
     const factors = this.state.tokenFactors();
-    return this.plottable().flatMap(({model}) => {
+    return models.flatMap(model => {
       const points = effortPoints(model, plotType, factors);
       return points.length < 2 ? [] : [{model, points}];
     });
-  });
+  }
 
   /** The effort points, only the Pareto points and only curves with such a level while the Pareto filter is on. */
   private readonly plottedEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
@@ -180,13 +195,29 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   });
 
   /** The non-deprecated model points and their other effort points, which compete for the Pareto set and the markers. */
-  private readonly rankedPoints = computed<{ id: string; x: number; y: number }[]>(() => {
-    const pts = this.plottable().filter(p => !p.model.deprecated).map(p => ({id: p.model.id, x: p.x, y: p.y}));
-    const levelPts = this.allEffortPoints()
+  private readonly rankedPoints = computed(() =>
+    this.rankedPointsOf(this.plottable(), this.allEffortPoints()));
+
+  /** The ranked points of all non-deprecated models in the database, before any filter; they set the best balanced bounds. */
+  private readonly allRankedPoints = computed(() => {
+    const plotType = this.state.plotType();
+    const models = this.state.allModels().flatMap(m => {
+      const xy = this.plotXY(m, plotType);
+      return xy ? [{model: m, ...xy}] : [];
+    });
+    return this.rankedPointsOf(models, this.effortPointsOf(models.map(p => p.model)));
+  });
+
+  private rankedPointsOf(
+    models: { model: AiModel; x: number; y: number }[],
+    curves: { model: AiModel; points: EffortPoint[] }[],
+  ): { id: string; x: number; y: number }[] {
+    const pts = models.filter(p => !p.model.deprecated).map(p => ({id: p.model.id, x: p.x, y: p.y}));
+    const levelPts = curves
       .filter(c => !c.model.deprecated)
       .flatMap(c => c.points.filter(p => !p.current).map(p => ({id: effortVariantId(c.model.id, p.effort), x: p.x, y: p.y})));
     return pts.concat(levelPts);
-  });
+  }
 
   /** Pareto set on the two axes of the current plot type. Effort levels have the id `<model id>@<effort>`. */
   readonly usefulIds = computed(() => {
@@ -227,7 +258,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const balancedId = bestBalancedId(candidates, [
       {get: p => p.x, higherIsBetter: higherXIsBetter, log: this.isLogX(this.state.plotType())},
       {get: p => p.y, higherIsBetter: higherYIsBetter, log: plotDef.logY},
-    ]);
+    ], this.allRankedPoints());
 
     return {axisBestIds, balancedId};
   });
@@ -392,26 +423,35 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         const yAxis = chart.scales['y'];
         if (!xAxis || !yAxis) return;
 
+        const split = this.zoneSplit();
+        if (!split) return;
+
+        const plotType = this.state.plotType();
         const {left, right} = xAxis;
         const {top, bottom} = yAxis;
-        const xMid = (left + right) / 2;
-        const yMid = (top + bottom) / 2;
+        const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+        const xMid = clamp(xAxis.getPixelForValue(this.transformX(split.x, plotType)), left, right);
+        const yMid = clamp(yAxis.getPixelForValue(this.transformY(split.y, plotType)), top, bottom);
         const colors = getPlotColors(this.themeState.theme());
 
         ctx.save();
 
         // Most attractive is always upper-right
-        ctx.fillStyle = colors.attractiveFill;
-        ctx.fillRect(xMid, top, right - xMid, yMid - top);
-        ctx.fillStyle = colors.unattractiveFill;
-        ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
         ctx.font = '10px system-ui, sans-serif';
-        ctx.fillStyle = colors.attractiveLabel;
-        ctx.textAlign = 'right';
-        ctx.fillText('Most attractive', right - 6, top + 14);
-        ctx.fillStyle = colors.unattractiveLabel;
-        ctx.textAlign = 'left';
-        ctx.fillText('Least attractive', left + 6, bottom - 6);
+        if (right > xMid && yMid > top) {
+          ctx.fillStyle = colors.attractiveFill;
+          ctx.fillRect(xMid, top, right - xMid, yMid - top);
+          ctx.fillStyle = colors.attractiveLabel;
+          ctx.textAlign = 'right';
+          ctx.fillText('Most attractive', right - 6, top + 14);
+        }
+        if (xMid > left && bottom > yMid) {
+          ctx.fillStyle = colors.unattractiveFill;
+          ctx.fillRect(left, yMid, xMid - left, bottom - yMid);
+          ctx.fillStyle = colors.unattractiveLabel;
+          ctx.textAlign = 'left';
+          ctx.fillText('Least attractive', left + 6, bottom - 6);
+        }
 
         ctx.restore();
       },

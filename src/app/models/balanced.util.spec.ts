@@ -24,4 +24,10 @@ describe('bestBalancedId', () => {
     expect(bestBalancedId(withFree, axes(true))).toBe('cheap');
     expect(bestBalancedId([{id: 'a', cost: NaN, intel: 1}], axes(true))).toBeNull();
   });
+
+  it('normalizes on the bounds of boundsFrom, so a missing extreme does not change the winner', () => {
+    const shown = points.filter(p => p.id !== 'pricey');
+    expect(bestBalancedId(shown, axes(false))).toBe('cheap');
+    expect(bestBalancedId(shown, axes(false), points)).toBe('mid');
+  });
 });

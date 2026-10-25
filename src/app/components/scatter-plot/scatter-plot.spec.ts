@@ -55,6 +55,36 @@ describe('ScatterPlotComponent plot types', () => {
     expect(c.xBounds()).toEqual({min: 1, max: 8});
   });
 
+  it('splits the zones at the median of all models, also when the filter hides models', () => {
+    state.allModels.set([
+      testModel({id: 'a', costsToRun: 1, overallIntelligence: 20}),
+      testModel({id: 'b', costsToRun: 4, overallIntelligence: 40}),
+      testModel({id: 'c', costsToRun: 9, overallIntelligence: 50}),
+      testModel({id: 'outlier', costsToRun: 10000, overallIntelligence: 90}),
+      testModel({id: 'no-cost', costsToRun: null, overallIntelligence: 10}),
+    ]);
+    state.showEfforts.set(false);
+    state.plotType.set('cost');
+    expect(c.zoneSplit()).toEqual({x: 6.5, y: 45});
+    state.toggleModel('outlier');
+    state.showOnlyPareto.set(true);
+    expect(c.zoneSplit()).toEqual({x: 6.5, y: 45});
+  });
+
+  it('keeps the best balanced model when the filter hides an extreme model', () => {
+    state.allModels.set([
+      testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40}),
+      testModel({id: 'mid', costsToRun: 10, overallIntelligence: 50}),
+      testModel({id: 'pricey', costsToRun: 1000, overallIntelligence: 0}),
+    ]);
+    state.showEfforts.set(false);
+    state.logScaleX.set(false);
+    state.plotType.set('cost');
+    expect(c.specialMarkers2d().balancedId).toBe('mid');
+    state.toggleModel('pricey');
+    expect(c.specialMarkers2d().balancedId).toBe('mid');
+  });
+
   it('gives a single model at a power of two a log axis one step wide', () => {
     state.allModels.set([testModel({id: 'one', costsToRun: 8})]);
     state.showEfforts.set(false);
