@@ -197,11 +197,16 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const axes = this.axes();
 
+    const levels = this.effortCurves()
+      .filter(c => !c.model.deprecated)
+      .flatMap(c => c.points.filter(p => p !== c.model));
+    const candidates = models.concat(levels);
+
     const axisBestIds = new Set<string>();
     for (const a of axes) {
       let bestModel: AiModel | null = null;
       let bestVal = a.higherIsBetter ? -Infinity : Infinity;
-      for (const m of models) {
+      for (const m of candidates) {
         const v = a.get(m);
         if (v === null || !Number.isFinite(v)) continue;
         if (a.higherIsBetter ? v > bestVal : v < bestVal) {
@@ -213,7 +218,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     }
 
     const balancedId = bestBalancedId(
-      models,
+      candidates,
       axes.map(a => ({get: (m: AiModel) => a.get(m)!, higherIsBetter: a.higherIsBetter})),
     );
     return {axisBestIds, balancedId};
@@ -351,6 +356,8 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const effortTraces = this.effortCurves().map(({model, points}) => {
       const lineColor = model.deprecated ? colors.deprecated : model.localModel ? colors.local : colors.api;
       const isUseful = (p: AiModel) => p !== model && showUseful && useful.has(p.id);
+      const isBalanced = (p: AiModel) => p !== model && p.id === balancedId;
+      const isAxisBest = (p: AiModel) => p !== model && !isBalanced(p) && axisBestIds.has(p.id);
       return {
         type: 'scatter3d',
         mode: 'lines+markers+text',
@@ -366,8 +373,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         hoverinfo: 'text',
         line: {color: lineColor, width: 2, dash: 'dash'},
         marker: {
-          size: points.map(p => isUseful(p) ? 6 : 3),
-          color: points.map(p => isUseful(p) ? colors.useful : lineColor),
+          size: points.map(p => isBalanced(p) || isAxisBest(p) ? 8 : isUseful(p) ? 6 : 3),
+          color: points.map(p => isBalanced(p) ? colors.balanced : isAxisBest(p) ? colors.axisBest : isUseful(p) ? colors.useful : lineColor),
+          symbol: points.map(p => isBalanced(p) ? 'square' : isAxisBest(p) ? 'diamond-open' : 'circle'),
         },
       };
     });

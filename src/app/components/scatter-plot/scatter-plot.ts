@@ -27,7 +27,7 @@ Chart.register(ScatterController, PointElement, LineElement, LinearScale, Logari
 interface EffortCurve {
   model: AiModel;
   color: string;
-  points: (EffortPoint & { px: number; useful: boolean })[];
+  points: (EffortPoint & { px: number; useful: boolean; axisBest: boolean; balanced: boolean })[];
 }
 
 function makeStarImage(color: string, size: number): HTMLImageElement {
@@ -69,6 +69,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private chart?: Chart;
 
   private readonly starIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 22));
+  private readonly effortStarIcon = computed(() => makeStarImage(getPlotColors(this.themeState.theme()).axisBest, 18));
 
   readonly plotTypes = PLOT_TYPES;
   readonly currentPlotDef = computed(() => PLOT_TYPES.find(p => p.key === this.state.plotType())!);
@@ -114,20 +115,33 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
+  /** The effort points of each plotted model with two or more, while the effort levels are shown. */
+  private readonly plottedEffortPoints = computed<{ model: AiModel; points: EffortPoint[] }[]>(() => {
+    if (!this.state.showEfforts()) return [];
+    const plotType = this.state.plotType();
+    const factors = this.state.tokenFactors();
+    return this.plotted().flatMap(({model}) => {
+      const points = effortPoints(model, plotType, factors);
+      return points.length < 2 ? [] : [{model, points}];
+    });
+  });
+
   readonly specialMarkers2d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
     const active = this.plotted().filter(p => !p.model.deprecated);
     if (active.length === 0) return {axisBestIds: new Set(), balancedId: null};
-    const models = active.map(p => p.model);
     const pts = active.map(p => ({id: p.model.id, x: p.x, y: p.y}));
-    const byId = new Map(pts.map(p => [p.id, p]));
+    const levelPts = this.plottedEffortPoints()
+      .filter(c => !c.model.deprecated)
+      .flatMap(c => c.points.filter(p => !p.current).map(p => ({id: effortVariantId(c.model.id, p.effort), x: p.x, y: p.y})));
     const plotDef = this.currentPlotDef();
     const higherXIsBetter = !plotDef.reverseX;
     const higherYIsBetter = true;
 
+    const candidates = pts.concat(levelPts);
     const bestOn = (key: 'x' | 'y', higherIsBetter: boolean): string | null => {
       let bestId: string | null = null;
       let bestVal = higherIsBetter ? -Infinity : Infinity;
-      for (const p of pts) {
+      for (const p of candidates) {
         const v = p[key];
         if (!Number.isFinite(v)) continue;
         if (higherIsBetter ? v > bestVal : v < bestVal) {
@@ -144,9 +158,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (bx) axisBestIds.add(bx);
     if (by) axisBestIds.add(by);
 
-    const balancedId = bestBalancedId(models, [
-      {get: m => byId.get(m.id)!.x, higherIsBetter: higherXIsBetter},
-      {get: m => byId.get(m.id)!.y, higherIsBetter: higherYIsBetter},
+    const balancedId = bestBalancedId(candidates, [
+      {get: p => p.x, higherIsBetter: higherXIsBetter},
+      {get: p => p.y, higherIsBetter: higherYIsBetter},
     ]);
 
     return {axisBestIds, balancedId};
@@ -206,26 +220,24 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   readonly hasEfforts = computed(() => this.state.allModels().some(m => m.efforts.length > 1));
 
   readonly effortCurves = computed<EffortCurve[]>(() => {
-    if (!this.state.showEfforts()) return [];
     const plotType = this.state.plotType();
     const colors = getPlotColors(this.themeState.theme());
     const useful = this.state.showUsefulModels() ? this.usefulIds() : new Set<string>();
-    const factors = this.state.tokenFactors();
-    const curves: EffortCurve[] = [];
-    for (const {model: m} of this.plotted()) {
-      const points = effortPoints(m, plotType, factors);
-      if (points.length < 2) continue;
-      curves.push({
-        model: m,
-        color: m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api,
-        points: points.map(p => ({
+    const {axisBestIds, balancedId} = this.specialMarkers2d();
+    return this.plottedEffortPoints().map(({model: m, points}) => ({
+      model: m,
+      color: m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api,
+      points: points.map(p => {
+        const id = effortVariantId(m.id, p.effort);
+        return {
           ...p,
           px: this.transformX(p.x, plotType),
-          useful: !p.current && useful.has(effortVariantId(m.id, p.effort)),
-        })),
-      });
-    }
-    return curves;
+          useful: !p.current && useful.has(id),
+          axisBest: !p.current && axisBestIds.has(id),
+          balanced: !p.current && balancedId === id,
+        };
+      }),
+    }));
   });
 
   private readonly allAxisData = computed(() => {
@@ -412,7 +424,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           for (const p of curve.points) {
             // The current level sits under the model point, which has its own label.
             if (p.current) continue;
-            ctx.fillStyle = p.useful ? colors.useful : curve.color;
+            ctx.fillStyle = p.balanced ? colors.balanced : p.axisBest ? colors.axisBest : p.useful ? colors.useful : curve.color;
             ctx.fillText(shortEffortLabel(p.effort), xAxis.getPixelForValue(p.px) + 5, yAxis.getPixelForValue(p.y) + 8);
           }
         }
@@ -422,19 +434,24 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   private effortDatasets(curves: EffortCurve[]): ChartDataset<'scatter'>[] {
-    const useful = getPlotColors(this.themeState.theme()).useful;
+    const {useful, balanced, axisBest} = getPlotColors(this.themeState.theme());
+    const pointColor = (c: EffortCurve, p: EffortCurve['points'][number]) =>
+      p.balanced ? balanced : p.axisBest ? axisBest : p.useful ? useful : c.color;
+    const pointRadius = (p: EffortCurve['points'][number]) => p.balanced ? 8 : p.axisBest ? 9 : p.useful ? 5 : 3;
+    const starIcon = this.effortStarIcon();
     return curves.map(c => ({
       label: c.model.publicName,
       data: c.points.map(p => ({x: p.px, y: p.y})),
       showLine: true,
       borderColor: c.color,
-      backgroundColor: c.points.map(p => p.estimated ? 'transparent' : p.useful ? useful : c.color),
-      pointBorderColor: c.points.map(p => p.useful ? useful : c.color),
+      backgroundColor: c.points.map(p => p.estimated ? 'transparent' : pointColor(c, p)),
+      pointBorderColor: c.points.map(p => pointColor(c, p)),
       pointBorderWidth: c.points.map(p => p.estimated ? 1.5 : 1),
+      pointStyle: c.points.map(p => p.balanced ? 'rectRot' : p.axisBest ? starIcon : 'circle'),
       borderWidth: 1.5,
       borderDash: [4, 3],
-      pointRadius: c.points.map(p => p.useful ? 5 : 3),
-      pointHoverRadius: c.points.map(p => p.useful ? 7 : 5),
+      pointRadius: c.points.map(pointRadius),
+      pointHoverRadius: c.points.map(p => pointRadius(p) + 2),
       order: 1,
     }));
   }
@@ -571,6 +588,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const responseTime = effortResponseTime(l);
     return [
       `${curve.model.publicName} (effort: ${point.effort}${point.current ? ', shown' : ''})`,
+      point.balanced ? '★ Best balanced' : '',
+      point.axisBest ? '★ Best on an axis' : '',
       point.useful ? '★ Pareto efficient' : '',
       `★ Overall Intelligence: ${l.overallIntelligence}`,
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',

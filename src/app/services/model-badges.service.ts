@@ -1,8 +1,9 @@
 import {Injectable} from '@angular/core';
 import {AiModel, responseTimeOf} from '../models/ai-model.model';
 import {Badge, ProfileEntry} from '../models/profile.model';
+import {parseEffortVariantId} from '../models/effort.util';
 
-/** The best-balanced model id (closest-to-ideal in cost-vs-intelligence space). */
+/** The best-balanced model or effort level id (closest-to-ideal in cost-vs-intelligence space). */
 export interface BalancedIds {
   overall: string | null;
 }
@@ -130,6 +131,7 @@ type BadgeRule = {
 };
 
 function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: BestSets, balancedIds: BalancedIds): BadgeRule[] {
+  const balanced = balancedIds.overall === null ? null : parseEffortVariantId(balancedIds.overall);
   const topBest = best.overall.has(model.id);
   return [
     {
@@ -151,11 +153,11 @@ function strengthRules(model: AiModel, m: ModelMetrics, t: Thresholds, best: Bes
       },
     },
     {
-      when: model.id === balancedIds.overall,
+      when: balanced?.modelId === model.id,
       badge: {
         id: 'best-balanced-overall',
         icon: '🎯',
-        label: 'Best balanced at overall',
+        label: balanced?.effort ? `Best balanced at overall (effort: ${balanced.effort})` : 'Best balanced at overall',
         tooltip: 'Closest to the ideal of low cost and high overall intelligence',
       },
     },

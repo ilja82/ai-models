@@ -19,9 +19,9 @@ export class ModelProfilesComponent {
   private readonly badges = inject(ModelBadgesService);
   readonly searchText = signal('');
 
-  /** The "best balanced" model id: closest-to-ideal in (cost ↓, intelligence ↑). */
+  /** The "best balanced" model or effort level id: closest-to-ideal in (cost ↓, intelligence ↑). */
   readonly balancedIds = computed(() => {
-    const models = this.state.filteredModels().filter(m => !m.deprecated && m.costsToRun !== null);
+    const models = this.state.paretoCandidates().filter(m => m.costsToRun !== null);
     const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun!, higherIsBetter: false};
     return {
       overall: bestBalancedId(models, [cost, {get: m => m.overallIntelligence, higherIsBetter: true}]),

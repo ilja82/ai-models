@@ -92,6 +92,12 @@ export function effortVariantId(modelId: string, effort: string): string {
   return `${modelId}@${effort}`;
 }
 
+/** The model id and the effort of an id from `effortVariantId`. A plain model id has the effort null. */
+export function parseEffortVariantId(id: string): { modelId: string; effort: string | null } {
+  const at = id.indexOf('@');
+  return at < 0 ? {modelId: id, effort: null} : {modelId: id.slice(0, at), effort: id.slice(at + 1)};
+}
+
 /** The model with the measured values of one effort level and the id `<model id>@<effort>`. */
 export function effortVariant(model: AiModel, level: EffortLevel): AiModel {
   return {

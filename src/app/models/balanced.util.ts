@@ -1,8 +1,8 @@
 import {AiModel} from './ai-model.model';
 
-export interface BalancedAxis {
+export interface BalancedAxis<T = AiModel> {
   /** value extractor for this axis */
-  get: (m: AiModel) => number;
+  get: (m: T) => number;
   /** true = larger value is better (e.g. intelligence); false = smaller is better (e.g. cost) */
   higherIsBetter: boolean;
 }
@@ -15,7 +15,7 @@ export interface BalancedAxis {
  * Iterates in input order with a strict `<` comparison, so ties keep the first model.
  * Returns null when there are no models or any axis is degenerate (no finite spread).
  */
-export function bestBalancedId(models: AiModel[], axes: BalancedAxis[]): string | null {
+export function bestBalancedId<T extends { id: string }>(models: T[], axes: BalancedAxis<T>[]): string | null {
   if (models.length === 0 || axes.length === 0) return null;
 
   const bounds = axes.map(a => {

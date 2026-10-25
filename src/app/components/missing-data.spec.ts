@@ -5,6 +5,7 @@ import {ScatterPlotComponent} from './scatter-plot/scatter-plot';
 import {BarChartComponent} from './bar-chart/bar-chart';
 import {Scatter3dPlotComponent} from './scatter-3d-plot/scatter-3d-plot';
 import {DataTableComponent} from './data-table/data-table';
+import {ModelProfilesComponent} from './model-profiles/model-profiles';
 
 // The components are created without change detection, so ngOnInit (canvas, Plotly) does not run in jsdom.
 describe('charts with missing measurements', () => {
@@ -83,6 +84,40 @@ describe('charts with missing measurements', () => {
     state.showEfforts.set(false);
     expect(c3.effortCurves()).toEqual([]);
     expect([...c3.useful3d()].sort()).toEqual(['e', 'mid']);
+  });
+
+  it('marks an effort level as best balanced and best per axis in the scatter plots, and as best balanced in the profiles', () => {
+    const levels = [
+      {effort: 'low', overallIntelligence: 38, costsToRun: 2, tokensPerSecond: 80},
+      {effort: 'high', overallIntelligence: 40, costsToRun: 10, tokensPerSecond: 50},
+    ].map(l => ({...l, tokensPerRun: 1, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3}));
+    state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
+
+    const c2 = TestBed.createComponent(ScatterPlotComponent).componentInstance;
+    state.plotType.set('speed');
+    expect(c2.specialMarkers2d().balancedId).toBe('e@low');
+    expect(c2.effortCurves()[0].points.map(p => [p.effort, p.balanced])).toEqual([['low', true], ['high', false]]);
+    expect([...c2.specialMarkers2d().axisBestIds].sort()).toEqual(['e', 'e@low']);
+    expect(c2.effortCurves()[0].points.map(p => [p.effort, p.axisBest])).toEqual([['low', true], ['high', false]]);
+
+    const c3 = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
+    state.scatter3dX.set('tokensPerSecond');
+    state.scatter3dY.set('costsToRun');
+    state.scatter3dZ.set('intelligence');
+    expect(c3.specialMarkers3d().balancedId).toBe('e@low');
+    expect([...c3.specialMarkers3d().axisBestIds].sort()).toEqual(['e', 'e@low']);
+
+    const profiles = TestBed.createComponent(ModelProfilesComponent).componentInstance;
+    expect(profiles.balancedIds().overall).toBe('e@low');
+    const badge = profiles.profiles().find(p => p.model.id === 'e')!.badges.find(b => b.id === 'best-balanced-overall');
+    expect(badge?.label).toBe('Best balanced at overall (effort: low)');
+
+    state.showEfforts.set(false);
+    expect([...c2.specialMarkers2d().axisBestIds]).not.toContain('e@low');
+    expect([...c3.specialMarkers3d().axisBestIds]).not.toContain('e@low');
+    expect(c2.specialMarkers2d().balancedId).not.toContain('@');
+    expect(c3.specialMarkers3d().balancedId).not.toContain('@');
+    expect(profiles.balancedIds().overall).not.toContain('@');
   });
 
   it('table sorts missing values last in both directions', () => {

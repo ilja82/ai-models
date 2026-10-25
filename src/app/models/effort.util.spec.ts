@@ -1,5 +1,14 @@
 import {AiModel, EffortLevel} from './ai-model.model';
-import {effortPoints, effortPrice, effortResponseTime, effortSeries, effortVariant, otherEffortVariants, shortEffortLabel} from './effort.util';
+import {
+  effortPoints,
+  effortPrice,
+  effortResponseTime,
+  effortSeries,
+  effortVariant,
+  otherEffortVariants,
+  parseEffortVariantId,
+  shortEffortLabel
+} from './effort.util';
 import {testModel} from '../../testing/model-fixture';
 import {fitTokenFactors} from './token-factors.util';
 
@@ -107,6 +116,11 @@ describe('effort variants', () => {
     const series = effortSeries(m);
     expect(series.map(v => v.id)).toEqual(['lorem-1@low', 'lorem-1', 'lorem-1@max']);
     expect(series[1]).toBe(m);
+  });
+
+  it('splits a level id into the model id and the effort', () => {
+    expect(parseEffortVariantId('lorem-1@low')).toEqual({modelId: 'lorem-1', effort: 'low'});
+    expect(parseEffortVariantId('lorem-1')).toEqual({modelId: 'lorem-1', effort: null});
   });
 });
 
