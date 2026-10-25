@@ -1,6 +1,20 @@
 import {ModelEfforts} from './ai-model.model';
 
 export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
+  'claude-3-haiku': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.6,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
   'claude-haiku-4.5': {
     effort: 'reasoning',
     levels: [
@@ -21,6 +35,79 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         inputProcessingTime: 19.5,
         thinkingTime: 0.0,
         outputTime: 5.3
+      },
+    ],
+  },
+  'claude-haiku-5.5': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'low',
+        overallIntelligence: 29.5,
+        tokensPerRun: 876,
+        tokensPerSecond: 176,
+        inputProcessingTime: 6.7,
+        thinkingTime: 0.0,
+        outputTime: 2.8
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 34.5,
+        tokensPerRun: 1_690,
+        tokensPerSecond: 180,
+        inputProcessingTime: 7.7,
+        thinkingTime: 0.0,
+        outputTime: 2.8
+      },
+      {
+        effort: 'high',
+        overallIntelligence: 37.8,
+        tokensPerRun: 2_915,
+        tokensPerSecond: 189,
+        inputProcessingTime: 17.8,
+        thinkingTime: 0.0,
+        outputTime: 2.6
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 41.2,
+        tokensPerRun: 4_635,
+        tokensPerSecond: 190,
+        inputProcessingTime: 55.5,
+        thinkingTime: 0.0,
+        outputTime: 2.6
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 43.4,
+        tokensPerRun: 8_169,
+        tokensPerSecond: 236,
+        inputProcessingTime: 301.6,
+        thinkingTime: 0.0,
+        outputTime: 2.1
+      },
+    ],
+  },
+  'claude-opus-4.5': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 23.7,
+        tokensPerRun: null,
+        tokensPerSecond: 48,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 10.4
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 29.1,
+        tokensPerRun: null,
+        tokensPerSecond: 60,
+        inputProcessingTime: 18.8,
+        thinkingTime: 0.0,
+        outputTime: 8.4
       },
     ],
   },
@@ -84,6 +171,106 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
     ],
   },
+  'claude-opus-5': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'low',
+        overallIntelligence: 39.4,
+        tokensPerRun: 967,
+        tokensPerSecond: 54,
+        inputProcessingTime: 2.7,
+        thinkingTime: 0.0,
+        outputTime: 9.2
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 44.8,
+        tokensPerRun: 1_878,
+        tokensPerSecond: 53,
+        inputProcessingTime: 3.2,
+        thinkingTime: 0.0,
+        outputTime: 9.5
+      },
+      {
+        effort: 'high',
+        overallIntelligence: 48.1,
+        tokensPerRun: 3_224,
+        tokensPerSecond: 54,
+        inputProcessingTime: 10.4,
+        thinkingTime: 0.0,
+        outputTime: 9.2
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 49.7,
+        tokensPerRun: 4_548,
+        tokensPerSecond: 56,
+        inputProcessingTime: 25.1,
+        thinkingTime: 0.0,
+        outputTime: 9.0
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 50.8,
+        tokensPerRun: 5_663,
+        tokensPerSecond: 57,
+        inputProcessingTime: 24.1,
+        thinkingTime: 0.0,
+        outputTime: 8.8
+      },
+    ],
+  },
+  'claude-opus-5.5': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'low',
+        overallIntelligence: 42.3,
+        tokensPerRun: 681,
+        tokensPerSecond: 81,
+        inputProcessingTime: 6.1,
+        thinkingTime: 0.0,
+        outputTime: 6.2
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 51.2,
+        tokensPerRun: 1_837,
+        tokensPerSecond: 84,
+        inputProcessingTime: 10.4,
+        thinkingTime: 0.0,
+        outputTime: 6.0
+      },
+      {
+        effort: 'high',
+        overallIntelligence: 53.6,
+        tokensPerRun: 2_672,
+        tokensPerSecond: 81,
+        inputProcessingTime: 21.5,
+        thinkingTime: 0.0,
+        outputTime: 6.2
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 56.0,
+        tokensPerRun: 6_058,
+        tokensPerSecond: 85,
+        inputProcessingTime: 97.9,
+        thinkingTime: 0.0,
+        outputTime: 5.9
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 57.6,
+        tokensPerRun: 11_238,
+        tokensPerSecond: 96,
+        inputProcessingTime: 562.5,
+        thinkingTime: 0.0,
+        outputTime: 5.2
+      },
+    ],
+  },
   'claude-sonnet-4.6': {
     effort: 'max',
     levels: [
@@ -113,6 +300,263 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         inputProcessingTime: 64.0,
         thinkingTime: 0.0,
         outputTime: 8.9
+      },
+    ],
+  },
+  'claude-sonnet-5': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 23.2,
+        tokensPerRun: null,
+        tokensPerSecond: 69,
+        inputProcessingTime: 0.8,
+        thinkingTime: 0.0,
+        outputTime: 7.3
+      },
+      {
+        effort: 'low',
+        overallIntelligence: 24.3,
+        tokensPerRun: 1_088,
+        tokensPerSecond: 67,
+        inputProcessingTime: 1.0,
+        thinkingTime: 0.0,
+        outputTime: 7.4
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 28.1,
+        tokensPerRun: 2_275,
+        tokensPerSecond: 70,
+        inputProcessingTime: 1.7,
+        thinkingTime: 0.0,
+        outputTime: 7.2
+      },
+      {
+        effort: 'high',
+        overallIntelligence: 31.7,
+        tokensPerRun: 4_254,
+        tokensPerSecond: 70,
+        inputProcessingTime: 7.2,
+        thinkingTime: 0.0,
+        outputTime: 7.2
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 34.4,
+        tokensPerRun: 7_159,
+        tokensPerSecond: 71,
+        inputProcessingTime: 13.6,
+        thinkingTime: 0.0,
+        outputTime: 7.0
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 38.2,
+        tokensPerRun: 13_226,
+        tokensPerSecond: 83,
+        inputProcessingTime: 147.9,
+        thinkingTime: 0.0,
+        outputTime: 6.0
+      },
+    ],
+  },
+  'claude-sonnet-5.5': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'low',
+        overallIntelligence: 35.9,
+        tokensPerRun: 740,
+        tokensPerSecond: 104,
+        inputProcessingTime: 1.4,
+        thinkingTime: 0.0,
+        outputTime: 4.8
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 40.8,
+        tokensPerRun: 1_005,
+        tokensPerSecond: 104,
+        inputProcessingTime: 1.4,
+        thinkingTime: 0.0,
+        outputTime: 4.8
+      },
+      {
+        effort: 'high',
+        overallIntelligence: 46.8,
+        tokensPerRun: 2_063,
+        tokensPerSecond: 108,
+        inputProcessingTime: 10.3,
+        thinkingTime: 0.0,
+        outputTime: 4.6
+      },
+      {
+        effort: 'xhigh',
+        overallIntelligence: 51.9,
+        tokensPerRun: 6_045,
+        tokensPerSecond: 111,
+        inputProcessingTime: 26.1,
+        thinkingTime: 0.0,
+        outputTime: 4.5
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 56.0,
+        tokensPerRun: 19_084,
+        tokensPerSecond: 133,
+        inputProcessingTime: 343.1,
+        thinkingTime: 0.0,
+        outputTime: 3.8
+      },
+    ],
+  },
+  'deepseek-v3.1': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 13.7,
+        tokensPerRun: null,
+        tokensPerSecond: 96,
+        inputProcessingTime: 1.4,
+        thinkingTime: 0.0,
+        outputTime: 5.2
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 13.5,
+        tokensPerRun: null,
+        tokensPerSecond: 120,
+        inputProcessingTime: 2.7,
+        thinkingTime: 16.6,
+        outputTime: 4.2
+      },
+    ],
+  },
+  'deepseek-v3.2': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 16.0,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 21.5,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'deepseek-v4.1-flash-1017': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'max',
+        overallIntelligence: 45.1,
+        tokensPerRun: 10_491,
+        tokensPerSecond: 195,
+        inputProcessingTime: 1.1,
+        thinkingTime: 10.2,
+        outputTime: 2.6
+      },
+    ],
+  },
+  'gemma-3-12B-instruct': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 3.8,
+        tokensPerRun: 2_651,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'gemma-3-27B-instruct': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 4.9,
+        tokensPerRun: 1_750,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'gemma-3-4B-instruct': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 4.8,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'gemma-4-31B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 13.9,
+        tokensPerRun: null,
+        tokensPerSecond: 52,
+        inputProcessingTime: 1.7,
+        thinkingTime: 0.0,
+        outputTime: 9.7
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 14.7,
+        tokensPerRun: 944,
+        tokensPerSecond: 36,
+        inputProcessingTime: 1.1,
+        thinkingTime: 48.3,
+        outputTime: 13.9
+      },
+    ],
+  },
+  'glm-4.7': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 17.4,
+        tokensPerRun: null,
+        tokensPerSecond: 36,
+        inputProcessingTime: 1.7,
+        thinkingTime: 0.0,
+        outputTime: 13.7
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 22.2,
+        tokensPerRun: null,
+        tokensPerSecond: 36,
+        inputProcessingTime: 2.2,
+        thinkingTime: 55.9,
+        outputTime: 14.0
       },
     ],
   },
@@ -300,6 +744,85 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
     ],
   },
+  'kimi-k3': {
+    effort: 'max',
+    levels: [
+      {
+        effort: 'low',
+        overallIntelligence: 30.1,
+        tokensPerRun: 1_539,
+        tokensPerSecond: 38,
+        inputProcessingTime: 3.8,
+        thinkingTime: 53.3,
+        outputTime: 13.3
+      },
+      {
+        effort: 'max',
+        overallIntelligence: 43.6,
+        tokensPerRun: 2_724,
+        tokensPerSecond: 41,
+        inputProcessingTime: 3.4,
+        thinkingTime: 49.3,
+        outputTime: 12.3
+      },
+    ],
+  },
+  'llama-3-instruct-70B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.5,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'llama-3-instruct-8B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 4.8,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'magistral-small-1.2': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 8.6,
+        tokensPerRun: null,
+        tokensPerSecond: 78,
+        inputProcessingTime: 1.5,
+        thinkingTime: 25.6,
+        outputTime: 6.4
+      },
+    ],
+  },
+  'minimax-m2': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 18.6,
+        tokensPerRun: null,
+        tokensPerSecond: 99,
+        inputProcessingTime: 1.4,
+        thinkingTime: 20.1,
+        outputTime: 5.0
+      },
+    ],
+  },
   'minimax-m2.1': {
     effort: 'reasoning',
     levels: [
@@ -328,6 +851,256 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
       },
     ],
   },
+  'ministral-3-14B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 6.0,
+        tokensPerRun: 1_249,
+        tokensPerSecond: 83,
+        inputProcessingTime: 1.0,
+        thinkingTime: 0.0,
+        outputTime: 6.0
+      },
+    ],
+  },
+  'ministral-3-3B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 4.8,
+        tokensPerRun: 613,
+        tokensPerSecond: 207,
+        inputProcessingTime: 0.7,
+        thinkingTime: 0.0,
+        outputTime: 2.4
+      },
+    ],
+  },
+  'ministral-3-8B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.5,
+        tokensPerRun: 1_126,
+        tokensPerSecond: 113,
+        inputProcessingTime: 0.9,
+        thinkingTime: 0.0,
+        outputTime: 4.4
+      },
+    ],
+  },
+  'mistral-7B-instruct': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.0,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'mistral-large': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.8,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'mixtral-8x7B-instruct': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.1,
+        tokensPerRun: null,
+        tokensPerSecond: 25,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 20.0
+      },
+    ],
+  },
+  'nemotron-3-super-120B-a12B': {
+    effort: 'reasoning',
+    levels: [
+      {
+        effort: 'reasoning',
+        overallIntelligence: 12.8,
+        tokensPerRun: 4_051,
+        tokensPerSecond: 155,
+        inputProcessingTime: 1.4,
+        thinkingTime: 12.9,
+        outputTime: 3.2
+      },
+    ],
+  },
+  'nova-2.0-lite': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 8.7,
+        tokensPerRun: null,
+        tokensPerSecond: 176,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 2.8
+      },
+      {
+        effort: 'low',
+        overallIntelligence: 11.8,
+        tokensPerRun: null,
+        tokensPerSecond: 175,
+        inputProcessingTime: 8.9,
+        thinkingTime: 11.4,
+        outputTime: 2.9
+      },
+      {
+        effort: 'medium',
+        overallIntelligence: 12.5,
+        tokensPerRun: null,
+        tokensPerSecond: 177,
+        inputProcessingTime: 11.9,
+        thinkingTime: 11.3,
+        outputTime: 2.8
+      },
+      {
+        effort: 'high',
+        overallIntelligence: 13.4,
+        tokensPerRun: null,
+        tokensPerSecond: 182,
+        inputProcessingTime: 16.1,
+        thinkingTime: 11.0,
+        outputTime: 2.7
+      },
+    ],
+  },
+  'nova-lite': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 6.7,
+        tokensPerRun: null,
+        tokensPerSecond: 171,
+        inputProcessingTime: 0.9,
+        thinkingTime: 0.0,
+        outputTime: 2.9
+      },
+    ],
+  },
+  'nova-micro': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.9,
+        tokensPerRun: null,
+        tokensPerSecond: 280,
+        inputProcessingTime: 0.9,
+        thinkingTime: 0.0,
+        outputTime: 1.8
+      },
+    ],
+  },
+  'nova-pro': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 7.0,
+        tokensPerRun: null,
+        tokensPerSecond: 129,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 3.9
+      },
+    ],
+  },
+  'nvidia-nemotron-3-nano-30B-a3B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 6.8,
+        tokensPerRun: null,
+        tokensPerSecond: 268,
+        inputProcessingTime: 0.8,
+        thinkingTime: 0.0,
+        outputTime: 1.9
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 8.9,
+        tokensPerRun: 739,
+        tokensPerSecond: 235,
+        inputProcessingTime: 0.9,
+        thinkingTime: 8.5,
+        outputTime: 2.1
+      },
+    ],
+  },
+  'nvidia-nemotron-nano-12B-v2-vl': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 5.8,
+        tokensPerRun: null,
+        tokensPerSecond: 202,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 2.5
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 7.5,
+        tokensPerRun: null,
+        tokensPerSecond: null,
+        inputProcessingTime: null,
+        thinkingTime: null,
+        outputTime: null
+      },
+    ],
+  },
+  'nvidia-nemotron-nano-9B-v2': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 6.8,
+        tokensPerRun: null,
+        tokensPerSecond: 165,
+        inputProcessingTime: 1.0,
+        thinkingTime: 0.0,
+        outputTime: 3.0
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 7.4,
+        tokensPerRun: null,
+        tokensPerSecond: 95,
+        inputProcessingTime: 0.8,
+        thinkingTime: 21.0,
+        outputTime: 5.3
+      },
+    ],
+  },
   'qwen3-235B': {
     effort: 'reasoning',
     levels: [
@@ -348,6 +1121,29 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         inputProcessingTime: null,
         thinkingTime: null,
         outputTime: null
+      },
+    ],
+  },
+  'qwen3-32B': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 7.3,
+        tokensPerRun: null,
+        tokensPerSecond: 58,
+        inputProcessingTime: 1.4,
+        thinkingTime: 0.0,
+        outputTime: 8.6
+      },
+      {
+        effort: 'reasoning',
+        overallIntelligence: 7.2,
+        tokensPerRun: null,
+        tokensPerSecond: 22,
+        inputProcessingTime: 1.8,
+        thinkingTime: 90.1,
+        outputTime: 22.5
       },
     ],
   },
@@ -376,6 +1172,34 @@ export const AI_MODEL_EFFORTS: Record<string, ModelEfforts> = {
         inputProcessingTime: 1.1,
         thinkingTime: 0.0,
         outputTime: 2.1
+      },
+    ],
+  },
+  'qwen3-coder-480B-a35B-instruct': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 11.9,
+        tokensPerRun: null,
+        tokensPerSecond: 82,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 6.1
+      },
+    ],
+  },
+  'qwen3-coder-next': {
+    effort: 'non-reasoning',
+    levels: [
+      {
+        effort: 'non-reasoning',
+        overallIntelligence: 9.2,
+        tokensPerRun: 1_278,
+        tokensPerSecond: 88,
+        inputProcessingTime: 1.1,
+        thinkingTime: 0.0,
+        outputTime: 5.7
       },
     ],
   },
