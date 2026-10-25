@@ -128,7 +128,7 @@ describe('ScatterPlotComponent plot types', () => {
     });
   }
 
-  for (const plotType of ['release', 'context'] as PlotType[]) {
+  for (const plotType of ['price', 'release', 'context'] as PlotType[]) {
     it(`shows no effort levels on the ${plotType} plot`, () => {
       state.plotType.set(plotType);
       expect(c.effortsShown()).toBe(false);

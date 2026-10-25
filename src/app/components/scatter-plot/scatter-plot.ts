@@ -79,7 +79,7 @@ interface PlotTypeDef {
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true, ySplit: 0.75},
+  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: false, ySplit: 0.75},
   {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true, ySplit: 0.75},
   {
     key: 'release',
@@ -250,9 +250,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   private effortPointsOf(models: AiModel[]): { model: AiModel; points: EffortPoint[] }[] {
     if (!this.effortsShown()) return [];
     const plotType = this.state.plotType();
-    const factors = this.state.tokenFactors();
     return models.flatMap(model => {
-      const points = effortPoints(model, plotType, factors);
+      const points = effortPoints(model, plotType);
       return points.length < 2 ? [] : [{model, points}];
     });
   }
@@ -682,9 +681,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       data: c.points.map(p => ({x: p.px, y: p.py})),
       showLine: true,
       borderColor: c.color,
-      backgroundColor: c.points.map(p => p.estimated ? 'transparent' : pointColor(c, p)),
-      pointBorderColor: c.points.map(p => p.balanced && !p.estimated ? balancedRing : pointColor(c, p)),
-      pointBorderWidth: c.points.map(p => p.balanced ? BALANCED_BORDER_WIDTH : p.estimated ? 1.5 : 1),
+      backgroundColor: c.points.map(p => pointColor(c, p)),
+      pointBorderColor: c.points.map(p => p.balanced ? balancedRing : pointColor(c, p)),
+      pointBorderWidth: c.points.map(p => p.balanced ? BALANCED_BORDER_WIDTH : 1),
       pointStyle: c.points.map(p => p.balanced ? 'rectRot' : p.axisBest ? starIcon : 'circle'),
       borderWidth: 1.5,
       borderDash: [4, 3],
@@ -737,7 +736,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         break;
       default: // price
         title = `Blended Price (USD per 1M tokens, usage mix ${priceBlendLabel()})`;
-        if (this.state.showEfforts()) title += ', effort levels scaled by tokens per run, hollow: estimated';
         tickCallback = (v: any) => formatUsdTick(+v);
         axisType = 'linear';
     }
@@ -854,10 +852,6 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
       responseTime !== null
         ? `★ Response time: ${responseTime.toFixed(1)}s (in: ${l.inputProcessingTime}s, think: ${l.thinkingTime}s, out: ${l.outputTime}s)`
-        : '',
-      this.state.plotType() === 'price' && !point.current
-        ? `★ Price: $${point.x.toFixed(2)} (${point.tokenRatio!.toFixed(2)}x the tokens per run of ${curve.model.effort}`
-        + `${point.estimated ? ', estimated from the effort names' : ''})`
         : '',
       l.costsToRun !== null ? `★ Run cost: ${formatUsd(l.costsToRun)} per index run` : '',
       l.tokensPerRun !== null ? `Tokens per run: ${l.tokensPerRun}M` : '',

@@ -1,7 +1,6 @@
-import {AiModel, blendedPriceOf, EffortLevel} from './ai-model.model';
+import {AiModel, EffortLevel} from './ai-model.model';
 import {
   effortPoints,
-  effortPrice,
   effortResponseTime,
   effortSeries,
   effortVariant,
@@ -10,9 +9,6 @@ import {
   shortEffortLabel
 } from './effort.util';
 import {testModel} from '../../testing/model-fixture';
-import {fitTokenFactors} from './token-factors.util';
-
-const PRICE = blendedPriceOf(testModel())!;
 
 function level(effort: string, overrides: Partial<EffortLevel> = {}): EffortLevel {
   return {
@@ -36,26 +32,9 @@ function model(efforts: EffortLevel[], effort: string | null = 'high'): AiModel 
 }
 
 describe('effortPoints', () => {
-  it('scales the model price by the tokens per run of each level and marks the current level', () => {
-    const m = model([level('low', {overallIntelligence: 30, tokensPerRun: 25}), level('high'), level('max', {tokensPerRun: 300})]);
-    const points = effortPoints(m, 'price');
-    expect(points.map(p => [p.effort, p.y, p.current])).toEqual([['low', 30, false], ['high', 40, true], ['max', 40, false]]);
-    [0.25, 1, 3].forEach((r, i) => expect(points[i].x).toBeCloseTo(r * PRICE));
-    expect(points.map(p => p.estimated)).toEqual([false, false, false]);
-  });
-
-  it('skips a level without tokens per run and without token factors on the price plot', () => {
-    const m = model([level('low', {tokensPerRun: null}), level('high')]);
-    expect(effortPoints(m, 'price').map(p => p.effort)).toEqual(['high']);
-  });
-
-  it('estimates the price of a level without tokens per run from the token factors', () => {
-    const factors = fitTokenFactors([model([level('low', {tokensPerRun: 25}), level('high', {tokensPerRun: 100})])]);
-    const m = testModel({effort: 'high', tokensPerRun: null, efforts: [level('low', {tokensPerRun: null}), level('high', {tokensPerRun: null})]});
-    const points = effortPoints(m, 'price', factors);
-    expect(points.map(p => [p.effort, p.estimated])).toEqual([['low', true], ['high', false]]);
-    expect(points[0].x).toBeCloseTo(0.25 * PRICE);
-    expect(points[0].tokenRatio).toBeCloseTo(0.25);
+  it('has no points on the price plot, because a level has the price per token of the model', () => {
+    const m = model([level('low', {tokensPerRun: 25}), level('high')]);
+    expect(effortPoints(m, 'price')).toEqual([]);
   });
 
   it('skips a level without a value on the x axis', () => {
@@ -80,30 +59,7 @@ describe('effortPoints', () => {
   });
 
   it('returns nothing for a model without effort levels', () => {
-    expect(effortPoints(model([], null), 'price')).toEqual([]);
-  });
-});
-
-describe('effortPrice', () => {
-  it('returns the blended price for the level of the model values, also without tokens per run', () => {
-    const m = testModel({effort: 'high', tokensPerRun: null});
-    expect(effortPrice(m, level('high', {tokensPerRun: null}))).toEqual({price: PRICE, tokenRatio: 1, estimated: false});
-  });
-
-  it('returns null if the level or the model has no tokens per run and no token factor links the efforts', () => {
-    expect(effortPrice(model([]), level('low', {tokensPerRun: null}))).toBeNull();
-    expect(effortPrice(testModel({effort: 'high', tokensPerRun: null}), level('low'))).toBeNull();
-    expect(effortPrice(testModel({effort: 'high', tokensPerRun: 0}), level('low'))).toBeNull();
-  });
-
-  it('scales the blended price by the token ratio', () => {
-    expect(effortPrice(model([]), level('low', {tokensPerRun: 50}))).toMatchObject({tokenRatio: 0.5, estimated: false});
-    expect(effortPrice(model([]), level('low', {tokensPerRun: 50}))!.price).toBeCloseTo(0.5 * PRICE);
-  });
-
-  it('prefers the measured ratio over the token factors', () => {
-    const factors = fitTokenFactors([model([level('low', {tokensPerRun: 10}), level('high', {tokensPerRun: 100})])]);
-    expect(effortPrice(model([]), level('low', {tokensPerRun: 50}), factors)).toMatchObject({tokenRatio: 0.5, estimated: false});
+    expect(effortPoints(model([], null), 'speed')).toEqual([]);
   });
 });
 

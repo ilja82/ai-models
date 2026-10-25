@@ -154,24 +154,18 @@ describe('Pareto set per plot type', () => {
     expect([...c.usefulIds()].sort()).toEqual(['cheap', 'quick']);
   });
 
-  it('ranks each level on the price plot by the model price scaled by its tokens per run', () => {
+  it('ranks only the models on the price plot, without their effort levels', () => {
     state.allModels.set([
       testModel({
         id: 'a', overallIntelligence: 50, tokensPerRun: 100, effort: 'high',
-        efforts: [{...level('low', 35, 2), tokensPerRun: 10}, {...level('medium', 45, 5), tokensPerRun: null}, level('high', 50, 10)],
+        efforts: [{...level('low', 35, 2), tokensPerRun: 10}, level('high', 50, 10)],
       }),
       testModel({id: 'b', overallIntelligence: 30, inputCosts: 0.5, outputCosts: 0.5}),
       testModel({id: 'c', overallIntelligence: 40, inputCosts: 0.2, outputCosts: 0.2}),
     ]);
     const plot = TestBed.createComponent(ScatterPlotComponent).componentInstance;
     state.plotType.set('price');
-    expect([...plot.usefulIds()].sort()).toEqual(['a', 'a@low', 'c']);
-    state.allModels.update(models => [...models, testModel({
-      id: 'd', overallIntelligence: 20, effort: 'high', deprecated: true,
-      efforts: [{...level('medium', 15, 5), tokensPerRun: 0.5}, level('high', 20, 1)],
-    })]);
-    expect([...plot.usefulIds()].sort()).toEqual(['a', 'a@low', 'a@medium', 'c']);
-    state.showEfforts.set(false);
+    expect(state.showEfforts()).toBe(true);
     expect([...plot.usefulIds()].sort()).toEqual(['a', 'c']);
   });
 

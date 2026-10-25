@@ -14,7 +14,6 @@ import {AXIS_FIELD_KEYS, AxisField, BarMetric, PLOT_TYPE_KEYS, PlotType, ViewTab
 import {parseHash, SCATTER3D_DEFAULTS, serializeHash} from './url-sync';
 import {otherEffortVariants} from '../models/effort.util';
 import {paretoIds} from '../models/pareto.util';
-import {fitTokenFactors} from '../models/token-factors.util';
 
 const KEY = (k: string) => `ai-models.${k}`;
 
@@ -295,9 +294,6 @@ export class AppState {
     {get: m => m.overallIntelligence, higherIsBetter: true},
     {get: m => m.costsToRun, higherIsBetter: false},
   ]));
-
-  /** Token factors of the effort names, fitted over all models, for the estimated effort prices. */
-  readonly tokenFactors = computed(() => fitTokenFactors(this.allModels()));
 
   toggleInputModality(modality: InputModality): void {
     this.inputModalities.update(list => toggled(INPUT_MODALITIES, list, modality));
