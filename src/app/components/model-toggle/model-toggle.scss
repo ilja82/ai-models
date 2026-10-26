@@ -12,7 +12,21 @@
     margin: 0 0 0.5rem;
   }
 
-  .modality-filter {
+  .link {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0.72rem;
+    color: var(--accent);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .modality-filter,
+  .sources {
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border);
@@ -21,19 +35,6 @@
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-    }
-
-    .clear {
-      border: none;
-      background: none;
-      padding: 0;
-      font-size: 0.72rem;
-      color: var(--accent);
-      cursor: pointer;
-
-      &:hover {
-        text-decoration: underline;
-      }
     }
 
     .chip-group + .chip-group {
@@ -96,34 +97,50 @@
     }
   }
 
-  .show-toggle {
+  .segmented {
     display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text);
-    background: rgba(var(--accent-rgb), 0.1);
-    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 0.5rem 0.65rem;
-    margin-bottom: 0.6rem;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s, border-color 0.15s;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
 
-    &:hover {
-      background: rgba(var(--accent-rgb), 0.18);
-      border-color: rgba(var(--accent-rgb), 0.6);
+  .segment {
+    flex: 1;
+    padding: 0.3rem 0;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    & + .segment {
+      border-left: 1px solid var(--border);
     }
 
-    input {
-      cursor: pointer;
-      margin: 0;
-      accent-color: var(--accent);
-      width: 14px;
-      height: 14px;
+    &:hover:not(.active) {
+      background: var(--surface-2);
+    }
+
+    &.active {
+      background: var(--accent);
+      color: #fff;
+    }
+  }
+
+  .list-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+
+    .list-count {
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    .bulk {
+      display: flex;
+      gap: 0.5rem;
     }
   }
 
@@ -146,9 +163,9 @@
 
   .providers {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem 0.9rem;
-    margin-bottom: 0.6rem;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
     padding: 0 0.15rem;
   }
 

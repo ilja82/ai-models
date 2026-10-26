@@ -19,6 +19,9 @@ import {paretoIds} from '../models/pareto.util';
 
 const KEY = (k: string) => `ai-models.${k}`;
 
+/** Which deprecated models the sidebar lists: none, only the new ones, or all. */
+export type DeprecatedMode = 'none' | 'new' | 'all';
+
 @Injectable({ providedIn: 'root' })
 export class AppState {
   readonly allModels = signal<AiModel[]>(AI_MODELS);
@@ -281,6 +284,9 @@ export class AppState {
     });
   });
 
+  readonly deprecatedMode = computed<DeprecatedMode>(() =>
+    this.showDeprecated() ? 'all' : this.showNewModels() ? 'new' : 'none');
+
   /** True if "Show deprecated" or "Show new" lists the deprecated model, without a single pick. */
   readonly shownByToggle = computed(() => {
     const showDeprecated = this.showDeprecated();
@@ -383,6 +389,26 @@ export class AppState {
   clearModalities(): void {
     this.inputModalities.set([]);
     this.outputModalities.set([]);
+  }
+
+  /** Sets the deprecated mode and turns on each model that the mode lists now and did not list before. */
+  setDeprecatedMode(mode: DeprecatedMode): void {
+    const wasListed = this.isListed();
+    this.showDeprecated.set(mode === 'all');
+    this.showNewModels.set(mode === 'new');
+    const isListed = this.isListed();
+    const added = this.allModels().filter(m => !wasListed(m) && isListed(m)).map(m => m.id);
+    this.disabledModelIds.update(set => {
+      const next = new Set(set);
+      added.forEach(id => next.delete(id));
+      return next;
+    });
+  }
+
+  /** Turns every model on or off and clears the single picks of deprecated models. */
+  setAllModelsActive(active: boolean): void {
+    this.pickedDeprecatedIds.set(new Set());
+    this.disabledModelIds.set(active ? new Set() : new Set(this.allModels().map(m => m.id)));
   }
 
   /** Turns a model on or off. A deprecated model that no toggle lists is picked or unpicked one by one. */

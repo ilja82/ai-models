@@ -1,5 +1,5 @@
 import {Component, computed, inject} from '@angular/core';
-import {AppState} from '../../state/app.state';
+import {AppState, DeprecatedMode} from '../../state/app.state';
 import {
   byIntelligenceDesc,
   hasModalities,
@@ -38,6 +38,15 @@ export class ModelToggleComponent {
     [...(this.state.searchResults() ?? this.state.availableModels())].sort(byIntelligenceDesc));
 
   readonly newModelMonths = NEW_MODEL_MONTHS;
+
+  readonly deprecatedOptions: { mode: DeprecatedMode; label: string; title: string }[] = [
+    {mode: 'none', label: 'None', title: 'Hide the deprecated models. The search still finds them.'},
+    {mode: 'new', label: 'New', title: `Show the deprecated models released in the last ${NEW_MODEL_MONTHS} months`},
+    {mode: 'all', label: 'All', title: 'Show all deprecated models'},
+  ];
+
+  readonly listedCount = computed(() => this.state.availableModels().length);
+  readonly activeCount = computed(() => this.state.filteredModels().length);
 
   readonly inputChips = computed<ModalityChip<InputModality>[]>(() => {
     const inputs = this.state.inputModalities();

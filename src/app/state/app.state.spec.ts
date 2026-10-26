@@ -204,6 +204,58 @@ describe('AppState deprecated models', () => {
     expect(ids(state.filteredModels())).toEqual(['active', 'fresh']);
   });
 
+  it('sets one deprecated mode at a time', () => {
+    const state = setUp();
+    expect(state.deprecatedMode()).toBe('none');
+    state.setDeprecatedMode('new');
+    expect([state.showDeprecated(), state.showNewModels()]).toEqual([false, true]);
+    expect(ids(state.filteredModels())).toEqual(['active', 'fresh']);
+    state.setDeprecatedMode('all');
+    expect([state.showDeprecated(), state.showNewModels()]).toEqual([true, false]);
+    expect(ids(state.filteredModels())).toEqual(['active', 'old', 'fresh']);
+    state.setDeprecatedMode('none');
+    expect([state.showDeprecated(), state.showNewModels()]).toEqual([false, false]);
+  });
+
+  it('turns on the models that a mode switch adds to the list', () => {
+    const state = setUp();
+    state.setDeprecatedMode('all');
+    state.disabledModelIds.set(new Set(['active', 'old', 'fresh']));
+    state.setDeprecatedMode('none');
+    state.setDeprecatedMode('new');
+    expect(ids(state.filteredModels())).toEqual(['fresh']);
+    state.setDeprecatedMode('all');
+    expect(ids(state.filteredModels())).toEqual(['old', 'fresh']);
+  });
+
+  it('reads both stored toggles on as the mode all', () => {
+    const state = setUp();
+    state.showDeprecated.set(true);
+    state.showNewModels.set(true);
+    expect(state.deprecatedMode()).toBe('all');
+  });
+
+  it('turns all models off and on and clears the manual choices', () => {
+    const state = setUp();
+    state.toggleModel('old');
+    state.toggleModel('active');
+    expect(ids(state.filteredModels())).toEqual(['old']);
+
+    state.setAllModelsActive(true);
+    expect(ids(state.filteredModels())).toEqual(['active']);
+    expect(state.pickedDeprecatedIds().size).toBe(0);
+    expect(state.disabledModelIds().size).toBe(0);
+
+    state.toggleModel('old');
+    state.setAllModelsActive(false);
+    expect(ids(state.filteredModels())).toEqual([]);
+    expect(state.pickedDeprecatedIds().size).toBe(0);
+    expect([...state.disabledModelIds()].sort()).toEqual(['active', 'fresh', 'old']);
+    state.setDeprecatedMode('new');
+    state.setAllModelsActive(true);
+    expect(ids(state.filteredModels())).toEqual(['active', 'fresh']);
+  });
+
   it('searches all models, deprecated ones included', () => {
     const state = setUp();
     state.modelSearch.set(' lorem ');

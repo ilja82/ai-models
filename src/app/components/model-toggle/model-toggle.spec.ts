@@ -130,3 +130,46 @@ describe('ModelToggleComponent model search', () => {
     expect(state.filteredModels().map(m => m.id)).toEqual(['a', 'd']);
   });
 });
+
+describe('ModelToggleComponent deprecated mode and bulk toggle', () => {
+  afterEach(() => localStorage.clear());
+
+  it('selects one deprecated mode and turns all listed models off and on', async () => {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'a', publicName: 'Lorem'}),
+      testModel({id: 'd', publicName: 'Dolor', deprecated: true, releaseDate: '2025-01-10'}),
+    ]);
+    state.setDeprecatedMode('none');
+    state.disabledModelIds.set(new Set());
+    state.modelSearch.set('');
+    const fixture = TestBed.createComponent(ModelToggleComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const segment = (label: string) => [...el.querySelectorAll<HTMLButtonElement>('.segment')]
+      .find(b => b.textContent!.trim() === label)!;
+    const checked = () => [...el.querySelectorAll('.segment[aria-checked="true"]')].map(b => b.textContent!.trim());
+    const count = () => el.querySelector('.list-count')!.textContent!.trim();
+    expect(checked()).toEqual(['None']);
+    expect(count()).toBe('1/1');
+
+    segment('All').click();
+    await fixture.whenStable();
+    expect(checked()).toEqual(['All']);
+    expect(state.showNewModels()).toBe(false);
+    expect(count()).toBe('2/2');
+
+    const link = (label: string) => [...el.querySelectorAll<HTMLButtonElement>('.bulk .link')]
+      .find(b => b.textContent!.trim() === label)!;
+    link('None').click();
+    await fixture.whenStable();
+    expect(count()).toBe('0/2');
+    link('All').click();
+    await fixture.whenStable();
+    expect(count()).toBe('2/2');
+
+    state.modelSearch.set('dol');
+    await fixture.whenStable();
+    expect(el.querySelector('.bulk')).toBeNull();
+  });
+});

@@ -3,7 +3,7 @@
     <div class="filter-head">
       <h3 class="panel-title" id="modality-title">Modalities</h3>
       @if (hasModalityFilter()) {
-        <button type="button" class="clear" (click)="state.clearModalities()">Clear</button>
+        <button type="button" class="link clear" (click)="state.clearModalities()">Clear</button>
       }
     </div>
     <div class="chip-group" role="group" aria-label="Input modalities">
@@ -44,29 +44,42 @@
     </div>
   </section>
 
-  <h3 class="panel-title">Models</h3>
-  <label class="show-toggle show-deprecated">
-    <input
-      type="checkbox"
-      [checked]="state.showDeprecated()"
-      (change)="state.showDeprecated.update(v => !v)"
-    />
-    Show deprecated
-  </label>
-  <label class="show-toggle show-new" [title]="'Show the deprecated models released in the last ' + newModelMonths + ' months'">
-    <input
-      type="checkbox"
-      [checked]="state.showNewModels()"
-      (change)="state.showNewModels.update(v => !v)"
-    />
-    Show new (&lt; {{ newModelMonths }} months)
-  </label>
-  <div class="providers" role="group" aria-label="Providers">
-    @for (option of providerOptions(); track option.provider) {
-      <label class="provider" [title]="'Show the models of ' + option.label">
-        <input type="checkbox" [checked]="option.shown" (change)="state.toggleProvider(option.provider)"/>
-        {{ option.label }}
-      </label>
+  <section class="sources" aria-labelledby="sources-title">
+    <h3 class="panel-title" id="sources-title">Providers</h3>
+    <div class="providers" role="group" aria-label="Providers">
+      @for (option of providerOptions(); track option.provider) {
+        <label class="provider" [title]="'Show the models of ' + option.label">
+          <input type="checkbox" [checked]="option.shown" (change)="state.toggleProvider(option.provider)"/>
+          {{ option.label }}
+        </label>
+      }
+    </div>
+    <h3 class="panel-title" id="deprecated-title">Deprecated models</h3>
+    <div class="segmented" role="radiogroup" aria-labelledby="deprecated-title">
+      @for (option of deprecatedOptions; track option.mode) {
+        <button
+          type="button"
+          role="radio"
+          class="segment"
+          [class.active]="state.deprecatedMode() === option.mode"
+          [attr.aria-checked]="state.deprecatedMode() === option.mode"
+          [title]="option.title"
+          (click)="state.setDeprecatedMode(option.mode)">
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <div class="list-head">
+    <h3 class="panel-title">Models <span class="list-count">{{ activeCount() }}/{{ listedCount() }}</span></h3>
+    @if (!state.modelSearch().trim()) {
+      <span class="bulk">
+        <button type="button" class="link" title="Turn on all models and clear the manual choices"
+                (click)="state.setAllModelsActive(true)">All</button>
+        <button type="button" class="link" title="Turn off all models and clear the manual choices"
+                (click)="state.setAllModelsActive(false)">None</button>
+      </span>
     }
   </div>
   <input
