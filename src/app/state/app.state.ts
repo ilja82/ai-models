@@ -8,6 +8,7 @@ import {
   OUTPUT_MODALITIES,
   OutputModality,
   Provider,
+  PROVIDER_LABELS,
   PROVIDERS,
 } from '../models/ai-model.model';
 import {AI_MODELS} from '../models/ai-models.data';
@@ -288,6 +289,12 @@ export class AppState {
     return (m: AiModel) => showDeprecated || (showNewModels && isNewModel(m, today));
   });
 
+  /** True if the model was released in the last NEW_MODEL_MONTHS months. */
+  readonly isNew = computed(() => {
+    const today = this.today();
+    return (m: AiModel) => isNewModel(m, today);
+  });
+
   /** True if the model is in the sidebar list without a search. */
   readonly isListed = computed(() => {
     const shownByToggle = this.shownByToggle();
@@ -324,6 +331,29 @@ export class AppState {
   readonly filteredModels = computed(() => {
     const disabled = this.disabledModelIds();
     return this.availableModels().filter(m => !disabled.has(m.id));
+  });
+
+  /** The reasons why a filter hides the model; empty if the model is in `filteredModels`. */
+  readonly hiddenReasons = computed(() => {
+    const showAPI = this.showAPI();
+    const showLocal = this.showLocal();
+    const maxVram = this.maxVram();
+    const hiddenProviders = this.hiddenProviders();
+    const isListed = this.isListed();
+    const inputs = this.inputModalities();
+    const outputs = this.outputModalities();
+    const disabled = this.disabledModelIds();
+    return (m: AiModel): string[] => {
+      const reasons: string[] = [];
+      if (m.provider !== null && hiddenProviders.includes(m.provider)) reasons.push(`${PROVIDER_LABELS[m.provider]} hidden`);
+      if (!showAPI && !m.localModel) reasons.push('API models hidden');
+      if (!showLocal && m.localModel) reasons.push('Local models hidden');
+      if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) reasons.push(`Needs ${m.minVramRequirement} GB VRAM`);
+      if (!isListed(m)) reasons.push('Deprecated');
+      if (!hasModalities(m, inputs, outputs)) reasons.push('Modality filter');
+      if (disabled.has(m.id)) reasons.push('Turned off');
+      return reasons;
+    };
   });
 
   /** The models that compete for the run-cost Pareto set and the profile badges, plus their other effort levels. */

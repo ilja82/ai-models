@@ -213,6 +213,30 @@ describe('AppState deprecated models', () => {
     expect(state.searchResults()).toBeNull();
   });
 
+  it('names the reasons why the filters hide a model', () => {
+    const state = setUp();
+    const [active, old] = state.allModels();
+    state.hiddenProviders.set(['bedrock']);
+    state.outputModalities.set(['image']);
+    state.disabledModelIds.set(new Set(['active']));
+    expect(state.hiddenReasons()(active)).toEqual(['AWS Bedrock hidden', 'Modality filter', 'Turned off']);
+    expect(state.hiddenReasons()(old)).toEqual(['AWS Bedrock hidden', 'Deprecated', 'Modality filter']);
+    state.hiddenProviders.set([]);
+    state.outputModalities.set([]);
+    state.disabledModelIds.set(new Set());
+    expect(state.hiddenReasons()(active)).toEqual([]);
+  });
+
+  it('names the availability and VRAM filters as reasons', () => {
+    const state = setUp();
+    const local = testModel({id: 'local', localModel: true, provider: null, minVramRequirement: 48});
+    state.showAPI.set(false);
+    state.showLocal.set(false);
+    state.maxVram.set(24);
+    expect(state.hiddenReasons()(state.allModels()[0])).toEqual(['API models hidden']);
+    expect(state.hiddenReasons()(local)).toEqual(['Local models hidden', 'Needs 48 GB VRAM']);
+  });
+
   it('turns a single deprecated model on and off', () => {
     const state = setUp();
     state.toggleModel('old');

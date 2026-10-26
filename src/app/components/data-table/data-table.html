@@ -15,7 +15,9 @@
       <input type="checkbox" [checked]="showHistogram()" (change)="showHistogram.update(v => !v)"/>
       Histogram cells
     </label>
-    <span class="count">{{ tableModels().length }} models</span>
+    <span class="count">{{ tableModels().length }} models@if (filteredOutReasons().size) {
+      , {{ filteredOutReasons().size }} filtered out
+    }</span>
   </div>
 
   <div class="table-scroll">
@@ -54,7 +56,8 @@
       </thead>
       <tbody>
         @for (model of tableModels(); track model.id) {
-          <tr [class.useful]="isUseful(model.id)">
+          <tr [class.useful]="isUseful(model.id)" [class.filtered-out]="filteredOutReasons().has(model.id)"
+              [attr.title]="filteredOutReasons().has(model.id) ? 'Filtered out: ' + filteredOutReasons().get(model.id) : null">
             <td class="name-cell" [class.deprecated]="model.deprecated">
               @if (isUseful(model.id)) {
                 <span class="useful-badge" title="Pareto efficient model">★</span>
@@ -63,6 +66,9 @@
                 <span class="deprecation-badge" [title]="'Deprecated: ' + model.deprecationInfo">⚠️</span>
               }
               {{ model.publicName }}
+              @if (state.isNew()(model)) {
+                <span class="new-badge" [title]="newTitle">new</span>
+              }
             </td>
             <td class="mono">{{ model.modelName }}</td>
             <td class="num hist" [style]="cellStyle(model, 'inputCosts')">{{ formatCost(model.inputCosts) }}</td>

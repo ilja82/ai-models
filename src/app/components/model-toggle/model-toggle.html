@@ -88,6 +88,9 @@
       >
         <span class="dot" [class.local]="model.localModel" [class.litellm]="!model.localModel"></span>
         <span class="name">{{ model.publicName }}</span>
+        @if (state.isNew()(model)) {
+          <span class="new-badge" [title]="'Released in the last ' + newModelMonths + ' months'">new</span>
+        }
         @if (model.deprecated) {
           <span class="deprecation-badge" aria-label="Deprecated">⚠️</span>
         }

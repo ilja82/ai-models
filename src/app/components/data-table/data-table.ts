@@ -1,7 +1,16 @@
 import {Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AppState} from '../../state/app.state';
-import {AiModel, costPerRequestOf, latencyOf, Modality, MODALITY_ICONS, PROVIDER_LABELS, responseTimeOf,} from '../../models/ai-model.model';
+import {
+  AiModel,
+  costPerRequestOf,
+  latencyOf,
+  Modality,
+  MODALITY_ICONS,
+  NEW_MODEL_MONTHS,
+  PROVIDER_LABELS,
+  responseTimeOf,
+} from '../../models/ai-model.model';
 import {formatUsd, modalityNames} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
@@ -98,6 +107,7 @@ const BAR_MIN_T = 0.06;
 export class DataTableComponent {
   readonly state = inject(AppState);
 
+  readonly newTitle = `Released in the last ${NEW_MODEL_MONTHS} months`;
   readonly searchText = signal('');
   readonly showHistogram = signal(true);
   readonly sortKey = signal<SortKey | null>('overallIntelligence');
@@ -110,19 +120,12 @@ export class DataTableComponent {
     const computedKey = this.computedSortKey();
     const dir = this.sortDir();
 
-    let models = this.state.filteredModels();
-
-    if (this.state.showOnlyPareto()) {
-      const pareto = this.state.usefulModelIds();
-      models = models.filter(m => pareto.has(m.id));
-    }
-
-    if (search) {
-      models = models.filter(m =>
+    const models = search
+      ? this.state.allModels().filter(m =>
         m.publicName.toLowerCase().includes(search) ||
         m.modelName.toLowerCase().includes(search)
-      );
-    }
+      )
+      : this.shownModels();
 
     return [...models].sort((a, b) => {
       const rawA = computedKey ? this.computedValue(a, computedKey) : key ? a[key] : 0;
@@ -145,6 +148,27 @@ export class DataTableComponent {
       }
       return dir === 'asc' ? cmp : -cmp;
     });
+  });
+
+  /** The models that pass all filters, the "Pareto only" filter included. */
+  readonly shownModels = computed(() => {
+    const models = this.state.filteredModels();
+    if (!this.state.showOnlyPareto()) return models;
+    const pareto = this.state.usefulModelIds();
+    return models.filter(m => pareto.has(m.id));
+  });
+
+  /** For each model that a filter hides, the reasons; a search lists these models too. */
+  readonly filteredOutReasons = computed(() => {
+    const shown = new Set(this.shownModels().map(m => m.id));
+    const hiddenReasons = this.state.hiddenReasons();
+    const reasons = new Map<string, string>();
+    for (const m of this.tableModels()) {
+      if (shown.has(m.id)) continue;
+      const list = hiddenReasons(m);
+      reasons.set(m.id, (list.length ? list : ['Not Pareto efficient']).join(', '));
+    }
+    return reasons;
   });
 
   readonly colExtents = computed<Record<NumericCol, Extent>>(() => {

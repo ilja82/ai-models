@@ -200,4 +200,27 @@
   td.name-cell.deprecated {
     color: var(--text-muted);
   }
+
+  tr.filtered-out td {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  tr.filtered-out td:not(.name-cell) {
+    opacity: 0.55;
+  }
+
+  .new-badge {
+    margin-left: 0.4rem;
+    padding: 0 0.3rem;
+    border-radius: 0.25rem;
+    background: var(--accent);
+    color: var(--surface-0);
+    font-size: 0.65rem;
+    font-weight: 600;
+    font-style: normal;
+    text-transform: uppercase;
+    vertical-align: middle;
+    cursor: help;
+  }
 }

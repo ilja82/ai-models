@@ -79,6 +79,26 @@ describe('ModelToggleComponent providers', () => {
   });
 });
 
+describe('ModelToggleComponent new tag', () => {
+  afterEach(() => localStorage.clear());
+
+  it('tags the models released in the last 3 months', () => {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'fresh', publicName: 'Fresh', releaseDate: '2026-08-01', overallIntelligence: 60}),
+      testModel({id: 'old', publicName: 'Old', releaseDate: '2026-07-20', overallIntelligence: 50}),
+    ]);
+    state.disabledModelIds.set(new Set());
+    state.hiddenProviders.set([]);
+    state.today.set(new Date(2026, 9, 26));
+    const fixture = TestBed.createComponent(ModelToggleComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const tags = [...el.querySelectorAll('.model-item')].map(li => li.querySelector('.new-badge')?.textContent!.trim() ?? null);
+    expect(tags).toEqual(['new', null]);
+  });
+});
+
 describe('ModelToggleComponent model search', () => {
   afterEach(() => localStorage.clear());
 
