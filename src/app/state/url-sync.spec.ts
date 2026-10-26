@@ -3,7 +3,7 @@ import {parseHash, serializeHash, UrlSnapshot} from './url-sync';
 const DEFAULTS: UrlSnapshot = {
   view: 'scatter', barMetric: 'intelligence', plotType: 'cost', scatter3dX: 'responseTime',
   scatter3dY: 'costsToRun', scatter3dZ: 'intelligence', showAPI: true, showLocal: false,
-  showDeprecated: false, hiddenProviders: [], groupByModel: true, logScaleX: true, logScale3d: true, onlyPareto: false,
+  showDeprecated: false, showNewModels: false, hiddenProviders: [], groupByModel: true, logScaleX: true, logScale3d: true, onlyPareto: false,
   inputModalities: [], outputModalities: [],
 };
 
@@ -95,5 +95,15 @@ describe('url-sync bar groups', () => {
     expect(parseHash(hash)).toEqual({view: 'bar', groupByModel: false});
     expect(serializeHash({...DEFAULTS, groupByModel: false})).toBe('#/scatter');
     expect(parseHash('#/table?group=0')).toEqual({view: 'table'});
+  });
+});
+
+describe('url-sync new models', () => {
+  it('omits the parameter by default and round-trips the toggle', () => {
+    const hash = serializeHash({...DEFAULTS, showNewModels: true});
+    expect(hash).toBe('#/scatter?new=1');
+    expect(parseHash(hash)?.showNewModels).toBe(true);
+    expect(parseHash('#/scatter?new=0')?.showNewModels).toBe(false);
+    expect(parseHash('#/scatter')?.showNewModels).toBeUndefined();
   });
 });

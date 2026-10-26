@@ -4,6 +4,7 @@ import {
   hasModalities,
   INPUT_MODALITIES,
   InputModality,
+  isNewModel,
   OUTPUT_MODALITIES,
   OutputModality,
   Provider,
@@ -20,13 +21,18 @@ const KEY = (k: string) => `ai-models.${k}`;
 @Injectable({ providedIn: 'root' })
 export class AppState {
   readonly allModels = signal<AiModel[]>(AI_MODELS);
-  readonly disabledModelIds = signal<Set<string>>(this.loadDisabledIds());
+  readonly disabledModelIds = signal<Set<string>>(this.loadIdSet('disabledIds'));
+  /** Deprecated models that the user turned on one by one. */
+  readonly pickedDeprecatedIds = signal<Set<string>>(this.loadIdSet('pickedDeprecatedIds'));
+  readonly modelSearch = signal('');
+  readonly today = signal(new Date());
 
   readonly showAPI = signal(this.loadBool('showAPI', true));
   readonly showLocal = signal(this.loadBool('showLocal', false));
   readonly maxVram = signal<number | null>(this.loadMaxVram());
   readonly showOnlyPareto = signal(this.loadBool('showOnlyPareto', false));
   readonly showDeprecated = signal(this.loadBool('showDeprecated', false));
+  readonly showNewModels = signal(this.loadBool('showNewModels', false));
   readonly hiddenProviders = signal<Provider[]>(this.loadList('hiddenProviders', PROVIDERS));
   readonly barGroupByModel = signal(this.loadBool('barGroupByModel', true));
   readonly inputModalities = signal<InputModality[]>(this.loadList('inputModalities', INPUT_MODALITIES));
@@ -71,6 +77,11 @@ export class AppState {
       localStorage.setItem(KEY('showDeprecated'), String(v));
     });
     effect(() => {
+      const v = this.showNewModels();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('showNewModels'), String(v));
+    });
+    effect(() => {
       const v = this.hiddenProviders();
       if (this.hydrating) return;
       localStorage.setItem(KEY('hiddenProviders'), JSON.stringify(v));
@@ -104,6 +115,11 @@ export class AppState {
       const v = this.disabledModelIds();
       if (this.hydrating) return;
       localStorage.setItem(KEY('disabledIds'), JSON.stringify([...v]));
+    });
+    effect(() => {
+      const v = this.pickedDeprecatedIds();
+      if (this.hydrating) return;
+      localStorage.setItem(KEY('pickedDeprecatedIds'), JSON.stringify([...v]));
     });
     effect(() => {
       const v = this.activeTab();
@@ -148,6 +164,7 @@ export class AppState {
         showAPI: this.showAPI(),
         showLocal: this.showLocal(),
         showDeprecated: this.showDeprecated(),
+        showNewModels: this.showNewModels(),
         hiddenProviders: this.hiddenProviders(),
         groupByModel: this.barGroupByModel(),
         logScaleX: this.logScaleX(),
@@ -191,6 +208,7 @@ export class AppState {
     this.showAPI.set(parsed.showAPI ?? true);
     this.showLocal.set(parsed.showLocal ?? false);
     this.showDeprecated.set(parsed.showDeprecated ?? false);
+    this.showNewModels.set(parsed.showNewModels ?? false);
     this.hiddenProviders.set(parsed.hiddenProviders ?? []);
     this.barGroupByModel.set(parsed.groupByModel ?? true);
     this.logScaleX.set(parsed.logScaleX ?? true);
@@ -236,9 +254,9 @@ export class AppState {
     return isNaN(num) ? 32 : num;
   }
 
-  private loadDisabledIds(): Set<string> {
+  private loadIdSet(key: string): Set<string> {
     try {
-      const stored = localStorage.getItem(KEY('disabledIds'));
+      const stored = localStorage.getItem(KEY(key));
       if (!stored) return new Set();
       return new Set(JSON.parse(stored) as string[]);
     } catch {
@@ -246,12 +264,11 @@ export class AppState {
     }
   }
 
-  /** The models that pass every filter except the modality filter, so the filter chips can count their matches. */
-  readonly modalityPool = computed(() => {
+  /** The models that pass the availability, VRAM and provider filters, deprecated or not. The model search looks here. */
+  readonly candidateModels = computed(() => {
     const showAPI = this.showAPI();
     const showLocal = this.showLocal();
     const maxVram = this.maxVram();
-    const showDeprecated = this.showDeprecated();
     const hiddenProviders = this.hiddenProviders();
 
     return this.allModels().filter(m => {
@@ -259,9 +276,43 @@ export class AppState {
       if (!showAPI && !m.localModel) return false;
       if (!showLocal && m.localModel) return false;
       if (maxVram !== null && m.localModel && m.minVramRequirement > maxVram) return false;
-      if (!showDeprecated && m.deprecated) return false;
       return true;
     });
+  });
+
+  /** True if "Show deprecated" or "Show new" lists the deprecated model, without a single pick. */
+  readonly shownByToggle = computed(() => {
+    const showDeprecated = this.showDeprecated();
+    const showNewModels = this.showNewModels();
+    const today = this.today();
+    return (m: AiModel) => showDeprecated || (showNewModels && isNewModel(m, today));
+  });
+
+  /** True if the model is in the sidebar list without a search. */
+  readonly isListed = computed(() => {
+    const shownByToggle = this.shownByToggle();
+    const picked = this.pickedDeprecatedIds();
+    return (m: AiModel) => !m.deprecated || picked.has(m.id) || shownByToggle(m);
+  });
+
+  /** The models that pass every filter except the modality filter, so the filter chips can count their matches. */
+  readonly modalityPool = computed(() => this.candidateModels().filter(this.isListed()));
+
+  /** The models whose name or id contains the search text, deprecated ones included, or null without a search. */
+  readonly searchResults = computed(() => {
+    const query = this.modelSearch().trim().toLowerCase();
+    if (!query) return null;
+    const inputs = this.inputModalities();
+    const outputs = this.outputModalities();
+    return this.candidateModels().filter(m => hasModalities(m, inputs, outputs)
+      && [m.publicName, m.modelName, m.id].some(name => name.toLowerCase().includes(query)));
+  });
+
+  /** True if the model is listed and not turned off. */
+  readonly isActive = computed(() => {
+    const isListed = this.isListed();
+    const disabled = this.disabledModelIds();
+    return (m: AiModel) => isListed(m) && !disabled.has(m.id);
   });
 
   readonly availableModels = computed(() => {
@@ -304,17 +355,26 @@ export class AppState {
     this.outputModalities.set([]);
   }
 
+  /** Turns a model on or off. A deprecated model that no toggle lists is picked or unpicked one by one. */
   toggleModel(id: string): void {
-    this.disabledModelIds.update(set => {
-      const next = new Set(set);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    const model = this.allModels().find(m => m.id === id);
+    if (model?.deprecated && !this.shownByToggle()(model)) {
+      this.pickedDeprecatedIds.update(set => toggledId(set, id));
+      this.disabledModelIds.update(set => set.has(id) ? toggledId(set, id) : set);
+      return;
+    }
+    this.disabledModelIds.update(set => toggledId(set, id));
   }
+}
+
+function toggledId(set: ReadonlySet<string>, id: string): Set<string> {
+  const next = new Set(set);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  return next;
 }
 
 function toggled<T extends string>(order: readonly T[], list: readonly T[], item: T): T[] {

@@ -17,6 +17,7 @@ export interface UrlState {
   showAPI?: boolean;
   showLocal?: boolean;
   showDeprecated?: boolean;
+  showNewModels?: boolean;
   hiddenProviders?: Provider[];
   groupByModel?: boolean;
   logScaleX?: boolean;
@@ -36,6 +37,7 @@ export interface UrlSnapshot {
   showAPI: boolean;
   showLocal: boolean;
   showDeprecated: boolean;
+  showNewModels: boolean;
   hiddenProviders: readonly Provider[];
   groupByModel: boolean;
   logScaleX: boolean;
@@ -97,6 +99,10 @@ export function parseHash(hash: string): UrlState | null {
   if (deprecated === '1') out.showDeprecated = true;
   else if (deprecated === '0') out.showDeprecated = false;
 
+  const recent = params.get('new');
+  if (recent === '1') out.showNewModels = true;
+  else if (recent === '0') out.showNewModels = false;
+
   const hidden = parseList(params.getAll('hide'), PROVIDERS);
   if (hidden.length) out.hiddenProviders = hidden;
 
@@ -146,6 +152,7 @@ export function serializeHash(s: UrlSnapshot): string {
   }
 
   if (s.showDeprecated) params.set('deprecated', '1');
+  if (s.showNewModels) params.set('new', '1');
   s.hiddenProviders.forEach(p => params.append('hide', p));
   if (s.view === 'bar' && !s.groupByModel) params.set('group', '0');
 

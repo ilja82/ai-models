@@ -172,3 +172,63 @@ describe('AppState bar groups', () => {
     expect(TestBed.inject(AppState).barGroupByModel()).toBe(false);
   });
 });
+
+describe('AppState deprecated models', () => {
+  afterEach(() => localStorage.clear());
+
+  function setUp(): AppState {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'active', publicName: 'Lorem Active'}),
+      testModel({id: 'old', publicName: 'Lorem Old', deprecated: true, releaseDate: '2025-01-10'}),
+      testModel({id: 'fresh', publicName: 'Ipsum Fresh', modelName: 'ipsum-fresh', deprecated: true, releaseDate: '2026-09-01'}),
+    ]);
+    state.today.set(new Date(2026, 9, 26));
+    state.showDeprecated.set(false);
+    state.showNewModels.set(false);
+    state.disabledModelIds.set(new Set());
+    state.pickedDeprecatedIds.set(new Set());
+    state.modelSearch.set('');
+    return state;
+  }
+
+  const ids = (models: { id: string }[] | null) => (models ?? []).map(m => m.id);
+
+  it('hides deprecated models by default', () => {
+    expect(ids(setUp().filteredModels())).toEqual(['active']);
+  });
+
+  it('shows the deprecated models released in the last 3 months', () => {
+    const state = setUp();
+    state.showNewModels.set(true);
+    expect(ids(state.filteredModels())).toEqual(['active', 'fresh']);
+  });
+
+  it('searches all models, deprecated ones included', () => {
+    const state = setUp();
+    state.modelSearch.set(' lorem ');
+    expect(ids(state.searchResults())).toEqual(['active', 'old']);
+    expect(state.isActive()(state.allModels()[1])).toBe(false);
+    state.modelSearch.set('');
+    expect(state.searchResults()).toBeNull();
+  });
+
+  it('turns a single deprecated model on and off', () => {
+    const state = setUp();
+    state.toggleModel('old');
+    expect([...state.pickedDeprecatedIds()]).toEqual(['old']);
+    expect(ids(state.filteredModels())).toEqual(['active', 'old']);
+    state.toggleModel('old');
+    expect(state.pickedDeprecatedIds().size).toBe(0);
+    expect(state.disabledModelIds().size).toBe(0);
+    expect(ids(state.filteredModels())).toEqual(['active']);
+  });
+
+  it('turns off a deprecated model that a toggle lists', () => {
+    const state = setUp();
+    state.showDeprecated.set(true);
+    state.toggleModel('old');
+    expect(state.pickedDeprecatedIds().size).toBe(0);
+    expect(ids(state.filteredModels())).toEqual(['active', 'fresh']);
+  });
+});

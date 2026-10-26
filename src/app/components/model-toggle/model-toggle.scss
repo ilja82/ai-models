@@ -96,7 +96,7 @@
     }
   }
 
-  .show-deprecated {
+  .show-toggle {
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -124,6 +124,23 @@
       accent-color: var(--accent);
       width: 14px;
       height: 14px;
+    }
+  }
+
+  .model-search {
+    box-sizing: border-box;
+    width: 100%;
+    margin-bottom: 0.6rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 0.8rem;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent);
     }
   }
 
@@ -179,6 +196,16 @@
     &.disabled {
       opacity: 0.35;
       text-decoration: line-through;
+    }
+
+    &.deprecated .name {
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .deprecation-badge {
+      margin-left: auto;
+      font-size: 0.7rem;
     }
 
     &.empty {

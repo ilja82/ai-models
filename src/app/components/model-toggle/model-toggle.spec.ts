@@ -78,3 +78,35 @@ describe('ModelToggleComponent providers', () => {
     expect(el.querySelectorAll('.model-item').length).toBe(1);
   });
 });
+
+describe('ModelToggleComponent model search', () => {
+  afterEach(() => localStorage.clear());
+
+  it('lists a matching deprecated model and turns it on with a click', async () => {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'a', publicName: 'Lorem'}),
+      testModel({id: 'd', publicName: 'Dolor', deprecated: true, deprecationInfo: 'Lorem ipsum'}),
+    ]);
+    state.showDeprecated.set(false);
+    state.pickedDeprecatedIds.set(new Set());
+    const fixture = TestBed.createComponent(ModelToggleComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const items = () => [...el.querySelectorAll<HTMLLIElement>('.model-item')];
+    expect(items().length).toBe(1);
+
+    const search = el.querySelector<HTMLInputElement>('.model-search')!;
+    search.value = 'dol';
+    search.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    expect(items().length).toBe(1);
+    expect(items()[0].classList).toContain('disabled');
+    expect(items()[0].querySelector('.deprecation-badge')).not.toBeNull();
+
+    items()[0].click();
+    await fixture.whenStable();
+    expect(items()[0].classList).not.toContain('disabled');
+    expect(state.filteredModels().map(m => m.id)).toEqual(['a', 'd']);
+  });
+});

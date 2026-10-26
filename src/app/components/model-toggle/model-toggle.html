@@ -45,13 +45,21 @@
   </section>
 
   <h3 class="panel-title">Models</h3>
-  <label class="show-deprecated">
+  <label class="show-toggle show-deprecated">
     <input
       type="checkbox"
       [checked]="state.showDeprecated()"
       (change)="state.showDeprecated.update(v => !v)"
     />
     Show deprecated
+  </label>
+  <label class="show-toggle show-new" [title]="'Show the deprecated models released in the last ' + newModelMonths + ' months'">
+    <input
+      type="checkbox"
+      [checked]="state.showNewModels()"
+      (change)="state.showNewModels.update(v => !v)"
+    />
+    Show new (&lt; {{ newModelMonths }} months)
   </label>
   <div class="providers" role="group" aria-label="Providers">
     @for (option of providerOptions(); track option.provider) {
@@ -61,16 +69,28 @@
       </label>
     }
   </div>
+  <input
+    type="search"
+    class="model-search"
+    placeholder="Search all models"
+    aria-label="Search all models"
+    [value]="state.modelSearch()"
+    (input)="state.modelSearch.set($any($event.target).value)"
+  />
   <ul class="model-list">
     @for (model of sortedModels(); track model.id) {
       <li
         class="model-item"
-        [class.disabled]="state.disabledModelIds().has(model.id)"
+        [class.disabled]="!state.isActive()(model)"
+        [class.deprecated]="model.deprecated"
         (click)="state.toggleModel(model.id)"
-        [title]="model.modelName"
+        [title]="model.deprecated ? model.modelName + ' - Deprecated: ' + model.deprecationInfo : model.modelName"
       >
         <span class="dot" [class.local]="model.localModel" [class.litellm]="!model.localModel"></span>
         <span class="name">{{ model.publicName }}</span>
+        @if (model.deprecated) {
+          <span class="deprecation-badge" aria-label="Deprecated">⚠️</span>
+        }
       </li>
     } @empty {
       <li class="model-item empty">No model matches the filters.</li>

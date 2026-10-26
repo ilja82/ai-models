@@ -8,6 +8,7 @@ import {
   Modality,
   MODALITY_ICONS,
   MODALITY_LABELS,
+  NEW_MODEL_MONTHS,
   OUTPUT_MODALITIES,
   OutputModality,
   Provider,
@@ -33,7 +34,10 @@ export interface ModalityChip<T extends Modality> {
 export class ModelToggleComponent {
   readonly state = inject(AppState);
 
-  readonly sortedModels = computed(() => [...this.state.availableModels()].sort(byIntelligenceDesc));
+  readonly sortedModels = computed(() =>
+    [...(this.state.searchResults() ?? this.state.availableModels())].sort(byIntelligenceDesc));
+
+  readonly newModelMonths = NEW_MODEL_MONTHS;
 
   readonly inputChips = computed<ModalityChip<InputModality>[]>(() => {
     const inputs = this.state.inputModalities();

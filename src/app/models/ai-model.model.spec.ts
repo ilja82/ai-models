@@ -5,6 +5,7 @@ import {
   effectiveCutoffDate,
   hasModalities,
   INPUT_MODALITIES,
+  isNewModel,
   latencyOf,
   OUTPUT_MODALITIES,
   PRICE_BLEND,
@@ -241,5 +242,20 @@ describe('formatUsdTick', () => {
   it('shows whole dollars from $100 and $0.00 for zero', () => {
     expect(formatUsdTick(4096)).toBe('$4096');
     expect(formatUsdTick(0)).toBe('$0.00');
+  });
+});
+
+describe('isNewModel', () => {
+  const today = new Date(2026, 9, 26);
+
+  it('is true for a release less than 3 months ago', () => {
+    expect(isNewModel({releaseDate: '2026-10-19'}, today)).toBe(true);
+    expect(isNewModel({releaseDate: '2026-07-27'}, today)).toBe(true);
+  });
+
+  it('is false for an older or unknown release', () => {
+    expect(isNewModel({releaseDate: '2026-07-26'}, today)).toBe(false);
+    expect(isNewModel({releaseDate: '2025-10-30'}, today)).toBe(false);
+    expect(isNewModel({releaseDate: null}, today)).toBe(false);
   });
 });

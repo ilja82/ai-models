@@ -159,6 +159,15 @@ export function releaseTimeOf(m: Pick<AiModel, 'releaseDate'>): number | null {
   return m.releaseDate ? new Date(m.releaseDate).getTime() : null;
 }
 
+export const NEW_MODEL_MONTHS = 3;
+
+/** True if the model was released less than NEW_MODEL_MONTHS months before `today`. */
+export function isNewModel(m: Pick<AiModel, 'releaseDate'>, today: Date): boolean {
+  if (!m.releaseDate) return false;
+  const since = new Date(Date.UTC(today.getFullYear(), today.getMonth() - NEW_MODEL_MONTHS, today.getDate()));
+  return m.releaseDate > since.toISOString().slice(0, 10);
+}
+
 /** Input processing plus thinking time, or null if one of them is not measured. */
 export function latencyOf(m: Pick<AiModel, 'inputProcessingTime' | 'thinkingTime'>): number | null {
   return m.inputProcessingTime === null || m.thinkingTime === null ? null : m.inputProcessingTime + m.thinkingTime;
