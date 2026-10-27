@@ -86,9 +86,10 @@ describe('ModelBadgesService headline', () => {
     expect(profileOf(models, 'fast').headline).toBe('#3 of 3 API · fastest');
   });
 
-  it('keeps Deprecated for a deprecated model', () => {
-    const models = [testModel({id: 'old', deprecated: true}), testModel({id: 'new'})];
-    expect(profileOf(models, 'old').headline).toBe('Deprecated');
+  it('shows Deprecated and the rank a deprecated model would have among the active models', () => {
+    const models = [testModel({id: 'old', deprecated: true, overallIntelligence: 30}), testModel({id: 'new'})];
+    expect(profileOf(models, 'old').headline).toBe('Deprecated · would be #2 of 2 API');
+    expect(profileOf(models, 'new').headline).toBe('#1 of 1 API');
   });
 });
 
@@ -112,16 +113,78 @@ describe('ModelBadgesService alternative and Pareto front', () => {
     }
   });
 
-  it('names only an alternative that accepts and returns all modalities of the model', () => {
+  it('prefers an alternative with all modalities of the model, else names the missing ones', () => {
     const vision = testModel({
       id: 'vision', localModel: true, minVramRequirement: 3, overallIntelligence: 5, costsToRun: 3,
       inputModalities: ['text', 'image']
     });
     const text = testModel({id: 'text', localModel: true, minVramRequirement: 1, overallIntelligence: 8, costsToRun: 3});
     const p = profileOf([vision, text], 'vision');
+    expect(badgeIds(p)).not.toContain('pareto-front');
+    expect(p.alternative?.reason).toBe('intelligence 8 instead of 5, 1 GB instead of 3 GB VRAM, but no Image input');
+
+    const weakVision = testModel({
+      id: 'weak-vision', localModel: true, minVramRequirement: 2, overallIntelligence: 6, costsToRun: 2,
+      inputModalities: ['text', 'image']
+    });
+    expect(profileOf([vision, text, weakVision], 'vision').alternative?.model.id).toBe('weak-vision');
+  });
+
+  it('counts the other effort levels as better, like the table and the scatter plot', () => {
+    const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
+      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
+      cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    });
+    const sonnet = testModel({
+      id: 'sonnet', publicName: 'Sonnet', overallIntelligence: 56, costsToRun: 7700, effort: 'xhigh',
+      efforts: [level('high', 46.8, 1076), level('xhigh', 56, 7700)]
+    });
+    const flash = testModel({id: 'flash', overallIntelligence: 45.1, costsToRun: 1767});
+    const p = profileOf([sonnet, flash], 'flash');
+    expect(badgeIds(p)).not.toContain('pareto-front');
+    expect([p.alternative?.model.id, p.alternative?.effort]).toEqual(['sonnet@high', 'high']);
+    expect(p.alternative?.reason).toBe('intelligence 46.8 instead of 45.1, 39% lower run cost');
+    expect(badgeIds(profileOf([sonnet, flash], 'sonnet'))).toContain('pareto-front');
+  });
+
+  it('rates each effort level and names the level that is Pareto-optimal', () => {
+    const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
+      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
+      cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    });
+    const sonnet = testModel({
+      id: 'sonnet', publicName: 'Sonnet', overallIntelligence: 56, costsToRun: 7720, effort: 'max',
+      efforts: [level('low', 35.9, 504), level('high', 46.8, 1076), level('max', 56, 7720)]
+    });
+    const opus = testModel({
+      id: 'opus', publicName: 'Opus', overallIntelligence: 57.6, costsToRun: 9326, effort: 'max',
+      efforts: [level('xhigh', 56, 4301), level('max', 57.6, 9326)]
+    });
+    const haiku = testModel({id: 'haiku', publicName: 'Haiku', overallIntelligence: 43.4, costsToRun: 356});
+    const p = profileOf([sonnet, opus, haiku], 'sonnet');
+
+    expect(p.badges.find(b => b.id === 'pareto-front')?.label).toBe('Pareto-optimal at effort high');
     expect(p.alternative).toBeNull();
-    expect(badgeIds(p)).toContain('pareto-front');
-    expect(profileOf([vision, text], 'text').alternative).toBeNull();
+    expect(p.levels.map(l => [l.effort, l.current, l.onFront, l.alternative?.model.id ?? null])).toEqual([
+      ['low', false, false, 'haiku'],
+      ['high', false, true, null],
+      ['max', true, false, 'opus@xhigh'],
+    ]);
+    expect(p.levels[0].costText).toBe('$504.00');
+    expect(profileOf([sonnet, opus, haiku], 'opus').badges.find(b => b.id === 'pareto-front')?.label).toBe('Pareto-optimal');
+    expect(profileOf([sonnet, opus, haiku], 'haiku').levels).toEqual([]);
+  });
+
+  it('rates a deprecated model like an active one and names the active model that beats it', () => {
+    const old = testModel({
+      id: 'old', deprecated: true, deprecationInfo: 'Use new', overallIntelligence: 20, costsToRun: 20, tokensPerSecond: 1
+    });
+    const active = [10, 20, 30, 40, 50].map(i => testModel({id: `a${i}`, overallIntelligence: i, costsToRun: 60 - i, tokensPerSecond: i}));
+    const p = profileOf([old, ...active], 'old');
+    expect(badgeIds(p)).toEqual(expect.arrayContaining(['deprecated', 'slow']));
+    expect(badgeIds(p)).not.toContain('pareto-front');
+    expect(p.alternative?.model.id).toBe('a50');
+    expect(p.metrics.find(m => m.id === 'intelligence')!.rank).toBe(0.4);
   });
 
   it('ignores VRAM for API models', () => {

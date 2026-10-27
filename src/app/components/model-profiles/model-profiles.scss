@@ -201,6 +201,39 @@
   }
 }
 
+.levels {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0.1rem 0.3rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.1rem 0.3rem;
+    white-space: nowrap;
+  }
+
+  .verdict {
+    white-space: normal;
+    color: var(--text-muted);
+  }
+
+  tr.front .verdict {
+    color: var(--accent);
+  }
+
+  tr.current td:first-child {
+    font-weight: 700;
+  }
+}
+
 .twin {
   display: flex;
   flex-direction: column;

@@ -5,7 +5,7 @@ import {testModel} from '../../testing/model-fixture';
 
 function entry(overrides: Partial<AiModel>): ProfileEntry {
   const model = testModel(overrides);
-  return {model, group: model.localModel ? 'local' : 'api', peerCount: 1, headline: '', badges: [], metrics: [], alternative: null};
+  return {model, group: model.localModel ? 'local' : 'api', peerCount: 1, headline: '', badges: [], metrics: [], alternative: null, levels: []};
 }
 
 const ids = (entries: ProfileEntry[]) => entries.map(e => e.model.id);

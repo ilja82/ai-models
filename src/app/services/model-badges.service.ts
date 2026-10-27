@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
-import {AiModel, hasModalities, responseTimeOf} from '../models/ai-model.model';
-import {Badge, MetricId, PeerGroup, ProfileAlternative, ProfileEntry, ProfileMetric} from '../models/profile.model';
-import {parseEffortVariantId} from '../models/effort.util';
+import {AiModel, Modality, MODALITY_LABELS, responseTimeOf} from '../models/ai-model.model';
+import {Badge, MetricId, PeerGroup, ProfileAlternative, ProfileEntry, ProfileLevel, ProfileMetric} from '../models/profile.model';
+import {effortSeries, otherEffortVariants, parseEffortVariantId} from '../models/effort.util';
 import {dominators, ParetoAxis} from '../models/pareto.util';
 import {formatUsd} from '../models/tooltip.util';
 import {PEER_GROUP_LABELS, peerGroupOf, VRAM_LIMITS} from '../models/profile.util';
@@ -57,6 +57,8 @@ interface PeerContext {
   group: PeerGroup;
   label: string;
   peers: AiModel[];
+  /** The peers plus their other effort levels, as in `AppState.paretoCandidates`. */
+  candidates: AiModel[];
   thresholds: Thresholds;
   best: BestSets;
   axes: ParetoAxis<AiModel>[];
@@ -159,6 +161,7 @@ function buildContext(group: PeerGroup, peers: AiModel[]): PeerContext {
     group,
     label: PEER_GROUP_LABELS[group],
     peers,
+    candidates: peers.concat(peers.flatMap(otherEffortVariants)),
     thresholds: buildThresholds(peers),
     best: buildBestSets(peers),
     axes,
@@ -172,7 +175,13 @@ type BadgeRule = {
   badge: Omit<Badge, 'kind'>;
 };
 
-function strengthRules(model: AiModel, m: ModelMetrics, ctx: PeerContext, balancedIds: BalancedIds, onFront: boolean): BadgeRule[] {
+/** Which effort levels of a model are Pareto-optimal: the current one, and the efforts of the others. */
+interface FrontState {
+  current: boolean;
+  otherEfforts: string[];
+}
+
+function strengthRules(model: AiModel, m: ModelMetrics, ctx: PeerContext, balancedIds: BalancedIds, front: FrontState): BadgeRule[] {
   const {thresholds: t, best, label} = ctx;
   const balancedId = balancedIds[ctx.group];
   const balanced = balancedId === null ? null : parseEffortVariantId(balancedId);
@@ -207,12 +216,12 @@ function strengthRules(model: AiModel, m: ModelMetrics, ctx: PeerContext, balanc
       },
     },
     {
-      when: onFront,
+      when: front.current || front.otherEfforts.length > 0,
       badge: {
         id: 'pareto-front',
         icon: '⭐',
-        label: 'Pareto-optimal',
-        tooltip: `No other ${label} model with its modalities is at least as good on ${axesText(ctx.group)} and better on one`,
+        label: front.current ? 'Pareto-optimal' : `Pareto-optimal at effort ${front.otherEfforts.join(', ')}`,
+        tooltip: `No other ${label} model or effort level is at least as good on ${axesText(ctx.group)} and better on one`,
       },
     },
     {
@@ -405,23 +414,22 @@ function applyRules(rules: BadgeRule[], kind: 'strength' | 'weakness', rated: bo
   return rules.filter(r => r.when && (rated || !r.relative)).map(r => ({...r.badge, kind}));
 }
 
-function computeBadges(model: AiModel, ctx: PeerContext, balancedIds: BalancedIds, onFront: boolean): Badge[] {
-  if (model.deprecated) {
-    return [
-      {
-        id: 'deprecated',
-        kind: 'meta',
-        icon: '⚠️',
-        label: 'Deprecated',
-        tooltip: model.deprecationInfo || 'Marked deprecated',
-      },
-      ...neutralBadges(model),
-    ];
-  }
+function deprecatedBadges(model: AiModel): Badge[] {
+  return model.deprecated ? [{
+    id: 'deprecated',
+    kind: 'meta',
+    icon: '⚠️',
+    label: 'Deprecated',
+    tooltip: model.deprecationInfo || 'Marked deprecated',
+  }] : [];
+}
 
+/** A deprecated model is not a peer, so it is rated against the active models and takes no best or top-3 badge. */
+function computeBadges(model: AiModel, ctx: PeerContext, balancedIds: BalancedIds, front: FrontState): Badge[] {
   const m = metricsFor(model);
   return [
-    ...applyRules(strengthRules(model, m, ctx, balancedIds, onFront), 'strength', ctx.thresholds.rated),
+    ...deprecatedBadges(model),
+    ...applyRules(strengthRules(model, m, ctx, balancedIds, front), 'strength', ctx.thresholds.rated),
     ...applyRules(weaknessRules(model, m, ctx), 'weakness', ctx.thresholds.rated),
     ...neutralBadges(model),
   ];
@@ -492,6 +500,15 @@ function computeMetrics(model: AiModel, ctx: PeerContext): ProfileMetric[] {
   });
 }
 
+function missingModalities(alt: AiModel, model: AiModel): string[] {
+  const names = (list: readonly Modality[], have: readonly Modality[], kind: string) =>
+    list.filter(x => !have.includes(x)).map(x => `${MODALITY_LABELS[x]} ${kind}`);
+  return [
+    ...names(model.inputModalities, alt.inputModalities, 'input'),
+    ...names(model.outputModalities, alt.outputModalities, 'output'),
+  ];
+}
+
 function alternativeReason(alt: AiModel, model: AiModel): string {
   const parts: string[] = [];
   const ai = alt.overallIntelligence!;
@@ -503,28 +520,48 @@ function alternativeReason(alt: AiModel, model: AiModel): string {
   if (model.localModel && alt.minVramRequirement < model.minVramRequirement) {
     parts.push(`${alt.minVramRequirement} GB instead of ${model.minVramRequirement} GB VRAM`);
   }
-  return parts.join(', ');
+  const missing = missingModalities(alt, model);
+  return missing.length === 0 ? parts.join(', ') : `${parts.join(', ')}, but no ${missing.join(', ')}`;
 }
 
-/** The peers that dominate the model and accept and return all its modalities. */
+/** The peers and effort levels that dominate the model, the same set test as `AppState.usefulModelIds`. */
 function betterPeers(model: AiModel, ctx: PeerContext): AiModel[] {
-  return dominators(model, ctx.peers, ctx.axes)
-    .filter(p => hasModalities(p, model.inputModalities, model.outputModalities));
+  return dominators(model, ctx.candidates, ctx.axes);
 }
 
-/** True if the model has a value on each Pareto axis and no peer with its modalities dominates it. */
+/** True if the model is active, has a value on each Pareto axis and no peer or effort level dominates it. */
 function isOnFront(model: AiModel, ctx: PeerContext, better: AiModel[]): boolean {
   return !model.deprecated && better.length === 0 && ctx.axes.every(a => a.get(model) !== null);
 }
 
-/** The better peer with the highest intelligence, then the lowest run cost, then the lowest VRAM. */
+/**
+ * The better peer or effort level with all modalities of the model first, then the highest intelligence,
+ * the lowest run cost and the lowest VRAM.
+ */
 function computeAlternative(model: AiModel, better: AiModel[]): ProfileAlternative | null {
-  if (model.deprecated) return null;
   const [alt] = [...better].sort((a, b) =>
-    b.overallIntelligence! - a.overallIntelligence!
+    missingModalities(a, model).length - missingModalities(b, model).length
+    || b.overallIntelligence! - a.overallIntelligence!
     || a.costsToRun! - b.costsToRun!
     || a.minVramRequirement - b.minVramRequirement);
-  return alt ? {model: alt, reason: alternativeReason(alt, model)} : null;
+  return alt ? {model: alt, effort: parseEffortVariantId(alt.id).effort, reason: alternativeReason(alt, model)} : null;
+}
+
+/** One row per effort level, in effort order; empty for a model with fewer than 2 levels. */
+function computeLevels(model: AiModel, ctx: PeerContext): ProfileLevel[] {
+  if (model.efforts.length < 2) return [];
+  return effortSeries(model).map(level => {
+    const better = betterPeers(level, ctx);
+    const onFront = isOnFront(level, ctx, better);
+    return {
+      effort: level.effort!,
+      current: level.id === model.id,
+      intelligence: level.overallIntelligence,
+      costText: level.costsToRun === null ? 'n/a' : METRIC_DEFS.cost.format(level.costsToRun),
+      onFront,
+      alternative: onFront ? null : computeAlternative(level, better),
+    };
+  });
 }
 
 /** True if no peer has a higher value; false without a value or with no other peer. */
@@ -557,15 +594,19 @@ function computeRole(model: AiModel, ctx: PeerContext): string | null {
   return null;
 }
 
-/** "#3 of 48 local · best up to 32 GB VRAM"; the #1 model has no role, because the rank says it already. */
+/**
+ * "#3 of 48 local · best up to 32 GB VRAM"; the #1 model has no role, because the rank says it already.
+ * A deprecated model shows the rank it would have if it joined the active models.
+ */
 function computeHeadline(model: AiModel, ctx: PeerContext): string {
-  if (model.deprecated) return 'Deprecated';
+  const prefix = model.deprecated ? 'Deprecated · would be ' : '';
   const own = model.overallIntelligence;
-  if (own === null) return 'No benchmark';
+  if (own === null) return model.deprecated ? 'Deprecated · No benchmark' : 'No benchmark';
   const scored = ctx.peers.filter(p => p.overallIntelligence !== null);
   const position = 1 + scored.filter(p => p.overallIntelligence! > own).length;
-  const rank = `#${position} of ${scored.length} ${ctx.label}`;
-  const role = position === 1 ? null : computeRole(model, ctx);
+  const count = scored.length + (model.deprecated ? 1 : 0);
+  const rank = `${prefix}#${position} of ${count} ${ctx.label}`;
+  const role = position === 1 || model.deprecated ? null : computeRole(model, ctx);
   return role ? `${rank} · ${role}` : rank;
 }
 
@@ -589,14 +630,21 @@ export class ModelBadgesService {
     return displayModels.map(model => {
       const ctx = contexts[peerGroupOf(model)];
       const better = betterPeers(model, ctx);
+      const levels = computeLevels(model, ctx);
+      const front: FrontState = {
+        current: isOnFront(model, ctx, better),
+        otherEfforts: levels.filter(l => l.onFront && !l.current).map(l => l.effort),
+      };
+      const anyOnFront = front.current || front.otherEfforts.length > 0;
       return {
         model,
         group: ctx.group,
         peerCount: ctx.peers.length,
         headline: computeHeadline(model, ctx),
-        badges: computeBadges(model, ctx, balancedIds, isOnFront(model, ctx, better)),
+        badges: computeBadges(model, ctx, balancedIds, front),
         metrics: computeMetrics(model, ctx),
-        alternative: computeAlternative(model, better),
+        alternative: anyOnFront ? null : computeAlternative(model, better),
+        levels,
       };
     });
   }

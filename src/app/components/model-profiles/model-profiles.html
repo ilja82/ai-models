@@ -42,9 +42,40 @@
     @if (entry.alternative) {
       <p class="alternative" [title]="entry.alternative.reason">
         <span class="label">Consider instead:</span>
-        <strong>{{ entry.alternative.model.publicName }}</strong>
+        <strong>{{ entry.alternative.model.publicName }}{{ entry.alternative.effort ? ' (effort: ' + entry.alternative.effort + ')' : '' }}</strong>
         <span class="reason">{{ ' (' + entry.alternative.reason + ')' }}</span>
       </p>
+    }
+    @if (entry.levels.length > 0) {
+      <table class="levels">
+        <thead>
+        <tr>
+          <th>Effort</th>
+          <th>Intel.</th>
+          <th>Run cost</th>
+          <th>Verdict</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (level of entry.levels; track level.effort) {
+            <tr [class.current]="level.current" [class.front]="level.onFront"
+                [title]="level.alternative ? level.alternative.reason : ''">
+              <td>{{ level.effort }}</td>
+              <td>{{ level.intelligence ?? 'n/a' }}</td>
+              <td>{{ level.costText }}</td>
+              <td class="verdict">
+                @if (level.onFront) {
+                  ⭐ Pareto-optimal
+                } @else if (level.alternative) {
+                  → {{ level.alternative.model.publicName }}{{ level.alternative.effort ? ' (' + level.alternative.effort + ')' : '' }}
+                } @else {
+                  n/a
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     }
   </ng-template>
 

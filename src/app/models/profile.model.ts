@@ -25,10 +25,25 @@ export interface ProfileMetric {
   rank: number | null;
 }
 
-/** A model of the peer group that dominates the profile model on intelligence, run cost and (local) VRAM. */
+/** A model or effort level of the peer group that dominates the profile model on intelligence, run cost and (local) VRAM. */
 export interface ProfileAlternative {
+  /** The model with the values of the level; its id is `<model id>@<effort>` for a level other than the current. */
   model: AiModel;
+  /** The effort of a level other than the current; null for the model itself. */
+  effort: string | null;
   reason: string;
+}
+
+/** One measured effort level of the profile model, rated like a model. */
+export interface ProfileLevel {
+  effort: string;
+  /** True for the level the model entry stands for. */
+  current: boolean;
+  intelligence: number | null;
+  costText: string;
+  onFront: boolean;
+  /** The better entry; null on the Pareto front or without a better entry. */
+  alternative: ProfileAlternative | null;
 }
 
 export interface ProfileEntry {
@@ -39,7 +54,10 @@ export interface ProfileEntry {
   headline: string;
   badges: Badge[];
   metrics: ProfileMetric[];
+  /** The better entry for the model; null if the model or one of its effort levels is Pareto-optimal. */
   alternative: ProfileAlternative | null;
+  /** One row per effort level; empty for a model with fewer than 2 levels. */
+  levels: ProfileLevel[];
 }
 
 export type ProfileSort = 'intelligence' | 'value' | 'cost' | 'speed' | 'release';
