@@ -15,9 +15,7 @@
       <input type="checkbox" [checked]="showHistogram()" (change)="showHistogram.update(v => !v)"/>
       Histogram cells
     </label>
-    <span class="count">{{ tableModels().length }} models@if (filteredOutReasons().size) {
-      , {{ filteredOutReasons().size }} filtered out
-    }</span>
+    <span class="count">{{ tableModels().length }} models{{ filteredOutReasons().size ? `, ${filteredOutReasons().size} filtered out` : '' }}</span>
   </div>
 
   <div class="table-scroll">

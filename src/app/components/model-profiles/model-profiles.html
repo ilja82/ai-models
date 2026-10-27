@@ -6,82 +6,141 @@
       placeholder="Search models…"
       [ngModel]="searchText()"
       (ngModelChange)="searchText.set($event)"/>
+    <label class="select">
+      Sort
+      <select [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event)">
+        @for (o of sortOptions; track o[0]) {
+          <option [value]="o[0]">{{ o[1] }}</option>
+        }
+      </select>
+    </label>
+    <label class="select">
+      Group
+      <select [ngModel]="grouping()" (ngModelChange)="grouping.set($event)">
+        @for (o of groupingOptions; track o[0]) {
+          <option [value]="o[0]">{{ o[1] }}</option>
+        }
+      </select>
+    </label>
     <span class="count">{{ shownCount() }} of {{ totalCount() }}</span>
   </div>
+
+  <ng-template #metricsBlock let-entry>
+    <dl class="metrics">
+      @for (metric of entry.metrics; track metric.id) {
+        <dt>{{ metric.label }}</dt>
+        <dd [title]="rankTitle(entry, metric.rank)" [class.missing]="metric.value === null">
+          <span class="bar">
+            @if (metric.rank !== null) {
+              <span class="fill" [style.width.%]="metric.rank * 100"></span>
+            }
+          </span>
+          <span class="value">{{ metric.text }}</span>
+        </dd>
+      }
+    </dl>
+    @if (entry.alternative) {
+      <p class="alternative" [title]="entry.alternative.reason">
+        <span class="label">Consider instead:</span>
+        <strong>{{ entry.alternative.model.publicName }}</strong>
+        <span class="reason">{{ ' (' + entry.alternative.reason + ')' }}</span>
+      </p>
+    }
+  </ng-template>
 
   @if (profiles().length === 0) {
     <div class="empty">No models match the current filter.</div>
   } @else {
-    <div class="profiles-grid">
-      @for (entry of profiles(); track entry.model.id) {
-        <article
-          class="profile-card"
-          [class.deprecated]="entry.model.deprecated"
-          [title]="tooltipFor(entry)">
-          <header class="card-head">
-            <h3 class="name">{{ entry.model.publicName }}</h3>
-            <code class="model-id">{{ entry.model.modelName }}</code>
-          </header>
-
-          <p class="headline">{{ entry.headline }}</p>
-
-          <dl class="modalities">
-            <dt>In</dt>
-            <dd>
-              @for (m of entry.model.inputModalities; track m) {
-                <span class="modality">{{ icons[m] }} {{ labels[m] }}</span>
-              }
-            </dd>
-            <dt>Out</dt>
-            <dd>
-              @for (m of entry.model.outputModalities; track m) {
-                <span class="modality">{{ icons[m] }} {{ labels[m] }}</span>
-              }
-            </dd>
-          </dl>
-
-          @if (strengths(entry).length > 0) {
-            <div class="badge-group">
-              @for (b of strengths(entry); track b.id) {
-                <span class="badge badge--strength" [title]="b.tooltip">
-                  <span class="icon">{{ b.icon }}</span>{{ b.label }}
-                </span>
-              }
-            </div>
+    <div class="profiles-scroll">
+      @for (section of sections(); track section.id) {
+        <section class="profiles-section">
+          @if (section.label) {
+            <h2 class="section-title">{{ section.label }} <span class="section-count">{{ section.cards.length }}</span></h2>
           }
+          <div class="profiles-grid">
+            @for (card of section.cards; track card.entry.model.id) {
+              @let entry = card.entry;
+              <article
+                class="profile-card"
+                [class.deprecated]="entry.model.deprecated"
+                [title]="tooltipFor(entry)">
+                <header class="card-head">
+                  <h3 class="name">{{ entry.model.publicName }}</h3>
+                  <code class="model-id">{{ entry.model.modelName }}</code>
+                </header>
 
-          @if (weaknesses(entry).length > 0) {
-            @if (strengths(entry).length > 0) {
-              <div class="divider"></div>
+                <p class="headline">{{ entry.headline }}</p>
+
+                <ng-container *ngTemplateOutlet="metricsBlock; context: {$implicit: entry}"/>
+
+                <dl class="modalities">
+                  <dt>In</dt>
+                  <dd>
+                    @for (m of entry.model.inputModalities; track m) {
+                      <span class="modality">{{ icons[m] }} {{ labels[m] }}</span>
+                    }
+                  </dd>
+                  <dt>Out</dt>
+                  <dd>
+                    @for (m of entry.model.outputModalities; track m) {
+                      <span class="modality">{{ icons[m] }} {{ labels[m] }}</span>
+                    }
+                  </dd>
+                </dl>
+
+                @if (strengths(entry).length > 0) {
+                  <div class="badge-group">
+                    @for (b of strengths(entry); track b.id) {
+                      <span class="badge badge--strength" [title]="b.tooltip">
+                        <span class="icon">{{ b.icon }}</span>{{ b.label }}
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (weaknesses(entry).length > 0) {
+                  @if (strengths(entry).length > 0) {
+                    <div class="divider"></div>
+                  }
+                  <div class="badge-group">
+                    @for (b of weaknesses(entry); track b.id) {
+                      <span class="badge badge--weakness" [title]="b.tooltip">
+                        <span class="icon">{{ b.icon }}</span>{{ b.label }}
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (neutrals(entry).length > 0) {
+                  <div class="badge-group neutrals">
+                    @for (b of neutrals(entry); track b.id) {
+                      <span class="badge" [class.badge--neutral]="b.kind === 'neutral'"
+                            [class.badge--meta]="b.kind === 'meta'"
+                            [title]="b.tooltip">
+                        <span class="icon">{{ b.icon }}</span>{{ b.label }}
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (card.twin; as twin) {
+                  <section class="twin" [title]="tooltipFor(twin)">
+                    <h4 class="twin-name">Also local: {{ twin.model.publicName }}</h4>
+                    <p class="headline">{{ twin.headline }}</p>
+                    <ng-container *ngTemplateOutlet="metricsBlock; context: {$implicit: twin}"/>
+                  </section>
+                }
+
+                <footer class="card-foot">
+                  <span>Released {{ entry.model.releaseDate ?? 'unknown' }}</span>
+                  @if (entry.model.localModel && entry.model.contextWindow !== null) {
+                    <span>{{ (entry.model.contextWindow / 1000).toFixed(0) }}K ctx</span>
+                  }
+                </footer>
+              </article>
             }
-            <div class="badge-group">
-              @for (b of weaknesses(entry); track b.id) {
-                <span class="badge badge--weakness" [title]="b.tooltip">
-                  <span class="icon">{{ b.icon }}</span>{{ b.label }}
-                </span>
-              }
-            </div>
-          }
-
-          @if (neutrals(entry).length > 0) {
-            <div class="badge-group neutrals">
-              @for (b of neutrals(entry); track b.id) {
-                <span class="badge" [class.badge--neutral]="b.kind === 'neutral'"
-                      [class.badge--meta]="b.kind === 'meta'"
-                      [title]="b.tooltip">
-                  <span class="icon">{{ b.icon }}</span>{{ b.label }}
-                </span>
-              }
-            </div>
-          }
-
-          <footer class="card-foot">
-            <span>Released {{ entry.model.releaseDate ?? 'unknown' }}</span>
-            @if (entry.model.contextWindow !== null) {
-              <span>{{ (entry.model.contextWindow / 1000).toFixed(0) }}K ctx</span>
-            }
-          </footer>
-        </article>
+          </div>
+        </section>
       }
     </div>
   }

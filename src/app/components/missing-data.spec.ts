@@ -128,9 +128,9 @@ describe('charts with missing measurements', () => {
     expect([...c3.specialMarkers3d().axisBestIds].sort()).toEqual(['e', 'e@low']);
 
     const profiles = TestBed.createComponent(ModelProfilesComponent).componentInstance;
-    expect(profiles.balancedIds().overall).toBe('e@low');
+    expect(profiles.balancedIds().api).toBe('e@low');
     const badge = profiles.profiles().find(p => p.model.id === 'e')!.badges.find(b => b.id === 'best-balanced-overall');
-    expect(badge?.label).toBe('Best balanced at overall (effort: low)');
+    expect(badge?.label).toBe('Best balanced API (effort: low)');
   });
 
   it('table sorts missing values last in both directions', () => {
