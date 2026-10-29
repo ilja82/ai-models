@@ -4,7 +4,9 @@ import {
   hasModalities,
   INPUT_MODALITIES,
   InputModality,
+  isBenchmarkOutdated,
   isNewModel,
+  latestBenchmarkVersion,
   OUTPUT_MODALITIES,
   OutputModality,
   Provider,
@@ -299,6 +301,15 @@ export class AppState {
   readonly isNew = computed(() => {
     const today = this.today();
     return (m: AiModel) => isNewModel(m, today);
+  });
+
+  /** The newest Intelligence Index version among all models. */
+  readonly latestBenchmarkVersion = computed(() => latestBenchmarkVersion(this.allModels()));
+
+  /** True if the benchmark values of the model come from an older Intelligence Index version than the newest. */
+  readonly isOutdated = computed(() => {
+    const latest = this.latestBenchmarkVersion();
+    return (m: Pick<AiModel, 'benchmarkVersion'>) => isBenchmarkOutdated(m, latest);
   });
 
   /** True if the model is in the sidebar list without a search. */

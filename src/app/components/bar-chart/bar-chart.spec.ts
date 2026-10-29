@@ -31,6 +31,13 @@ describe('BarChartComponent Pareto only', () => {
     expect(ids()).toEqual(['no-speed', 'best', 'cheap']);
   });
 
+  it('passes the bars to the outdated benchmark hint only for a benchmark metric', () => {
+    state.barMetric.set('tokensPerSecond');
+    expect(c.benchmarkModels().map(m => m.id)).toEqual(ids());
+    state.barMetric.set('inputCosts');
+    expect(c.benchmarkModels()).toEqual([]);
+  });
+
   it('keeps the value axis when Pareto only is toggled', () => {
     state.barMetric.set('tokensPerSecond');
     const before = [c.chartData().yMax, c.chartData().ySuggestedMax];

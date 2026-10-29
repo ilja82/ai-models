@@ -5,9 +5,10 @@ import {AiModel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.mode
 import {buildModelTooltipLines} from '../../models/tooltip.util';
 import {darken, getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
-import {AxisField} from '../../models/view-types';
+import {AxisField, BENCHMARK_AXIS_FIELDS} from '../../models/view-types';
 import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
+import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
 import {effortSeries, effortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {Rect, Shift, spreadLabels} from '../../models/label-layout.util';
 import {percentile} from '../../models/median.util';
@@ -182,7 +183,7 @@ export function shiftsFromRects(labels: Label3d[], rects: (Rect | null)[], curre
 @Component({
   selector: 'app-scatter-3d-plot',
   standalone: true,
-  imports: [MissingDataHintComponent],
+  imports: [MissingDataHintComponent, OutdatedBenchmarkHintComponent],
   templateUrl: './scatter-3d-plot.html',
   styleUrl: './scatter-3d-plot.scss',
 })
@@ -224,6 +225,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const shown = new Set(this.plotModels().map(m => m.id));
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
+
+  /** The plotted models while an axis comes from the benchmark, else none. */
+  readonly benchmarkModels = computed(() =>
+    this.axes().some(a => BENCHMARK_AXIS_FIELDS.has(a.key)) ? this.plotModels() : []);
 
   readonly hasEfforts = computed(() => this.state.allModels().some(m => m.efforts.length > 1));
 
@@ -456,6 +461,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const defs = [this.defOf(this.state.scatter3dX()), this.defOf(this.state.scatter3dY()), this.defOf(this.state.scatter3dZ())];
     const costAxis = defs.some(d => d.key === 'costsToRun');
+    const latest = this.state.latestBenchmarkVersion();
     const symbolOf = (m: AiModel, symbol: string) =>
       costAxis && m.tokensPerRunEstimated && !symbol.endsWith('-open') ? `${symbol}-open` : symbol;
     const buildTrace = (group: ModelGroup, name: string, color: string, symbol: string) => ({
@@ -465,7 +471,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
       ...coords(groups[group]),
       text: groups[group].map(m => m.publicName),
       textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
-      hovertext: groups[group].map(m => buildModelTooltipLines(m).join('<br>')),
+      hovertext: groups[group].map(m => buildModelTooltipLines(m, latest).join('<br>')),
       hoverinfo: 'text',
       marker: {
         color, size: MODEL_MARKER_SIZE[group], symbol: groups[group].map(m => symbolOf(m, symbol)),
@@ -512,7 +518,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
         text: points.map(p => shownIds.has(model.id) ? shortEffortLabel(p.effort!) : `${model.publicName} ${shortEffortLabel(p.effort!)}`),
         textposition: 'middle right',
         textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
-        hovertext: points.map(p => buildModelTooltipLines(p).join('<br>')),
+        hovertext: points.map(p => buildModelTooltipLines(p, latest).join('<br>')),
         hoverinfo: 'text',
         line: {color: lineColor, width: 2, dash: 'dash'},
         marker: {

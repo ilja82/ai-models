@@ -98,6 +98,9 @@
                 <header class="card-head">
                   <h3 class="name">{{ entry.model.publicName }}</h3>
                   <code class="model-id">{{ entry.model.modelName }}</code>
+                  @if (state.isOutdated()(entry.model)) {
+                    <span class="outdated-badge">{{ outdatedTitle(entry.model) }}</span>
+                  }
                 </header>
 
                 <p class="headline">{{ entry.headline }}</p>

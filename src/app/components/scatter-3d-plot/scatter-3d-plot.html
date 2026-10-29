@@ -51,6 +51,7 @@
   </div>
 
   <app-missing-data-hint [models]="missingModels()"/>
+  <app-outdated-benchmark-hint [models]="benchmarkModels()"/>
   <div class="plot-wrap">
     @if (loading()) {
       <div class="status">Loading 3D library…</div>

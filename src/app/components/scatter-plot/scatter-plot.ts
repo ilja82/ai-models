@@ -16,7 +16,7 @@ import {
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
 import {AiModel, blendedPriceOf, priceBlendLabel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
-import {buildModelTooltipLines, formatUsd, formatUsdTick} from '../../models/tooltip.util';
+import {buildModelTooltipLines, formatUsd, formatUsdTick, intelligenceLine} from '../../models/tooltip.util';
 import {darken, getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
@@ -24,6 +24,7 @@ import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEff
 import {paretoIds} from '../../models/pareto.util';
 import {median, percentile} from '../../models/median.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
+import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -195,7 +196,7 @@ function hasRunCostX(plotType: PlotType): boolean {
 @Component({
   selector: 'app-scatter-plot',
   standalone: true,
-  imports: [MissingDataHintComponent],
+  imports: [MissingDataHintComponent, OutdatedBenchmarkHintComponent],
   templateUrl: './scatter-plot.html',
   styleUrl: './scatter-plot.scss',
 })
@@ -278,6 +279,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const shown = new Set(this.plottable().map(p => p.model.id));
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
+
+  /** The plotted models, for the outdated benchmark hint. */
+  readonly plottedModels = computed(() => this.plotted().map(p => p.model));
 
   /** The effort points of each plottable model with two or more, while the plot type shows effort levels. */
   private readonly allEffortPoints = computed(() => this.effortPointsOf(this.plottable().map(p => p.model)));
@@ -881,7 +885,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (datasetIndex > 0) return this.buildEffortTooltipLines(datasetIndex - 1, dataIndex);
     const model = this.plotted()[dataIndex]?.model;
     if (!model) return [];
-    return buildModelTooltipLines(model);
+    return buildModelTooltipLines(model, this.state.latestBenchmarkVersion());
   }
 
   private buildEffortTooltipLines(curveIndex: number, pointIndex: number): string[] {
@@ -895,7 +899,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       point.balanced ? '★ Best balanced' : '',
       point.axisBest ? '★ Best on an axis' : '',
       point.useful ? '★ Pareto efficient' : '',
-      `★ Overall Intelligence: ${l.overallIntelligence}`,
+      intelligenceLine(l.overallIntelligence, curve.model, this.state.latestBenchmarkVersion()),
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
       responseTime !== null
         ? `★ Response time: ${responseTime.toFixed(1)}s (in: ${l.inputProcessingTime}s, think: ${l.thinkingTime}s, out: ${l.outputTime}s)`

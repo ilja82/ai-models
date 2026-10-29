@@ -1,0 +1,6 @@
+@if (outdated().length) {
+  <p class="outdated-hint" [title]="names()">
+    Outdated benchmark: Intelligence Index {{ versions() }}, not comparable with {{ latest() }}
+    ({{ outdated().length }} {{ outdated().length === 1 ? 'model' : 'models' }}): {{ names() }}
+  </p>
+}

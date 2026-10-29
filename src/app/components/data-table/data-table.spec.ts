@@ -26,6 +26,32 @@ describe('DataTableComponent provider column', () => {
   });
 });
 
+describe('DataTableComponent outdated benchmark', () => {
+  afterEach(() => localStorage.clear());
+
+  it('marks the name and the score of a model with an older benchmark version', () => {
+    const state = TestBed.inject(AppState);
+    state.allModels.set([
+      testModel({id: 'current', publicName: 'Current', overallIntelligence: 60}),
+      testModel({id: 'old', modelName: 'old', publicName: 'Old', overallIntelligence: 50, benchmarkVersion: 'v4.3.2'}),
+    ]);
+    state.disabledModelIds.set(new Set());
+    state.hiddenProviders.set([]);
+    state.showOnlyPareto.set(false);
+    const fixture = TestBed.createComponent(DataTableComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const col = [...el.querySelectorAll('th')].findIndex(th => th.textContent!.includes('Overall'));
+    const [current, old] = [...el.querySelectorAll('tbody tr')];
+    expect(current.querySelector('.outdated-badge')).toBeNull();
+    expect(current.querySelectorAll('td')[col].classList).not.toContain('outdated');
+    expect(old.querySelector('.outdated-badge')!.textContent!.trim()).toBe('v4.3.2');
+    const score = old.querySelectorAll('td')[col];
+    expect(score.classList).toContain('outdated');
+    expect(score.getAttribute('title')).toBe('Outdated benchmark: Intelligence Index v4.3.2, not comparable with v5.0');
+  });
+});
+
 describe('DataTableComponent search', () => {
   afterEach(() => localStorage.clear());
 

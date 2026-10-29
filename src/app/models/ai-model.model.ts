@@ -43,6 +43,8 @@ export interface AiModel {
   minVramRequirement: number;
   /** Intelligence Index score, or null for a model without benchmark (embedding, speech, rerank). */
   overallIntelligence: number | null;
+  /** Intelligence Index version of the score, the token counts, the speed and the times; null without benchmark. */
+  benchmarkVersion: string | null;
   releaseDate: string | null;
   cutoffDate: string | null;
   reasoning: boolean;
@@ -152,6 +154,32 @@ export function hasModalities(
 /** Sort order by intelligence, highest first; models without a score go last. */
 export function byIntelligenceDesc(a: Pick<AiModel, 'overallIntelligence'>, b: Pick<AiModel, 'overallIntelligence'>): number {
   return (b.overallIntelligence ?? -Infinity) - (a.overallIntelligence ?? -Infinity) || 0;
+}
+
+/** Order of two Intelligence Index versions such as 'v4.3.2' and 'v5.0': negative if `a` is older than `b`. */
+export function compareBenchmarkVersions(a: string, b: string): number {
+  const parts = (v: string) => v.replace(/^v/, '').split('.').map(Number);
+  const pa = parts(a);
+  const pb = parts(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+/** The newest benchmark version of the models, or null if no model has a benchmark. */
+export function latestBenchmarkVersion(models: readonly Pick<AiModel, 'benchmarkVersion'>[]): string | null {
+  let latest: string | null = null;
+  for (const {benchmarkVersion: v} of models) {
+    if (v !== null && (latest === null || compareBenchmarkVersions(v, latest) > 0)) latest = v;
+  }
+  return latest;
+}
+
+/** True if the benchmark values come from an older Intelligence Index version than `latest`. */
+export function isBenchmarkOutdated(m: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): boolean {
+  return m.benchmarkVersion !== null && latest !== null && compareBenchmarkVersions(m.benchmarkVersion, latest) < 0;
 }
 
 /** Release date in ms since 1970, or null if unknown. */

@@ -5,7 +5,7 @@ import {AppState} from '../../state/app.state';
 import {BalancedIds, ModelBadgesService} from '../../services/model-badges.service';
 import {ProfileEntry, ProfileGrouping, ProfileSection, ProfileSort} from '../../models/profile.model';
 import {groupProfiles, PROFILE_GROUPING_LABELS, PROFILE_SORT_LABELS, sortProfiles} from '../../models/profile.util';
-import {buildModelTooltipLines} from '../../models/tooltip.util';
+import {buildModelTooltipLines, outdatedBenchmarkText} from '../../models/tooltip.util';
 import {BalancedAxis, bestBalancedId} from '../../models/balanced.util';
 import {AiModel, MODALITY_ICONS, MODALITY_LABELS} from '../../models/ai-model.model';
 
@@ -56,7 +56,11 @@ export class ModelProfilesComponent {
   readonly shownCount = computed(() => this.profiles().length);
 
   tooltipFor(entry: ProfileEntry): string {
-    return buildModelTooltipLines(entry.model).join('\n');
+    return buildModelTooltipLines(entry.model, this.state.latestBenchmarkVersion()).join('\n');
+  }
+
+  outdatedTitle(model: AiModel): string {
+    return outdatedBenchmarkText(model, this.state.latestBenchmarkVersion());
   }
 
   rankTitle(entry: ProfileEntry, rank: number | null): string {

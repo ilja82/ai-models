@@ -11,7 +11,7 @@ import {
   PROVIDER_LABELS,
   responseTimeOf,
 } from '../../models/ai-model.model';
-import {formatUsd, modalityNames} from '../../models/tooltip.util';
+import {formatUsd, modalityNames, outdatedBenchmarkText} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime' | 'costPerRequest';
@@ -242,6 +242,10 @@ export class DataTableComponent {
 
   runCostTitle(model: AiModel): string | null {
     return model.tokensPerRunEstimated ? 'Estimated: the benchmark publishes no token counts for this model' : null;
+  }
+
+  outdatedTitle(model: AiModel): string {
+    return outdatedBenchmarkText(model, this.state.latestBenchmarkVersion());
   }
 
   latency(model: AiModel): number | null {

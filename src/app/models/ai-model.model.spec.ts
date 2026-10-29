@@ -1,12 +1,15 @@
 import {
   blendedPriceOf,
   byIntelligenceDesc,
+  compareBenchmarkVersions,
   costPerRequestOf,
   effectiveCutoffDate,
   hasModalities,
   INPUT_MODALITIES,
+  isBenchmarkOutdated,
   isNewModel,
   latencyOf,
+  latestBenchmarkVersion,
   OUTPUT_MODALITIES,
   PRICE_BLEND,
   priceBlendLabel,
@@ -101,6 +104,37 @@ describe('missing measurements', () => {
 
   it('shows the overall intelligence in the tooltip', () => {
     expect(buildModelTooltipLines(testModel())).toContain('★ Overall Intelligence: 40');
+  });
+
+  it('names an outdated benchmark in the tooltip', () => {
+    const old = testModel({benchmarkVersion: 'v4.3.2'});
+    expect(buildModelTooltipLines(old, 'v5.0')).toContain(
+      '★ Overall Intelligence: 40 (Outdated benchmark: Intelligence Index v4.3.2, not comparable with v5.0)');
+    expect(buildModelTooltipLines(testModel(), 'v5.0')).toContain('★ Overall Intelligence: 40');
+    expect(buildModelTooltipLines(old)).toContain('★ Overall Intelligence: 40');
+  });
+});
+
+describe('benchmark versions', () => {
+  it('orders versions by their numbers', () => {
+    expect(compareBenchmarkVersions('v4.3.2', 'v5.0')).toBeLessThan(0);
+    expect(compareBenchmarkVersions('v5.10', 'v5.9')).toBeGreaterThan(0);
+    expect(compareBenchmarkVersions('v5', 'v5.0')).toBe(0);
+  });
+
+  it('finds the newest version and marks the older ones as outdated', () => {
+    const models = [{benchmarkVersion: 'v4.3.2'}, {benchmarkVersion: null}, {benchmarkVersion: 'v5.0'}];
+    expect(latestBenchmarkVersion(models)).toBe('v5.0');
+    expect(latestBenchmarkVersion([{benchmarkVersion: null}])).toBeNull();
+    expect(models.map(m => isBenchmarkOutdated(m, 'v5.0'))).toEqual([true, false, false]);
+    expect(isBenchmarkOutdated({benchmarkVersion: 'v4.3.2'}, null)).toBe(false);
+  });
+
+  it('gives each data entry with a score a benchmark version and each entry without a score none', () => {
+    for (const m of AI_MODELS) {
+      if (m.overallIntelligence === null) expect(m.benchmarkVersion, m.id).toBeNull();
+      else expect(m.benchmarkVersion, m.id).toMatch(/^v\d+(\.\d+)*$/);
+    }
   });
 });
 

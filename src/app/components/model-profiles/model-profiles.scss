@@ -127,6 +127,12 @@
     color: var(--text-muted);
     word-break: break-all;
   }
+
+  .outdated-badge {
+    font-size: 0.7rem;
+    font-style: italic;
+    color: var(--text-muted);
+  }
 }
 
 .headline {

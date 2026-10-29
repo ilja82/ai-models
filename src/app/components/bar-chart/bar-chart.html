@@ -29,6 +29,7 @@
     </div>
   </div>
   <app-missing-data-hint [models]="chartData().missing"/>
+  <app-outdated-benchmark-hint [models]="benchmarkModels()"/>
   <div class="canvas-wrap">
     <canvas #canvas></canvas>
   </div>

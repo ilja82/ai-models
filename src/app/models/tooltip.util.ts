@@ -3,6 +3,7 @@ import {
   blendedPriceOf,
   costPerRequestOf,
   effectiveCutoffDate,
+  isBenchmarkOutdated,
   Modality,
   MODALITY_LABELS,
   priceBlendLabel,
@@ -51,14 +52,26 @@ export function runCostText(model: Pick<AiModel, 'costsToRun' | 'tokensPerRunEst
   return `${formatUsd(model.costsToRun)} per index run${model.tokensPerRunEstimated ? ' (estimated tokens)' : ''}`;
 }
 
-export function buildModelTooltipLines(model: AiModel): string[] {
+/** The text that marks an outdated benchmark, for titles and tooltips. */
+export function outdatedBenchmarkText(model: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): string {
+  return `Outdated benchmark: Intelligence Index ${model.benchmarkVersion}, not comparable with ${latest}`;
+}
+
+/** The intelligence line of a tooltip; it names an outdated index version. */
+export function intelligenceLine(score: number | null, model: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): string {
+  const outdated = isBenchmarkOutdated(model, latest) ? ` (${outdatedBenchmarkText(model, latest)})` : '';
+  return `★ Overall Intelligence: ${score ?? MISSING}${outdated}`;
+}
+
+/** Tooltip lines of a model; `latest` is the newest benchmark version, to name an outdated one. */
+export function buildModelTooltipLines(model: AiModel, latest: string | null = null): string[] {
   const responseTime = responseTimeOf(model);
   const perRequest = costPerRequestOf(model);
   const blended = blendedPriceOf(model);
   return [
     `${model.publicName}`,
     model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
-    `★ Overall Intelligence: ${model.overallIntelligence ?? MISSING}`,
+    intelligenceLine(model.overallIntelligence, model, latest),
     model.effort ? `★ Effort: ${model.effort}${model.efforts.length > 1 ? ` (${model.efforts.length} levels measured)` : ''}` : '',
     `★ Speed: ${model.tokensPerSecond === null ? MISSING : `${model.tokensPerSecond} tok/s`}`,
     responseTime === null

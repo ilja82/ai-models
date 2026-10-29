@@ -104,7 +104,8 @@
       font-weight: 600;
     }
 
-    &.estimated {
+    &.estimated,
+    &.outdated {
       font-style: italic;
       color: var(--text-muted);
     }
@@ -220,6 +221,18 @@
     font-weight: 600;
     font-style: normal;
     text-transform: uppercase;
+    vertical-align: middle;
+    cursor: help;
+  }
+
+  .outdated-badge {
+    margin-left: 0.4rem;
+    padding: 0 0.3rem;
+    border: 1px solid var(--text-muted);
+    border-radius: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-style: normal;
     vertical-align: middle;
     cursor: help;
   }

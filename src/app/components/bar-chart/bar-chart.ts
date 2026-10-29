@@ -2,8 +2,10 @@ import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, View
 import {BarController, BarElement, CategoryScale, Chart, ChartConfiguration, Legend, LinearScale, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {AiModel, latencyOf, responseTimeOf} from '../../models/ai-model.model';
-import {BarMetric} from '../../models/view-types';
+import {BarMetric, BENCHMARK_BAR_METRICS} from '../../models/view-types';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
+import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
+import {outdatedBenchmarkText} from '../../models/tooltip.util';
 import {otherEffortVariants, parseEffortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {effortLines, groupBars, highlightColors, modelIdOf} from '../../models/bar-groups.util';
 
@@ -111,7 +113,7 @@ function groupedLabels(models: AiModel[], fullLabels: string[]): string[] {
 @Component({
   selector: 'app-bar-chart',
   standalone: true,
-  imports: [MissingDataHintComponent],
+  imports: [MissingDataHintComponent, OutdatedBenchmarkHintComponent],
   templateUrl: './bar-chart.html',
   styleUrl: './bar-chart.scss',
 })
@@ -128,6 +130,10 @@ export class BarChartComponent implements OnInit, OnDestroy {
   private hoveredModelId: string | null = null;
 
   readonly hasEffortBars = computed(() => this.chartData().models.some(isEffortLevel));
+
+  /** The shown models while the metric comes from the benchmark, else none. */
+  readonly benchmarkModels = computed(() =>
+    BENCHMARK_BAR_METRICS.has(this.state.barMetric()) ? this.chartData().models : []);
 
   private getTotalValue(m: AiModel, metric: BarMetric): number | null {
     switch (metric) {
@@ -392,6 +398,8 @@ export class BarChartComponent implements OnInit, OnDestroy {
       const m = data.models[items[0].dataIndex];
       return [
         data.metricDef.key === 'costsToRun' && m?.tokensPerRunEstimated ? 'Estimated: no measured token counts' : '',
+        m && BENCHMARK_BAR_METRICS.has(data.metricDef.key) && this.state.isOutdated()(m)
+          ? outdatedBenchmarkText(m, this.state.latestBenchmarkVersion()) : '',
         m?.deprecated ? `⚠️ Deprecated: ${m.deprecationInfo}` : '',
       ].filter(Boolean);
     };
