@@ -7,8 +7,9 @@ import {HIGHLIGHT_LABEL_SIZE_3D, LABEL_SIZE_3D, MARKER_SIZE_3D, Scatter3dPlotCom
 
 describe('highlighted 3D markers', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
-    effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+    outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+    outputTime: 3,
   });
 
   let state: AppState;

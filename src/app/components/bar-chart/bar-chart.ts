@@ -1,11 +1,11 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {BarController, BarElement, CategoryScale, Chart, ChartConfiguration, Legend, LinearScale, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
-import {AiModel, latencyOf, responseTimeOf} from '../../models/ai-model.model';
-import {BarMetric, BENCHMARK_BAR_METRICS} from '../../models/view-types';
+import {AiModel, hasEstimatedScore, latencyOf, responseTimeOf} from '../../models/ai-model.model';
+import {BarMetric, VERSIONED_BAR_METRICS} from '../../models/view-types';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
-import {outdatedBenchmarkText} from '../../models/tooltip.util';
+import {ESTIMATED_SCORE_TITLE, estimatedScoreText, estimatedTokensText, outdatedBenchmarkText,} from '../../models/tooltip.util';
 import {otherEffortVariants, parseEffortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {effortLines, groupBars, highlightColors, modelIdOf} from '../../models/bar-groups.util';
 
@@ -28,11 +28,16 @@ interface StackSegment {
   values: number[];
   borderColor?: string[];
   borderWidth?: number[];
+  /** Bars with an estimated score; the plugin draws their outline dashed. */
+  dashed?: boolean[];
 }
 
 interface LegendItem {
   label: string;
   color: string;
+  /** A CSS border, for the dashed swatch of the estimated score. */
+  border?: string;
+  title?: string;
 }
 
 interface ChartDataResult {
@@ -61,6 +66,8 @@ const SEG_COLOR_1 = 'rgba(99,140,210,0.82)';
 const SEG_COLOR_2 = 'rgba(180,100,210,0.82)';
 const SEG_COLOR_3 = 'rgba(70,180,180,0.82)';
 const ESTIMATED_FILL_ALPHA = '0.15)';
+const ESTIMATED_DASH = [4, 3];
+const ESTIMATED_BORDER_WIDTH = 1.5;
 const EFFORT_FILL_ALPHA = '0.4)';
 const LINE_ALPHA = 0.55;
 const DIMMED_LINE_ALPHA = 0.12;
@@ -131,9 +138,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
 
   readonly hasEffortBars = computed(() => this.chartData().models.some(isEffortLevel));
 
-  /** The shown models while the metric comes from the benchmark, else none. */
-  readonly benchmarkModels = computed(() =>
-    BENCHMARK_BAR_METRICS.has(this.state.barMetric()) ? this.chartData().models : []);
+  /** The shown models while the metric keeps the index version of its run, else none. */
+  readonly versionedModels = computed(() =>
+    VERSIONED_BAR_METRICS.has(this.state.barMetric()) ? this.chartData().models : []);
 
   private getTotalValue(m: AiModel, metric: BarMetric): number | null {
     switch (metric) {
@@ -234,6 +241,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const values = models.map(m => this.getTotalValue(m, metric)!);
     const solid = models.map(m => m.deprecated ? DEPRECATED_BAR_COLOR : m.localModel ? LOCAL_COLOR : API_COLOR);
     const estimated = models.map(m => metric === 'costsToRun' && m.tokensPerRunEstimated);
+    const dashed = models.map(m => metric === 'intelligence' && hasEstimatedScore(m));
     let yMax: number | undefined;
     if (metric === 'intelligence') {
       yMax = Math.min(100, Math.ceil(ySuggestedMax ?? 0) + 5);
@@ -244,11 +252,13 @@ export class BarChartComponent implements OnInit, OnDestroy {
       fullLabels,
       segments: [{
         label: metricDef.label,
-        color: solid.map((c, i) => estimated[i] ? c.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA) : effortFill(models[i], c)),
+        color: solid.map((c, i) =>
+          estimated[i] || dashed[i] ? c.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA) : effortFill(models[i], c)),
         baseColor: API_COLOR,
         values,
         borderColor: solid,
         borderWidth: estimated.map(e => e ? 1.5 : 0),
+        dashed,
       }],
       isStacked: false,
       yMax,
@@ -281,8 +291,37 @@ export class BarChartComponent implements OnInit, OnDestroy {
     if (data.metricDef.key === 'costsToRun' && data.models.some(m => m.tokensPerRunEstimated)) {
       items.push({label: 'Estimated tokens (hollow)', color: API_COLOR.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA)});
     }
+    if (data.segments[0]?.dashed?.some(Boolean)) {
+      items.push({
+        label: 'Estimated score', color: API_COLOR.replace(/[\d.]+\)$/, ESTIMATED_FILL_ALPHA),
+        border: `${ESTIMATED_BORDER_WIDTH}px dashed ${API_COLOR}`, title: ESTIMATED_SCORE_TITLE,
+      });
+    }
     return items;
   });
+
+  /** Strokes a dashed outline around each bar with an estimated score. */
+  private readonly estimatedBarsPlugin = {
+    id: 'estimatedBars',
+    afterDatasetsDraw: (chart: Chart) => {
+      const seg = this.chartData().segments[0];
+      if (!seg?.dashed?.some(Boolean) || !chart.data.datasets.length) return;
+      const meta = chart.getDatasetMeta(0);
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.setLineDash(ESTIMATED_DASH);
+      ctx.lineWidth = ESTIMATED_BORDER_WIDTH;
+      seg.dashed.forEach((dashed, i) => {
+        const bar = meta.data[i] as any;
+        if (!dashed || !bar) return;
+        ctx.strokeStyle = seg.borderColor?.[i] ?? API_COLOR;
+        ctx.beginPath();
+        ctx.roundRect(bar.x - bar.width / 2, Math.min(bar.y, bar.base), bar.width, Math.abs(bar.base - bar.y), 4);
+        ctx.stroke();
+      });
+      ctx.restore();
+    },
+  };
 
   private readonly valueLabelsPlugin = {
     id: 'valueLabels',
@@ -300,11 +339,11 @@ export class BarChartComponent implements OnInit, OnDestroy {
       ctx.textBaseline = 'bottom';
       meta.data.forEach((bar: any, i: number) => {
         const total = data.segments.reduce((s, seg) => s + (seg.values[i] ?? 0), 0);
-        const label = this.formatValue(total, data.metricDef.unit);
+        const model = data.models[i];
+        const label = `${data.segments[0]?.dashed?.[i] ? '~' : ''}${this.formatValue(total, data.metricDef.unit)}`;
         const x = bar.x;
         const y = bar.y;
         ctx.fillText(label, x, y - 4);
-        const model = data.models[i];
         if (model?.deprecated) {
           ctx.fillText('⚠️', x, y - 18);
         }
@@ -396,10 +435,13 @@ export class BarChartComponent implements OnInit, OnDestroy {
     const afterBody = (items: any[]): string | string[] => {
       if (!items.length) return '';
       const m = data.models[items[0].dataIndex];
+      const latest = this.state.latestBenchmarkVersion();
       return [
-        data.metricDef.key === 'costsToRun' && m?.tokensPerRunEstimated ? 'Estimated: no measured token counts' : '',
-        m && BENCHMARK_BAR_METRICS.has(data.metricDef.key) && this.state.isOutdated()(m)
-          ? outdatedBenchmarkText(m, this.state.latestBenchmarkVersion()) : '',
+        data.metricDef.key === 'costsToRun' && m?.tokensPerRunEstimated ? estimatedTokensText(m, latest) : '',
+        m && data.metricDef.key === 'intelligence' && hasEstimatedScore(m)
+          ? `Score ${estimatedScoreText(m, m, latest)}` : '',
+        m && VERSIONED_BAR_METRICS.has(data.metricDef.key) && this.state.isOutdated()(m)
+          ? outdatedBenchmarkText(m, latest) : '',
         m?.deprecated ? `⚠️ Deprecated: ${m.deprecationInfo}` : '',
       ].filter(Boolean);
     };
@@ -432,7 +474,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
           borderSkipped: false,
         })),
       },
-      plugins: [this.valueLabelsPlugin, this.effortLinesPlugin],
+      plugins: [this.estimatedBarsPlugin, this.valueLabelsPlugin, this.effortLinesPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,

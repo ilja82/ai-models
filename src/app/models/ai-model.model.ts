@@ -41,9 +41,14 @@ export interface AiModel {
   /** The provider that serves the API model, or null for a local model. */
   provider: Provider | null;
   minVramRequirement: number;
-  /** Intelligence Index score, or null for a model without benchmark (embedding, speech, rerank). */
+  /**
+   * Intelligence Index score on the scale of the newest index version, or null for a model without benchmark
+   * (embedding, speech, rerank). It is an estimate if `intelligenceEstimatedFrom` is set.
+   */
   overallIntelligence: number | null;
-  /** Intelligence Index version of the score, the token counts, the speed and the times; null without benchmark. */
+  /** The score measured in the older `benchmarkVersion` that `overallIntelligence` is estimated from, else null. */
+  intelligenceEstimatedFrom: number | null;
+  /** Intelligence Index version of the measured score, the token counts, the speed and the times; null without benchmark. */
   benchmarkVersion: string | null;
   releaseDate: string | null;
   cutoffDate: string | null;
@@ -55,6 +60,7 @@ export interface AiModel {
   totalTokens: number;
   totalSpend: number;
   totalRequests: number;
+  /** Tokens of one index run in millions, on the scale of the newest index version, like the three values below. */
   tokensPerRun: number | null;
   /** Input tokens of one index run in millions. */
   inputTokensPerRun: number | null;
@@ -62,8 +68,13 @@ export interface AiModel {
   outputTokensPerRun: number | null;
   /** Share of the input tokens read from the cache. */
   cacheHitRate: number | null;
-  /** True if the token counts are estimated from the score, the reasoning flag and the release date. */
+  /**
+   * True if the token counts are estimated: from the score, the reasoning flag and the release date, or scaled from
+   * the run of an older `benchmarkVersion` (`tokensPerRunScaled`).
+   */
   tokensPerRunEstimated: boolean;
+  /** True if the token counts are scaled from the run of the older `benchmarkVersion` with its `TokenScale`. */
+  tokensPerRunScaled: boolean;
   usesCache: boolean;
   tokensPerSecond: number | null;
   inputProcessingTime: number | null;
@@ -81,6 +92,7 @@ export interface AiModel {
 export interface EffortLevelInput {
   effort: string;
   overallIntelligence: number;
+  intelligenceEstimatedFrom: number | null;
   tokensPerRun: number | null;
   inputTokensPerRun: number | null;
   outputTokensPerRun: number | null;
@@ -95,12 +107,44 @@ export interface EffortLevel extends EffortLevelInput {
   costsToRun: number | null;
 }
 
+/** Factors from the token counts of an older Intelligence Index run to the newest version. */
+export interface TokenScale {
+  /** Ratio of the input tokens. */
+  input: number;
+  /** Ratio of the reasoning and answer tokens. */
+  output: number;
+  /** Ratio of the share of the input tokens that miss the cache. */
+  cacheMiss: number;
+}
+
 export interface ModelEfforts {
   effort: string | null;
   levels: EffortLevelInput[];
 }
 
 type RunTokens = Pick<EffortLevelInput, 'inputTokensPerRun' | 'outputTokensPerRun' | 'cacheHitRate'>;
+
+/**
+ * The token counts of a run of an older index version on the scale of the newest version: the input and the output
+ * tokens times their factors, the cache misses times theirs. A cache hit rate of 0 or null stays. Token counts without
+ * the input and output split stay as they are.
+ */
+export function scaleRunTokens<T extends RunTokens & Pick<EffortLevelInput, 'tokensPerRun'>>(
+  tokens: T,
+  scale: TokenScale,
+): T {
+  if (tokens.inputTokensPerRun === null || tokens.outputTokensPerRun === null) return tokens;
+  const input = tokens.inputTokensPerRun * scale.input;
+  const output = tokens.outputTokensPerRun * scale.output;
+  const hits = tokens.cacheHitRate;
+  return {
+    ...tokens,
+    tokensPerRun: Math.round(input + output),
+    inputTokensPerRun: Math.round(input),
+    outputTokensPerRun: Math.round(output * 10) / 10,
+    cacheHitRate: hits === null || hits <= 0 ? hits : Math.round((1 - (1 - hits) * scale.cacheMiss) * 1000) / 1000,
+  };
+}
 
 /**
  * USD for one Intelligence Index run at the prices of the model: cache hits at the cache price, the other input tokens
@@ -180,6 +224,11 @@ export function latestBenchmarkVersion(models: readonly Pick<AiModel, 'benchmark
 /** True if the benchmark values come from an older Intelligence Index version than `latest`. */
 export function isBenchmarkOutdated(m: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): boolean {
   return m.benchmarkVersion !== null && latest !== null && compareBenchmarkVersions(m.benchmarkVersion, latest) < 0;
+}
+
+/** True if the score is estimated from the score of an older Intelligence Index version. */
+export function hasEstimatedScore(m: Pick<AiModel, 'intelligenceEstimatedFrom'>): boolean {
+  return m.intelligenceEstimatedFrom !== null;
 }
 
 /** Release date in ms since 1970, or null if unknown. */

@@ -3,6 +3,7 @@ import {
   blendedPriceOf,
   costPerRequestOf,
   effectiveCutoffDate,
+  hasEstimatedScore,
   isBenchmarkOutdated,
   Modality,
   MODALITY_LABELS,
@@ -17,13 +18,16 @@ export function formatUsd(value: number): string {
   return value > 0 && value < 0.01 ? `$${value.toPrecision(2)}` : `$${value.toFixed(2)}`;
 }
 
-function tokensPerRunLine(model: AiModel): string {
+function tokensPerRunLine(model: AiModel, latest: string | null): string {
   if (model.tokensPerRun === null) return '';
   const split = model.inputTokensPerRun === null || model.outputTokensPerRun === null
     ? ''
     : ` (in: ${model.inputTokensPerRun}M, out: ${model.outputTokensPerRun}M`
     + `${model.cacheHitRate === null ? '' : `, ${Math.round(model.cacheHitRate * 100)}% cache hits`})`;
-  return `Tokens per run: ${model.tokensPerRun}M${split}${model.tokensPerRunEstimated ? ' estimated' : ''}`;
+  const estimate = model.tokensPerRunScaled
+    ? ` estimated${latest ? ` for ${latest}` : ''} from the ${model.benchmarkVersion} run`
+    : model.tokensPerRunEstimated ? ' estimated' : '';
+  return `Tokens per run: ${model.tokensPerRun}M${split}${estimate}`;
 }
 
 /** Modality names for a sentence, e.g. "Text, Image". */
@@ -52,15 +56,48 @@ export function runCostText(model: Pick<AiModel, 'costsToRun' | 'tokensPerRunEst
   return `${formatUsd(model.costsToRun)} per index run${model.tokensPerRunEstimated ? ' (estimated tokens)' : ''}`;
 }
 
-/** The text that marks an outdated benchmark, for titles and tooltips. */
-export function outdatedBenchmarkText(model: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): string {
-  return `Outdated benchmark: Intelligence Index ${model.benchmarkVersion}, not comparable with ${latest}`;
+/** The title of a run cost from estimated token counts: scaled from an older index run, or estimated by a fit. */
+export function estimatedTokensText(
+  model: Pick<AiModel, 'tokensPerRunScaled' | 'benchmarkVersion'>,
+  latest: string | null,
+): string {
+  return model.tokensPerRunScaled
+    ? `Token counts estimated${latest ? ` for ${latest}` : ''} from the ${model.benchmarkVersion} run`
+    : 'Estimated: the benchmark publishes no token counts for this model';
 }
 
-/** The intelligence line of a tooltip; it names an outdated index version. */
-export function intelligenceLine(score: number | null, model: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): string {
-  const outdated = isBenchmarkOutdated(model, latest) ? ` (${outdatedBenchmarkText(model, latest)})` : '';
-  return `★ Overall Intelligence: ${score ?? MISSING}${outdated}`;
+/** The text that marks the values of an outdated benchmark, for titles and tooltips. */
+export function outdatedBenchmarkText(model: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): string {
+  return `Outdated benchmark: speed and times from Intelligence Index ${model.benchmarkVersion}, not comparable with ${latest}`;
+}
+
+/** The title of the "Estimated score" legend item. */
+export const ESTIMATED_SCORE_TITLE = 'Estimated from the score of an older Intelligence Index version, '
+  + 'with a curve fitted on the models that have a score in both versions';
+
+/** The text that names the measured score an estimated score comes from, for titles and tooltips. */
+export function estimatedScoreText(
+  values: Pick<AiModel, 'intelligenceEstimatedFrom'>,
+  model: Pick<AiModel, 'benchmarkVersion'>,
+  latest: string | null,
+): string {
+  return `estimated${latest ? ` for ${latest}` : ''} from the ${model.benchmarkVersion} score ${values.intelligenceEstimatedFrom}`;
+}
+
+/** The score with `~` if it is estimated, or `fallback` without a score. */
+export function scoreText(values: Pick<AiModel, 'overallIntelligence' | 'intelligenceEstimatedFrom'>, fallback = MISSING): string {
+  if (values.overallIntelligence === null) return fallback;
+  return `${hasEstimatedScore(values) ? '~' : ''}${values.overallIntelligence}`;
+}
+
+/** The intelligence line of a tooltip; `values` is the model or one of its effort levels. */
+export function intelligenceLine(
+  values: Pick<AiModel, 'overallIntelligence' | 'intelligenceEstimatedFrom'>,
+  model: Pick<AiModel, 'benchmarkVersion'>,
+  latest: string | null,
+): string {
+  const estimate = hasEstimatedScore(values) ? ` (${estimatedScoreText(values, model, latest)})` : '';
+  return `★ Overall Intelligence: ${scoreText(values)}${estimate}`;
 }
 
 /** Tooltip lines of a model; `latest` is the newest benchmark version, to name an outdated one. */
@@ -71,7 +108,8 @@ export function buildModelTooltipLines(model: AiModel, latest: string | null = n
   return [
     `${model.publicName}`,
     model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
-    intelligenceLine(model.overallIntelligence, model, latest),
+    intelligenceLine(model, model, latest),
+    isBenchmarkOutdated(model, latest) ? outdatedBenchmarkText(model, latest) : '',
     model.effort ? `★ Effort: ${model.effort}${model.efforts.length > 1 ? ` (${model.efforts.length} levels measured)` : ''}` : '',
     `★ Speed: ${model.tokensPerSecond === null ? MISSING : `${model.tokensPerSecond} tok/s`}`,
     responseTime === null
@@ -86,7 +124,7 @@ export function buildModelTooltipLines(model: AiModel, latest: string | null = n
     `Input: ${perMillion(model.inputCosts)}`,
     `Output: ${perMillion(model.outputCosts)}`,
     `Cache: ${model.cacheCosts === null ? 'no cache, input price' : `$${model.cacheCosts.toFixed(3)}/M tokens`}`,
-    tokensPerRunLine(model),
+    tokensPerRunLine(model, latest),
     perRequest === null ? '' : `Cost per request: ${formatUsd(perRequest)} (LiteLLM, ${model.totalRequests} requests)`,
     `Context: ${kiloTokens(model.contextWindow)}`,
     `Max In: ${kiloTokens(model.maxInputTokens)}`,

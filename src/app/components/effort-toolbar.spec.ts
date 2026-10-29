@@ -9,8 +9,9 @@ import {Scatter3dPlotComponent} from './scatter-3d-plot/scatter-3d-plot';
 
 describe('effort levels in the plot toolbars', () => {
   const level = (effort: string, overallIntelligence: number): EffortLevel => ({
-    effort, overallIntelligence, costsToRun: 10, tokensPerRun: 100, inputTokensPerRun: 90, outputTokensPerRun: 10,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun: 10, tokensPerRun: 100,
+    inputTokensPerRun: 90, outputTokensPerRun: 10, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1,
+    thinkingTime: 2, outputTime: 3,
   });
 
   beforeEach(() => {

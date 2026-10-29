@@ -39,7 +39,9 @@ export interface ProfileLevel {
   effort: string;
   /** True for the level the model entry stands for. */
   current: boolean;
-  intelligence: number | null;
+  /** The score, with `~` if it is estimated. */
+  intelligenceText: string;
+  /** The run cost, with `~` if its token counts are estimated. */
   costText: string;
   onFront: boolean;
   /** The better entry; null on the Pareto front or without a better entry. */

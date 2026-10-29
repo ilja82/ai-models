@@ -72,6 +72,7 @@ describe('charts with missing measurements', () => {
       {effort: 'high', overallIntelligence: 40, costsToRun: 10},
     ].map(l => ({
       ...l,
+      intelligenceEstimatedFrom: null,
       tokensPerRun: 1,
       inputTokensPerRun: 1,
       outputTokensPerRun: 0,
@@ -103,6 +104,7 @@ describe('charts with missing measurements', () => {
       {effort: 'high', overallIntelligence: 40, costsToRun: 10, tokensPerSecond: 50},
     ].map(l => ({
       ...l,
+      intelligenceEstimatedFrom: null,
       tokensPerRun: 1,
       inputTokensPerRun: 1,
       outputTokensPerRun: 0,

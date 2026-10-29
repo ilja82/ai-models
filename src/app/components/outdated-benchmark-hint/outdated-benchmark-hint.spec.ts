@@ -20,7 +20,7 @@ describe('OutdatedBenchmarkHintComponent', () => {
   it('names each shown model with an older benchmark version once', () => {
     const hint = render([current, old, oldLevel]).querySelector('.outdated-hint')!;
     expect(hint.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      'Outdated benchmark: Intelligence Index v4.3.2, not comparable with v5.0 (1 model): Lorem Old');
+      'Outdated benchmark: speed and times from Intelligence Index v4.3.2, not comparable with v5.0 (1 model): Lorem Old');
     expect(hint.getAttribute('title')).toBe('Lorem Old');
   });
 

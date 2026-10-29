@@ -4,6 +4,7 @@ import {AppState} from '../../state/app.state';
 import {
   AiModel,
   costPerRequestOf,
+  hasEstimatedScore,
   latencyOf,
   Modality,
   MODALITY_ICONS,
@@ -11,7 +12,7 @@ import {
   PROVIDER_LABELS,
   responseTimeOf,
 } from '../../models/ai-model.model';
-import {formatUsd, modalityNames, outdatedBenchmarkText} from '../../models/tooltip.util';
+import {estimatedScoreText, estimatedTokensText, formatUsd, modalityNames, outdatedBenchmarkText, scoreText,} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime' | 'costPerRequest';
@@ -241,11 +242,22 @@ export class DataTableComponent {
   }
 
   runCostTitle(model: AiModel): string | null {
-    return model.tokensPerRunEstimated ? 'Estimated: the benchmark publishes no token counts for this model' : null;
+    return model.tokensPerRunEstimated ? estimatedTokensText(model, this.state.latestBenchmarkVersion()) : null;
   }
 
   outdatedTitle(model: AiModel): string {
     return outdatedBenchmarkText(model, this.state.latestBenchmarkVersion());
+  }
+
+  readonly hasEstimatedScore = hasEstimatedScore;
+
+  /** The score with `~` if it is estimated, or a dash without a score. */
+  scoreText(model: AiModel): string {
+    return scoreText(model, '—');
+  }
+
+  scoreTitle(model: AiModel): string | null {
+    return hasEstimatedScore(model) ? `Score ${estimatedScoreText(model, model, this.state.latestBenchmarkVersion())}` : null;
   }
 
   latency(model: AiModel): number | null {

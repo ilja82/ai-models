@@ -29,11 +29,14 @@ describe('DataTableComponent provider column', () => {
 describe('DataTableComponent outdated benchmark', () => {
   afterEach(() => localStorage.clear());
 
-  it('marks the name and the score of a model with an older benchmark version', () => {
+  it('marks the name of a model with an older benchmark version and its estimated score', () => {
     const state = TestBed.inject(AppState);
     state.allModels.set([
       testModel({id: 'current', publicName: 'Current', overallIntelligence: 60}),
-      testModel({id: 'old', modelName: 'old', publicName: 'Old', overallIntelligence: 50, benchmarkVersion: 'v4.3.2'}),
+      testModel({
+        id: 'old', modelName: 'old', publicName: 'Old', overallIntelligence: 31.2, intelligenceEstimatedFrom: 43.6,
+        benchmarkVersion: 'v4.3.2',
+      }),
     ]);
     state.disabledModelIds.set(new Set());
     state.hiddenProviders.set([]);
@@ -44,11 +47,16 @@ describe('DataTableComponent outdated benchmark', () => {
     const col = [...el.querySelectorAll('th')].findIndex(th => th.textContent!.includes('Overall'));
     const [current, old] = [...el.querySelectorAll('tbody tr')];
     expect(current.querySelector('.outdated-badge')).toBeNull();
-    expect(current.querySelectorAll('td')[col].classList).not.toContain('outdated');
-    expect(old.querySelector('.outdated-badge')!.textContent!.trim()).toBe('v4.3.2');
+    const currentScore = current.querySelectorAll('td')[col];
+    expect([currentScore.textContent!.trim(), currentScore.classList.contains('estimated')]).toEqual(['60', false]);
+    expect(currentScore.getAttribute('title')).toBeNull();
+    const badge = old.querySelector('.outdated-badge')!;
+    expect(badge.textContent!.trim()).toBe('v4.3.2');
+    expect(badge.getAttribute('title')).toBe(
+      'Outdated benchmark: speed and times from Intelligence Index v4.3.2, not comparable with v5.0');
     const score = old.querySelectorAll('td')[col];
-    expect(score.classList).toContain('outdated');
-    expect(score.getAttribute('title')).toBe('Outdated benchmark: Intelligence Index v4.3.2, not comparable with v5.0');
+    expect([score.textContent!.trim(), score.classList.contains('estimated')]).toEqual(['~31.2', true]);
+    expect(score.getAttribute('title')).toBe('Score estimated for v5.0 from the v4.3.2 score 43.6');
   });
 });
 

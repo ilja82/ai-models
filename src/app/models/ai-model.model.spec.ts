@@ -4,6 +4,7 @@ import {
   compareBenchmarkVersions,
   costPerRequestOf,
   effectiveCutoffDate,
+  hasEstimatedScore,
   hasModalities,
   INPUT_MODALITIES,
   isBenchmarkOutdated,
@@ -17,10 +18,12 @@ import {
   releaseTimeOf,
   responseTimeOf,
   runCostOf,
+  scaleRunTokens,
 } from './ai-model.model';
 import {testModel} from '../../testing/model-fixture';
-import {buildModelTooltipLines, formatUsd, formatUsdTick} from './tooltip.util';
+import {buildModelTooltipLines, formatUsd, formatUsdTick, scoreText} from './tooltip.util';
 import {AI_MODELS} from './ai-models.data';
+import {TOKEN_SCALES} from './token-scale.data';
 
 const BLEND_7_2_1 = {cache: 7, input: 2, reasoning: 0, output: 1};
 
@@ -46,6 +49,46 @@ describe('runCostOf', () => {
     for (const m of AI_MODELS) {
       expect(m.costsToRun).toEqual(runCostOf(m, m));
       if (m.tokensPerRun !== null) expect(m.costsToRun).not.toBeNull();
+    }
+  });
+});
+
+describe('scaleRunTokens', () => {
+  const scale = {input: 2, output: 0.5, cacheMiss: 0.5};
+
+  it('scales input and output tokens and the cache misses, and rounds like the data file', () => {
+    const tokens = {tokensPerRun: 1010, inputTokensPerRun: 1000, outputTokensPerRun: 10.3, cacheHitRate: 0.9};
+    expect(scaleRunTokens(tokens, scale)).toEqual(
+      {tokensPerRun: 2005, inputTokensPerRun: 2000, outputTokensPerRun: 5.2, cacheHitRate: 0.95});
+  });
+
+  it('keeps a cache hit rate of 0 or null and token counts without a split', () => {
+    const tokens = {tokensPerRun: 110, inputTokensPerRun: 100, outputTokensPerRun: 10, cacheHitRate: null};
+    expect(scaleRunTokens(tokens, scale).cacheHitRate).toBeNull();
+    expect(scaleRunTokens({...tokens, cacheHitRate: 0}, scale).cacheHitRate).toBe(0);
+    const noSplit = {...tokens, inputTokensPerRun: null};
+    expect(scaleRunTokens(noSplit, scale)).toBe(noSplit);
+  });
+
+  it('scales the token counts of each outdated data entry and of its effort levels, and of no other entry', () => {
+    const latest = latestBenchmarkVersion(AI_MODELS);
+    for (const m of AI_MODELS) {
+      const outdated = isBenchmarkOutdated(m, latest) && m.tokensPerRun !== null;
+      expect(m.tokensPerRunScaled, m.id).toBe(outdated);
+      if (outdated) {
+        expect(m.tokensPerRunEstimated, m.id).toBe(true);
+        expect(TOKEN_SCALES[m.benchmarkVersion!], m.id).toBeDefined();
+      }
+    }
+    expect(Object.keys(TOKEN_SCALES).every(v => latest !== null && compareBenchmarkVersions(v, latest) < 0)).toBe(true);
+  });
+
+  it('scales an effort level like its entry, so the effort line meets the model point', () => {
+    for (const m of AI_MODELS.filter(x => x.tokensPerRunScaled && x.effort !== null)) {
+      const current = m.efforts.find(l => l.effort === m.effort);
+      if (current?.tokensPerRun == null) continue;
+      expect([current.inputTokensPerRun, current.outputTokensPerRun, current.cacheHitRate], m.id)
+        .toEqual([m.inputTokensPerRun, m.outputTokensPerRun, m.cacheHitRate]);
     }
   });
 });
@@ -106,12 +149,33 @@ describe('missing measurements', () => {
     expect(buildModelTooltipLines(testModel())).toContain('★ Overall Intelligence: 40');
   });
 
-  it('names an outdated benchmark in the tooltip', () => {
-    const old = testModel({benchmarkVersion: 'v4.3.2'});
+  it('names token counts scaled from an older index run in the tooltip', () => {
+    const old = testModel({benchmarkVersion: 'v4.3.2', tokensPerRunEstimated: true, tokensPerRunScaled: true});
     expect(buildModelTooltipLines(old, 'v5.0')).toContain(
-      '★ Overall Intelligence: 40 (Outdated benchmark: Intelligence Index v4.3.2, not comparable with v5.0)');
-    expect(buildModelTooltipLines(testModel(), 'v5.0')).toContain('★ Overall Intelligence: 40');
-    expect(buildModelTooltipLines(old)).toContain('★ Overall Intelligence: 40');
+      'Tokens per run: 100M (in: 90M, out: 10M) estimated for v5.0 from the v4.3.2 run');
+    expect(buildModelTooltipLines(testModel({tokensPerRunEstimated: true}), 'v5.0')).toContain(
+      'Tokens per run: 100M (in: 90M, out: 10M) estimated');
+  });
+
+  it('names an estimated score and the values of an outdated benchmark in the tooltip', () => {
+    const old = testModel({benchmarkVersion: 'v4.3.2', overallIntelligence: 31.2, intelligenceEstimatedFrom: 43.6});
+    const outdatedLine = 'Outdated benchmark: speed and times from Intelligence Index v4.3.2, not comparable with v5.0';
+    const lines = buildModelTooltipLines(old, 'v5.0');
+    expect(lines).toContain('★ Overall Intelligence: ~31.2 (estimated for v5.0 from the v4.3.2 score 43.6)');
+    expect(lines).toContain(outdatedLine);
+    expect(buildModelTooltipLines(old)).toContain('★ Overall Intelligence: ~31.2 (estimated from the v4.3.2 score 43.6)');
+    expect(buildModelTooltipLines(old)).not.toContain(outdatedLine);
+    const current = buildModelTooltipLines(testModel(), 'v5.0');
+    expect(current).toContain('★ Overall Intelligence: 40');
+    expect(current.some(l => l.startsWith('Outdated benchmark'))).toBe(false);
+  });
+
+  it('marks an estimated score with ~ and keeps a missing score as a fallback text', () => {
+    expect(scoreText(testModel({overallIntelligence: 31.2, intelligenceEstimatedFrom: 43.6}))).toBe('~31.2');
+    expect(scoreText(testModel({overallIntelligence: 31.2}))).toBe('31.2');
+    expect(scoreText(testModel({overallIntelligence: null}), '—')).toBe('—');
+    expect(hasEstimatedScore(testModel({intelligenceEstimatedFrom: 0}))).toBe(true);
+    expect(hasEstimatedScore(testModel())).toBe(false);
   });
 });
 
@@ -134,6 +198,15 @@ describe('benchmark versions', () => {
     for (const m of AI_MODELS) {
       if (m.overallIntelligence === null) expect(m.benchmarkVersion, m.id).toBeNull();
       else expect(m.benchmarkVersion, m.id).toMatch(/^v\d+(\.\d+)*$/);
+    }
+  });
+
+  it('estimates the score of each outdated data entry and of its effort levels, and of no other entry', () => {
+    const latest = latestBenchmarkVersion(AI_MODELS);
+    for (const m of AI_MODELS) {
+      const outdated = isBenchmarkOutdated(m, latest) && m.overallIntelligence !== null;
+      expect(hasEstimatedScore(m), m.id).toBe(outdated);
+      for (const level of m.efforts) expect(hasEstimatedScore(level), `${m.id} ${level.effort}`).toBe(outdated);
     }
   });
 });

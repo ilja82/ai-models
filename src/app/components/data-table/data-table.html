@@ -42,7 +42,7 @@
           <th (click)="sort('releaseDate')" class="sortable">Released {{ sortIcon('releaseDate') }}</th>
           <th (click)="sort('cutoffDate')" class="sortable">Cutoff {{ sortIcon('cutoffDate') }}</th>
           <th (click)="sort('overallIntelligence')" class="sortable"
-              title="Intelligence Index score, italic = outdated index version">Overall {{ sortIcon('overallIntelligence') }}
+              title="Intelligence Index score, italic with ~ = estimated from an older index version">Overall {{ sortIcon('overallIntelligence') }}
           </th>
           <th (click)="sort('reasoning')" class="sortable">Reasoning {{ sortIcon('reasoning') }}</th>
           <th title="Input → output modalities">Modalities</th>
@@ -91,9 +91,8 @@
             </td>
             <td class="center">{{ model.releaseDate ?? '—' }}</td>
             <td class="center">{{ model.cutoffDate ?? '—' }}</td>
-            <td class="num intel hist" [class.outdated]="state.isOutdated()(model)"
-                [attr.title]="state.isOutdated()(model) ? outdatedTitle(model) : null"
-                [style]="cellStyle(model, 'overallIntelligence')">{{ model.overallIntelligence ?? '—' }}
+            <td class="num intel hist" [class.estimated]="hasEstimatedScore(model)" [attr.title]="scoreTitle(model)"
+                [style]="cellStyle(model, 'overallIntelligence')">{{ scoreText(model) }}
             </td>
             <td class="center">{{ model.reasoning ? 'Yes' : 'No' }}</td>
             <td class="modalities" [title]="modalitiesTitle(model)" [attr.aria-label]="modalitiesTitle(model)">

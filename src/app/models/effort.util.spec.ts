@@ -14,6 +14,7 @@ function level(effort: string, overrides: Partial<EffortLevel> = {}): EffortLeve
   return {
     effort,
     overallIntelligence: 40,
+    intelligenceEstimatedFrom: null,
     tokensPerRun: 100,
     inputTokensPerRun: 90,
     outputTokensPerRun: 10,

@@ -1,4 +1,4 @@
-import {darken, getPlotColors} from './plot-colors';
+import {darken, getPlotColors, withAlpha} from './plot-colors';
 
 function hue(color: string): number {
   const rgba = color.match(/\d+(\.\d+)?/g);
@@ -41,6 +41,11 @@ describe('darken', () => {
     expect(darken('#ffd60a', 0)).toBe('#ffd60a');
     expect(darken('#ffffff', 0.5)).toBe('rgb(128,128,128)');
     expect(darken('rgba(200,100,0,0.5)', 0.5)).toBe('rgb(100,50,0)');
+  });
+
+  it('sets the alpha of hex and rgba colors', () => {
+    expect(withAlpha('#1e5bc6', 0.35)).toBe('rgba(30,91,198,0.35)');
+    expect(withAlpha('rgba(160,160,160,0.65)', 0.35)).toBe('rgba(160,160,160,0.35)');
   });
 
   it('darkens labels in the green zone only in the light theme', () => {

@@ -7,8 +7,9 @@ import {PlotType} from '../../models/view-types';
 
 describe('ScatterPlotComponent plot types', () => {
   const level = (effort: string, overallIntelligence: number, outputTime: number): EffortLevel => ({
-    effort, overallIntelligence, costsToRun: 10, tokensPerRun: 100, inputTokensPerRun: 90, outputTokensPerRun: 10,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime,
+    effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun: 10, tokensPerRun: 100,
+    inputTokensPerRun: 90, outputTokensPerRun: 10, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1,
+    thinkingTime: 2, outputTime,
   });
   const fast = testModel({id: 'fast', inputProcessingTime: 0.5, thinkingTime: 0, outputTime: 0.5});
   const slow = testModel({

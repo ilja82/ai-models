@@ -132,8 +132,9 @@ describe('ModelBadgesService alternative and Pareto front', () => {
 
   it('counts the other effort levels as better, like the table and the scatter plot', () => {
     const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
-      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-      cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+      effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+      outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+      outputTime: 3,
     });
     const sonnet = testModel({
       id: 'sonnet', publicName: 'Sonnet', overallIntelligence: 56, costsToRun: 7700, effort: 'xhigh',
@@ -149,8 +150,9 @@ describe('ModelBadgesService alternative and Pareto front', () => {
 
   it('rates each effort level and names the level that is Pareto-optimal', () => {
     const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
-      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-      cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+      effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+      outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+      outputTime: 3,
     });
     const sonnet = testModel({
       id: 'sonnet', publicName: 'Sonnet', overallIntelligence: 56, costsToRun: 7720, effort: 'max',

@@ -36,6 +36,9 @@
       @if (hasEfforts()) {
         <span class="legend-item"><span class="shape effort-line"></span>Effort levels</span>
       }
+      @if (estimatedShown()) {
+        <span class="legend-item" [title]="estimatedScoreTitle"><span class="shape circle estimated"></span>Estimated score</span>
+      }
     </div>
 
     <div class="toolbar-right">
@@ -51,7 +54,7 @@
   </div>
 
   <app-missing-data-hint [models]="missingModels()"/>
-  <app-outdated-benchmark-hint [models]="benchmarkModels()"/>
+  <app-outdated-benchmark-hint [models]="versionedModels()"/>
   <div class="plot-wrap">
     @if (loading()) {
       <div class="status">Loading 3D library…</div>

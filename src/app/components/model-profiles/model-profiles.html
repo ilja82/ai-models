@@ -61,7 +61,7 @@
             <tr [class.current]="level.current" [class.front]="level.onFront"
                 [title]="level.alternative ? level.alternative.reason : ''">
               <td>{{ level.effort }}</td>
-              <td>{{ level.intelligence ?? 'n/a' }}</td>
+              <td>{{ level.intelligenceText }}</td>
               <td>{{ level.costText }}</td>
               <td class="verdict">
                 @if (level.onFront) {

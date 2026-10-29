@@ -93,6 +93,11 @@
         height: 0;
         border-top: 2px dashed var(--plot-api);
       }
+
+      &.circle.estimated {
+        background: var(--plot-api);
+        opacity: 0.4;
+      }
     }
   }
 

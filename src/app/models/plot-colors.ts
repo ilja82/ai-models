@@ -74,12 +74,21 @@ export function getPlotColors(theme: Theme): PlotColors {
   return theme === 'light' ? LIGHT : DARK;
 }
 
+function channelsOf(color: string): number[] {
+  return color.startsWith('#')
+    ? [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16))
+    : color.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+}
+
 /** Mixes a hex or rgb(a) color with black; `amount` 0 returns the color, 1 returns black. */
 export function darken(color: string, amount: number): string {
   if (amount <= 0) return color;
-  const channels = color.startsWith('#')
-    ? [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16))
-    : color.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
-  const [r, g, b] = channels.map(c => Math.round(c * (1 - amount)));
+  const [r, g, b] = channelsOf(color).map(c => Math.round(c * (1 - amount)));
   return `rgb(${r},${g},${b})`;
+}
+
+/** A hex or rgb(a) color with the given alpha. */
+export function withAlpha(color: string, alpha: number): string {
+  const [r, g, b] = channelsOf(color);
+  return `rgba(${r},${g},${b},${alpha})`;
 }

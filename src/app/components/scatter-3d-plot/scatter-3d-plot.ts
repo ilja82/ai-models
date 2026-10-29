@@ -1,11 +1,11 @@
 import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
-import {buildModelTooltipLines} from '../../models/tooltip.util';
+import {AiModel, hasEstimatedScore, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
+import {buildModelTooltipLines, ESTIMATED_SCORE_TITLE} from '../../models/tooltip.util';
 import {darken, getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
-import {AxisField, BENCHMARK_AXIS_FIELDS} from '../../models/view-types';
+import {AxisField, VERSIONED_AXIS_FIELDS} from '../../models/view-types';
 import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
 import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
@@ -97,6 +97,8 @@ interface AxisExtent {
 }
 
 export const MARKER_SIZE_3D = {useful: 10, axisBest: 13, balanced: 18};
+/** Marker opacity of a model with an estimated score; Plotly 3D has no dashed marker outline. */
+export const ESTIMATED_OPACITY_3D = 0.4;
 export const LABEL_SIZE_3D = 10;
 export const HIGHLIGHT_LABEL_SIZE_3D = 14;
 export const BALANCED_LABEL_SIZE_3D = 17;
@@ -226,9 +228,16 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** The plotted models while an axis comes from the benchmark, else none. */
-  readonly benchmarkModels = computed(() =>
-    this.axes().some(a => BENCHMARK_AXIS_FIELDS.has(a.key)) ? this.plotModels() : []);
+  /** The plotted models while an axis keeps the index version of its run, else none. */
+  readonly versionedModels = computed(() =>
+    this.axes().some(a => VERSIONED_AXIS_FIELDS.has(a.key)) ? this.plotModels() : []);
+
+  private readonly intelligenceShown = computed(() => this.axes().some(a => a.key === 'intelligence'));
+
+  /** True while a shown model has an estimated score on the intelligence axis. */
+  readonly estimatedShown = computed(() => this.intelligenceShown() && this.shownModels().some(hasEstimatedScore));
+
+  readonly estimatedScoreTitle = ESTIMATED_SCORE_TITLE;
 
   readonly hasEfforts = computed(() => this.state.allModels().some(m => m.efforts.length > 1));
 
@@ -464,21 +473,28 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     const latest = this.state.latestBenchmarkVersion();
     const symbolOf = (m: AiModel, symbol: string) =>
       costAxis && m.tokensPerRunEstimated && !symbol.endsWith('-open') ? `${symbol}-open` : symbol;
-    const buildTrace = (group: ModelGroup, name: string, color: string, symbol: string) => ({
-      type: 'scatter3d',
-      mode: 'markers+text',
-      name,
-      ...coords(groups[group]),
-      text: groups[group].map(m => m.publicName),
-      textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
-      hovertext: groups[group].map(m => buildModelTooltipLines(m, latest).join('<br>')),
-      hoverinfo: 'text',
-      marker: {
-        color, size: MODEL_MARKER_SIZE[group], symbol: groups[group].map(m => symbolOf(m, symbol)),
-        line: group === 'balanced' ? {color: colors.balancedRing, width: 3} : {color: 'rgba(0,0,0,0.4)', width: 0.5},
-        opacity: 0.95,
-      },
-    });
+    const intelligenceShown = this.intelligenceShown();
+    const buildTrace = (group: ModelGroup, name: string, color: string, symbol: string, estimated = false) => {
+      const items = groups[group].filter(m => (intelligenceShown && hasEstimatedScore(m)) === estimated);
+      return {
+        type: 'scatter3d',
+        mode: 'markers+text',
+        name: estimated ? `${name}, estimated score` : name,
+        showlegend: !estimated,
+        ...coords(items),
+        text: items.map(m => m.publicName),
+        textfont: {size: LABEL_SIZE_3D, color: HIDDEN_TEXT},
+        hovertext: items.map(m => buildModelTooltipLines(m, latest).join('<br>')),
+        hoverinfo: 'text',
+        marker: {
+          color, size: MODEL_MARKER_SIZE[group], symbol: items.map(m => symbolOf(m, symbol)),
+          line: group === 'balanced' ? {color: colors.balancedRing, width: 3} : {color: 'rgba(0,0,0,0.4)', width: 0.5},
+          opacity: estimated ? ESTIMATED_OPACITY_3D : 0.95,
+        },
+      };
+    };
+    const modelTraces = (group: ModelGroup, name: string, color: string, symbol: string) =>
+      [buildTrace(group, name, color, symbol), buildTrace(group, name, color, symbol, true)];
 
     const regionTraces: any[] = [];
     const regions = this.regions();
@@ -533,12 +549,12 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return [
       ...regionTraces,
       ...effortTraces,
-      buildTrace('deprecated', 'Deprecated', colors.deprecated, 'circle'),
-      buildTrace('api', 'API', colors.api, 'circle'),
-      buildTrace('local', 'Local', colors.local, 'diamond'),
-      buildTrace('useful', 'Pareto efficient', colors.useful, 'circle'),
-      buildTrace('axisBest', 'Best per axis', colors.axisBest, 'diamond-open'),
-      buildTrace('balanced', 'Best balanced', colors.balanced, 'square'),
+      ...modelTraces('deprecated', 'Deprecated', colors.deprecated, 'circle'),
+      ...modelTraces('api', 'API', colors.api, 'circle'),
+      ...modelTraces('local', 'Local', colors.local, 'diamond'),
+      ...modelTraces('useful', 'Pareto efficient', colors.useful, 'circle'),
+      ...modelTraces('axisBest', 'Best per axis', colors.axisBest, 'diamond-open'),
+      ...modelTraces('balanced', 'Best balanced', colors.balanced, 'square'),
     ];
   });
 

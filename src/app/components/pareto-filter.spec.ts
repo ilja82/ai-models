@@ -9,8 +9,9 @@ import {DataTableComponent} from './data-table/data-table';
 
 describe('show only Pareto best', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
-    effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+    outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+    outputTime: 3,
   });
 
   let state: AppState;
@@ -112,8 +113,9 @@ describe('show only Pareto best', () => {
 
 describe('Pareto set per plot type', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
-    effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+    outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+    outputTime: 3,
   });
 
   let state: AppState;

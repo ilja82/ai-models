@@ -9,8 +9,9 @@ import {ThemeState} from '../state/theme.state';
 
 describe('special marker sizes', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
-    effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+    outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+    outputTime: 3,
   });
   const cheap = testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40});
   const pricey = testModel({id: 'pricey', costsToRun: 1000, overallIntelligence: 50});
@@ -139,8 +140,9 @@ describe('best balanced effort level label in 3D', () => {
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');
     const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
-      effort, overallIntelligence, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1, outputTokensPerRun: 0,
-      cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+      effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
+      outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
+      outputTime: 3,
     });
     state.allModels.set([
       testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40}),

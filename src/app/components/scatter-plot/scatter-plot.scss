@@ -76,6 +76,12 @@
           height: 0;
           border-top: 2px dashed var(--plot-api);
         }
+
+        &.estimated {
+          border-radius: 50%;
+          border: 1.5px dashed var(--plot-api);
+          background: color-mix(in srgb, var(--plot-api) 35%, transparent);
+        }
       }
     }
 

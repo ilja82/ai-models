@@ -2,8 +2,9 @@ import {effortLines, groupBars, highlightColors, modelIdOf} from './bar-groups.u
 import {testModel} from '../../testing/model-fixture';
 
 const lvl = (effort: string) => ({
-  effort, overallIntelligence: 0, costsToRun: 0, tokensPerRun: null, inputTokensPerRun: null, outputTokensPerRun: null,
-  cacheHitRate: null, tokensPerSecond: null, inputProcessingTime: null, thinkingTime: null, outputTime: null,
+  effort, overallIntelligence: 0, intelligenceEstimatedFrom: null, costsToRun: 0, tokensPerRun: null,
+  inputTokensPerRun: null, outputTokensPerRun: null, cacheHitRate: null, tokensPerSecond: null,
+  inputProcessingTime: null, thinkingTime: null, outputTime: null,
 });
 const efforts = [lvl('low'), lvl('medium'), lvl('high')];
 

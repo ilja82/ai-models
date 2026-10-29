@@ -1,9 +1,9 @@
 import {Injectable} from '@angular/core';
-import {AiModel, Modality, MODALITY_LABELS, responseTimeOf} from '../models/ai-model.model';
+import {AiModel, hasEstimatedScore, Modality, MODALITY_LABELS, responseTimeOf} from '../models/ai-model.model';
 import {Badge, MetricId, PeerGroup, ProfileAlternative, ProfileEntry, ProfileLevel, ProfileMetric} from '../models/profile.model';
 import {effortSeries, otherEffortVariants, parseEffortVariantId} from '../models/effort.util';
 import {dominators, ParetoAxis} from '../models/pareto.util';
-import {formatUsd} from '../models/tooltip.util';
+import {formatUsd, scoreText} from '../models/tooltip.util';
 import {PEER_GROUP_LABELS, peerGroupOf, VRAM_LIMITS} from '../models/profile.util';
 
 /** The best-balanced model or effort level id of each peer group (closest-to-ideal in cost-vs-intelligence space). */
@@ -445,16 +445,18 @@ interface MetricDef {
   get: (m: AiModel) => number | null;
   format: (v: number) => string;
   higherIsBetter: boolean;
+  /** True if the value of the model is an estimate; its text then starts with `~`. */
+  estimated?: (m: AiModel) => boolean;
 }
 
 const METRIC_DEFS: Record<MetricId, MetricDef> = {
   intelligence: {
     id: 'intelligence', label: 'Intelligence', get: m => m.overallIntelligence,
-    format: v => String(v), higherIsBetter: true,
+    format: v => String(v), higherIsBetter: true, estimated: hasEstimatedScore,
   },
   cost: {
     id: 'cost', label: 'Run cost', get: m => m.costsToRun,
-    format: v => v === 0 ? 'Free' : formatUsd(v), higherIsBetter: false,
+    format: v => v === 0 ? 'Free' : formatUsd(v), higherIsBetter: false, estimated: m => m.tokensPerRunEstimated,
   },
   speed: {
     id: 'speed', label: 'Speed', get: m => positive(m.tokensPerSecond),
@@ -486,6 +488,11 @@ function rankOf(def: MetricDef, value: number, model: AiModel, peers: AiModel[])
   return 1 - better / others.length;
 }
 
+/** The value of a metric as text, with `~` if the value of the model is an estimate, or n/a without a value. */
+function metricText(def: MetricDef, value: number | null, model: AiModel): string {
+  return value === null ? 'n/a' : `${def.estimated?.(model) ? '~' : ''}${def.format(value)}`;
+}
+
 function computeMetrics(model: AiModel, ctx: PeerContext): ProfileMetric[] {
   return metricIds(ctx.group).map(id => {
     const def = METRIC_DEFS[id];
@@ -494,7 +501,7 @@ function computeMetrics(model: AiModel, ctx: PeerContext): ProfileMetric[] {
       id,
       label: def.label,
       value,
-      text: value === null ? 'n/a' : def.format(value),
+      text: metricText(def, value, model),
       rank: value === null ? null : rankOf(def, value, model, ctx.peers),
     };
   });
@@ -511,9 +518,8 @@ function missingModalities(alt: AiModel, model: AiModel): string[] {
 
 function alternativeReason(alt: AiModel, model: AiModel): string {
   const parts: string[] = [];
-  const ai = alt.overallIntelligence!;
-  const mi = model.overallIntelligence!;
-  parts.push(ai === mi ? 'same intelligence' : `intelligence ${ai} instead of ${mi}`);
+  parts.push(alt.overallIntelligence === model.overallIntelligence
+    ? 'same intelligence' : `intelligence ${scoreText(alt)} instead of ${scoreText(model)}`);
   const ac = alt.costsToRun!;
   const mc = model.costsToRun!;
   if (ac < mc) parts.push(`${Math.round((1 - ac / mc) * 100)}% lower run cost`);
@@ -556,8 +562,8 @@ function computeLevels(model: AiModel, ctx: PeerContext): ProfileLevel[] {
     return {
       effort: level.effort!,
       current: level.id === model.id,
-      intelligence: level.overallIntelligence,
-      costText: level.costsToRun === null ? 'n/a' : METRIC_DEFS.cost.format(level.costsToRun),
+      intelligenceText: metricText(METRIC_DEFS.intelligence, level.overallIntelligence, level),
+      costText: metricText(METRIC_DEFS.cost, level.costsToRun, level),
       onFront,
       alternative: onFront ? null : computeAlternative(level, better),
     };

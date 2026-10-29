@@ -9,15 +9,32 @@ import {
   LogarithmicScale,
   Plugin,
   PointElement,
+  PointStyle,
   ScatterController,
   Ticks,
   Tooltip
 } from 'chart.js';
+import {drawPoint} from 'chart.js/helpers';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {AiModel, blendedPriceOf, priceBlendLabel, releaseTimeOf, responseTimeOf} from '../../models/ai-model.model';
-import {buildModelTooltipLines, formatUsd, formatUsdTick, intelligenceLine} from '../../models/tooltip.util';
-import {darken, getPlotColors} from '../../models/plot-colors';
+import {
+  AiModel,
+  blendedPriceOf,
+  hasEstimatedScore,
+  isBenchmarkOutdated,
+  priceBlendLabel,
+  releaseTimeOf,
+  responseTimeOf,
+} from '../../models/ai-model.model';
+import {
+  buildModelTooltipLines,
+  ESTIMATED_SCORE_TITLE,
+  formatUsd,
+  formatUsdTick,
+  intelligenceLine,
+  outdatedBenchmarkText,
+} from '../../models/tooltip.util';
+import {darken, getPlotColors, withAlpha} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
 import {PlotType} from '../../models/view-types';
 import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEffortLabel} from '../../models/effort.util';
@@ -51,6 +68,9 @@ const HIGHLIGHT_EFFORT_LABEL_FONT = 'bold 13px system-ui, sans-serif';
 const BALANCED_EFFORT_LABEL_FONT = 'bold 15px system-ui, sans-serif';
 const BALANCED_BORDER_WIDTH = 2.5;
 export const STAR_SIZE = 26;
+export const ESTIMATED_DASH = [3, 2];
+export const ESTIMATED_FILL_ALPHA = 0.35;
+const ESTIMATED_BORDER_WIDTH = 1.5;
 
 const LABEL_GAP = 3;
 
@@ -93,6 +113,29 @@ export function effortLabelFont(p: MarkerRole): string {
   return [EFFORT_LABEL_FONT, HIGHLIGHT_EFFORT_LABEL_FONT, HIGHLIGHT_EFFORT_LABEL_FONT, BALANCED_EFFORT_LABEL_FONT][markerRank(p)];
 }
 
+/** Strokes the dashed outline of a point with an estimated score; around an image point (the star) a dashed circle. */
+export function drawEstimatedOutline(
+  ctx: CanvasRenderingContext2D,
+  p: { pointStyle: string | HTMLImageElement; radius: number; borderColor: string; borderWidth: number },
+  x: number,
+  y: number,
+): void {
+  const borderWidth = Math.max(ESTIMATED_BORDER_WIDTH, p.borderWidth);
+  ctx.save();
+  ctx.setLineDash(ESTIMATED_DASH);
+  ctx.strokeStyle = p.borderColor;
+  ctx.fillStyle = 'transparent';
+  ctx.lineWidth = borderWidth;
+  if (typeof p.pointStyle === 'string') {
+    drawPoint(ctx, {pointStyle: p.pointStyle as PointStyle, radius: p.radius, rotation: 0, borderWidth}, x, y);
+  } else {
+    ctx.beginPath();
+    ctx.arc(x, y, p.radius + 2, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function makeStarImage(color: string, size: number, onLoad: () => void): HTMLImageElement {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">` +
     `<polygon fill="${color}" points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38"/></svg>`;
@@ -112,11 +155,19 @@ interface PlotTypeDef {
   showsEfforts: boolean;
   /** The percentile (0 to 1) of all y values where the zones split. */
   ySplit: number;
+  /** True if an axis shows speed or response time, which keep the index version of their run. */
+  versionedAxis: boolean;
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
-  {key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: true, ySplit: 0.75},
-  {key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false, showsEfforts: false, ySplit: 0.75},
+  {
+    key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false,
+    showsEfforts: true, ySplit: 0.75, versionedAxis: false
+  },
+  {
+    key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false,
+    showsEfforts: false, ySplit: 0.75, versionedAxis: false
+  },
   {
     key: 'responseVsIntel',
     label: 'Response Time vs Intelligence',
@@ -125,7 +176,8 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseY: false,
     logY: false,
     showsEfforts: true,
-    ySplit: 0.75
+    ySplit: 0.75,
+    versionedAxis: true
   },
   {
     key: 'costVsResponse',
@@ -135,7 +187,8 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseY: true,
     logY: true,
     showsEfforts: true,
-    ySplit: 0.5
+    ySplit: 0.5,
+    versionedAxis: true
   },
   {
     key: 'speed',
@@ -145,7 +198,8 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseY: false,
     logY: false,
     showsEfforts: true,
-    ySplit: 0.75
+    ySplit: 0.75,
+    versionedAxis: true
   },
   {
     key: 'responseVsSpeed',
@@ -155,7 +209,8 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseY: false,
     logY: false,
     showsEfforts: true,
-    ySplit: 0.5
+    ySplit: 0.5,
+    versionedAxis: true
   },
   {
     key: 'context',
@@ -165,7 +220,8 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseY: false,
     logY: false,
     showsEfforts: false,
-    ySplit: 0.75
+    ySplit: 0.75,
+    versionedAxis: false
   },
   {
     key: 'release',
@@ -175,7 +231,8 @@ const PLOT_TYPES: PlotTypeDef[] = [
     reverseY: false,
     logY: false,
     showsEfforts: false,
-    ySplit: 0.75
+    ySplit: 0.75,
+    versionedAxis: false
   },
 ];
 
@@ -191,6 +248,10 @@ function log2Bounds(min: number, max: number): { min: number; max: number } {
 
 function hasRunCostX(plotType: PlotType): boolean {
   return plotType === 'cost' || plotType === 'costVsResponse';
+}
+
+function hasIntelligenceY(plotType: PlotType): boolean {
+  return plotType !== 'costVsResponse' && plotType !== 'responseVsSpeed';
 }
 
 @Component({
@@ -211,6 +272,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     makeStarImage(getPlotColors(this.themeState.theme()).axisBest, STAR_SIZE, () => this.chart?.update('none')));
 
   readonly plotTypes = PLOT_TYPES;
+  readonly estimatedScoreTitle = ESTIMATED_SCORE_TITLE;
   readonly currentPlotDef = computed(() => plotTypeDef(this.state.plotType()));
 
   /** True while the current plot type shows the effort levels. */
@@ -280,8 +342,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** The plotted models, for the outdated benchmark hint. */
-  readonly plottedModels = computed(() => this.plotted().map(p => p.model));
+  /** The plotted models while an axis keeps the index version of its run, for the outdated benchmark hint. */
+  readonly versionedModels = computed(() => this.currentPlotDef().versionedAxis ? this.plotted().map(p => p.model) : []);
 
   /** The effort points of each plottable model with two or more, while the plot type shows effort levels. */
   private readonly allEffortPoints = computed(() => this.effortPointsOf(this.plottable().map(p => p.model)));
@@ -396,6 +458,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     const starIcon = this.starIcon();
 
     return plotted.map(({model: m, x, y}) => {
+      const estimated = hasIntelligenceY(plotType) && hasEstimatedScore(m);
       if (m.deprecated) {
         return {
           x: this.transformX(x, plotType), y: this.transformY(y, plotType), label: m.publicName,
@@ -404,6 +467,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
           radius: 6,
           isUseful: false,
           hollow: hasRunCostX(plotType) && m.tokensPerRunEstimated,
+          estimated,
           balanced: false,
           axisBest: false,
         };
@@ -435,11 +499,15 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         radius,
         isUseful,
         hollow,
+        estimated,
         balanced,
         axisBest
       };
     });
   });
+
+  /** True while a plotted point has an estimated score on the y axis. */
+  readonly estimatedShown = computed(() => this.plotData().some(d => d.estimated));
 
   readonly hasEfforts = computed(() => this.state.allModels().some(m => m.efforts.length > 1));
 
@@ -714,12 +782,37 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     };
   }
 
+  private estimatedScorePlugin(): Plugin {
+    return {
+      id: 'estimatedScore',
+      afterDatasetDraw: (chart: Chart, args: { index: number }) => {
+        if (args.index !== 0) return;
+        const elements = chart.getDatasetMeta(0).data;
+        this.plotData().forEach((d, i) => {
+          const el = elements[i];
+          if (!d.estimated || !el) return;
+          drawEstimatedOutline(chart.ctx, {...d, borderColor: this.borderColorOf(d), borderWidth: this.borderWidthOf(d)}, el.x, el.y);
+        });
+      },
+    };
+  }
+
   private borderColorOf(d: { color: string; hollow: boolean; balanced: boolean }): string {
     return d.balanced && !d.hollow ? getPlotColors(this.themeState.theme()).balancedRing : d.color;
   }
 
   private borderWidthOf(d: { hollow: boolean; balanced: boolean }): number {
     return d.balanced ? BALANCED_BORDER_WIDTH : d.hollow ? 1.5 : 1;
+  }
+
+  /** Hollow without fill, an estimated score with a faint fill under the dashed outline of the plugin. */
+  pointFillOf(d: { color: string; hollow: boolean; estimated: boolean }): string {
+    return d.hollow ? 'transparent' : d.estimated ? withAlpha(d.color, ESTIMATED_FILL_ALPHA) : d.color;
+  }
+
+  /** The solid border; an estimated score has none, because the plugin draws its outline dashed. */
+  pointBorderWidthOf(d: { hollow: boolean; balanced: boolean; estimated: boolean }): number {
+    return d.estimated ? 0 : this.borderWidthOf(d);
   }
 
   private effortDatasets(curves: EffortCurve[]): ChartDataset<'scatter'>[] {
@@ -810,8 +903,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
   }
 
   private yAxisLabel(plotType: PlotType): string {
-    if (plotType === 'costVsResponse') return 'Response Time until first 500 tokens (s)';
-    return plotType === 'responseVsSpeed' ? 'Tokens Per Second' : 'Intelligence Score';
+    if (hasIntelligenceY(plotType)) return 'Intelligence Score';
+    return plotType === 'responseVsSpeed' ? 'Tokens Per Second' : 'Response Time until first 500 tokens (s)';
   }
 
   private yTickCallback(plotType: PlotType): any {
@@ -836,14 +929,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     const config: ChartConfiguration<'scatter'> = {
       type: 'scatter',
-      plugins: [this.quadrantPlugin(), this.effortLabelPlugin(), this.labelPlugin()],
+      plugins: [this.quadrantPlugin(), this.estimatedScorePlugin(), this.effortLabelPlugin(), this.labelPlugin()],
       data: {
         datasets: [{
           label: 'Models',
           data: data.map(d => ({x: d.x, y: d.y})),
-          backgroundColor: data.map(d => d.hollow ? 'transparent' : d.color),
+          backgroundColor: data.map(d => this.pointFillOf(d)),
           borderColor: data.map(d => this.borderColorOf(d)),
-          pointBorderWidth: data.map(d => this.borderWidthOf(d)),
+          pointBorderWidth: data.map(d => this.pointBorderWidthOf(d)),
           pointStyle: data.map(d => d.pointStyle) as any,
           pointRadius: data.map(d => d.radius),
           pointHoverRadius: data.map(d => d.radius + 3),
@@ -894,12 +987,14 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (!point) return [];
     const l = point.level;
     const responseTime = effortResponseTime(l);
+    const latest = this.state.latestBenchmarkVersion();
     return [
       `${curve.model.publicName} (effort: ${point.effort}${point.current ? ', shown' : ''})`,
       point.balanced ? '★ Best balanced' : '',
       point.axisBest ? '★ Best on an axis' : '',
       point.useful ? '★ Pareto efficient' : '',
-      intelligenceLine(l.overallIntelligence, curve.model, this.state.latestBenchmarkVersion()),
+      intelligenceLine(l, curve.model, latest),
+      isBenchmarkOutdated(curve.model, latest) ? outdatedBenchmarkText(curve.model, latest) : '',
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
       responseTime !== null
         ? `★ Response time: ${responseTime.toFixed(1)}s (in: ${l.inputProcessingTime}s, think: ${l.thinkingTime}s, out: ${l.outputTime}s)`
@@ -919,6 +1014,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       radius: number;
       isUseful: boolean;
       hollow: boolean;
+      estimated: boolean;
       balanced: boolean;
       axisBest: boolean
     }[],
@@ -931,9 +1027,9 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (!this.chart) return;
 
     this.chart.data.datasets[0].data = data.map(d => ({x: d.x, y: d.y}));
-    (this.chart.data.datasets[0] as any).backgroundColor = data.map(d => d.hollow ? 'transparent' : d.color);
+    (this.chart.data.datasets[0] as any).backgroundColor = data.map(d => this.pointFillOf(d));
     (this.chart.data.datasets[0] as any).borderColor = data.map(d => this.borderColorOf(d));
-    (this.chart.data.datasets[0] as any).pointBorderWidth = data.map(d => this.borderWidthOf(d));
+    (this.chart.data.datasets[0] as any).pointBorderWidth = data.map(d => this.pointBorderWidthOf(d));
     (this.chart.data.datasets[0] as any).pointStyle = data.map(d => d.pointStyle);
     (this.chart.data.datasets[0] as any).pointRadius = data.map(d => d.radius);
     (this.chart.data.datasets[0] as any).pointHoverRadius = data.map(d => d.radius + 3);
