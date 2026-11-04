@@ -258,8 +258,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   readonly useful3d = computed<Set<string>>(() => {
     const axes = this.axes();
     const levels = this.effortCurves().flatMap(c => c.points.filter(p => p !== c.model));
-    const models = this.plotModels().concat(levels).filter(m => !m.deprecated);
-    return paretoIds(models, axes);
+    return paretoIds(this.plotModels().concat(levels), axes);
   });
 
   /** The plotted models, only the Pareto set of the three axes while the Pareto filter is on. */
@@ -282,12 +281,11 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
   /** The shown best balanced point and its label; the layout draws the label as an annotation beside the marker. */
   readonly specialMarkers3d = computed<{ axisBestIds: Set<string>; balancedId: string | null }>(() => {
-    const models = this.plotModels().filter(m => !m.deprecated);
+    const models = this.plotModels();
     if (models.length === 0) return {axisBestIds: new Set(), balancedId: null};
     const axes = this.axes();
 
     const levels = this.effortCurves()
-      .filter(c => !c.model.deprecated)
       .flatMap(c => c.points.filter(p => p !== c.model));
     const candidates = models.concat(levels);
 
@@ -443,10 +441,10 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
   });
 
   private groupOf(m: AiModel, useful: Set<string>, axisBestIds: Set<string>, balancedId: string | null): ModelGroup {
-    if (m.deprecated) return 'deprecated';
     if (m.id === balancedId) return 'balanced';
     if (axisBestIds.has(m.id)) return 'axisBest';
     if (useful.has(m.id)) return 'useful';
+    if (m.deprecated) return 'deprecated';
     return m.localModel ? 'local' : 'api';
   }
 

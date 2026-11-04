@@ -59,6 +59,7 @@ const EFFORT_LABEL_FONT = '10px system-ui, sans-serif';
 const HIGHLIGHT_EFFORT_LABEL_FONT = 'bold 13px system-ui, sans-serif';
 const BALANCED_EFFORT_LABEL_FONT = 'bold 15px system-ui, sans-serif';
 const BALANCED_BORDER_WIDTH = 2.5;
+const DEPRECATED_POINT_RADIUS = 6;
 export const STAR_SIZE = 26;
 export const ESTIMATED_DASH = [3, 2];
 export const ESTIMATED_FILL_ALPHA = 0.35;
@@ -360,11 +361,11 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     });
   });
 
-  /** The non-deprecated model points and their other effort points, which compete for the Pareto set and the markers. */
+  /** The shown model points and their other effort points, which compete for the Pareto set and the markers. */
   private readonly rankedPoints = computed(() =>
     this.rankedPointsOf(this.plottable(), this.allEffortPoints()));
 
-  /** The ranked points of all non-deprecated models in the database, before any filter; they set the best balanced bounds. */
+  /** The ranked points of all models in the database, before any filter; they set the best balanced bounds. */
   private readonly allRankedPoints = computed(() => {
     const plotType = this.state.plotType();
     const models = this.state.allModels().flatMap(m => {
@@ -378,9 +379,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     models: { model: AiModel; x: number; y: number }[],
     curves: { model: AiModel; points: EffortPoint[] }[],
   ): { id: string; x: number; y: number }[] {
-    const pts = models.filter(p => !p.model.deprecated).map(p => ({id: p.model.id, x: p.x, y: p.y}));
+    const pts = models.map(p => ({id: p.model.id, x: p.x, y: p.y}));
     const levelPts = curves
-      .filter(c => !c.model.deprecated)
       .flatMap(c => c.points.filter(p => !p.current).map(p => ({id: effortVariantId(c.model.id, p.effort), x: p.x, y: p.y})));
     return pts.concat(levelPts);
   }
@@ -451,21 +451,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
 
     return plotted.map(({model: m, x, y}) => {
       const estimated = hasIntelligenceY(plotType) && hasEstimatedScore(m);
-      if (m.deprecated) {
-        return {
-          x: this.transformX(x, plotType), y: this.transformY(y, plotType), label: m.publicName,
-          color: colors.deprecated,
-          pointStyle: (m.localModel ? 'triangle' : 'circle') as string | HTMLImageElement,
-          radius: 6,
-          isUseful: false,
-          hollow: hasRunCostX(plotType) && m.tokensPerRunEstimated,
-          estimated,
-          balanced: false,
-          axisBest: false,
-        };
-      }
-
-      let color = m.localModel ? colors.local : colors.api;
+      let color = m.deprecated ? colors.deprecated : m.localModel ? colors.local : colors.api;
       let pointStyle: string | HTMLImageElement = m.localModel ? 'triangle' : 'circle';
       const isUseful = useful.has(m.id);
       const axisBest = axisBestIds.has(m.id);
@@ -479,7 +465,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
         pointStyle = 'rectRot';
         color = colors.balanced;
       }
-      const radius = modelPointRadius({balanced, axisBest, useful: isUseful});
+      const role = {balanced, axisBest, useful: isUseful};
+      const radius = m.deprecated && markerRank(role) === 0 ? DEPRECATED_POINT_RADIUS : modelPointRadius(role);
 
       const hollow = hasRunCostX(plotType) && m.tokensPerRunEstimated;
       return {

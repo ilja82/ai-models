@@ -366,9 +366,9 @@ export class AppState {
     };
   });
 
-  /** The models that compete for the run-cost Pareto set and the profile badges, plus their other effort levels. */
+  /** The shown models, deprecated ones included, plus their other effort levels; they compete for the run-cost Pareto set and the best balanced badge. */
   readonly paretoCandidates = computed(() => {
-    const models = this.filteredModels().filter(m => !m.deprecated);
+    const models = this.filteredModels();
     return models.concat(models.flatMap(otherEffortVariants));
   });
 

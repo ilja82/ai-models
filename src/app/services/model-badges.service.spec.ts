@@ -86,10 +86,18 @@ describe('ModelBadgesService headline', () => {
     expect(profileOf(models, 'fast').headline).toBe('#3 of 3 API · fastest');
   });
 
-  it('shows Deprecated and the rank a deprecated model would have among the active models', () => {
-    const models = [testModel({id: 'old', deprecated: true, overallIntelligence: 30}), testModel({id: 'new'})];
-    expect(profileOf(models, 'old').headline).toBe('Deprecated · would be #2 of 2 API');
-    expect(profileOf(models, 'new').headline).toBe('#1 of 1 API');
+  it('ranks a shown deprecated model as a peer and starts its headline with Deprecated', () => {
+    const models = [testModel({id: 'old', deprecated: true, overallIntelligence: 30, costsToRun: 20, tokensPerSecond: 10}), testModel({id: 'new'})];
+    expect(profileOf(models, 'old').headline).toBe('Deprecated · #2 of 2 API');
+    expect(profileOf(models, 'new').headline).toBe('#1 of 2 API');
+  });
+
+  it('gives the best badge to a shown deprecated model and leaves out a hidden one', () => {
+    const old = testModel({id: 'old', deprecated: true, overallIntelligence: 90});
+    const active = testModel({id: 'new', overallIntelligence: 40});
+    expect(badgeIds(profileOf([old, active], 'old'))).toContain('best-overall');
+    expect(badgeIds(profileOf([old, active], 'new'))).not.toContain('best-overall');
+    expect(badgeIds(profileOf([active], 'new', [active]))).toContain('best-overall');
   });
 });
 

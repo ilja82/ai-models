@@ -52,7 +52,7 @@ interface ModelMetrics {
   cutoffMonths: number;
 }
 
-/** Everything a profile is rated against: the active models of one peer group. */
+/** Everything a profile is rated against: the shown models of one peer group, deprecated ones included. */
 interface PeerContext {
   group: PeerGroup;
   label: string;
@@ -424,7 +424,6 @@ function deprecatedBadges(model: AiModel): Badge[] {
   }] : [];
 }
 
-/** A deprecated model is not a peer, so it is rated against the active models and takes no best or top-3 badge. */
 function computeBadges(model: AiModel, ctx: PeerContext, balancedIds: BalancedIds, front: FrontState): Badge[] {
   const m = metricsFor(model);
   return [
@@ -530,14 +529,14 @@ function alternativeReason(alt: AiModel, model: AiModel): string {
   return missing.length === 0 ? parts.join(', ') : `${parts.join(', ')}, but no ${missing.join(', ')}`;
 }
 
-/** The peers and effort levels that dominate the model, the same set test as `AppState.usefulModelIds`. */
+/** The shown models and effort levels that dominate the model, the same set test as `AppState.usefulModelIds`. */
 function betterPeers(model: AiModel, ctx: PeerContext): AiModel[] {
   return dominators(model, ctx.candidates, ctx.axes);
 }
 
-/** True if the model is active, has a value on each Pareto axis and no peer or effort level dominates it. */
+/** True if the model has a value on each Pareto axis and no shown model or effort level dominates it. */
 function isOnFront(model: AiModel, ctx: PeerContext, better: AiModel[]): boolean {
-  return !model.deprecated && better.length === 0 && ctx.axes.every(a => a.get(model) !== null);
+  return better.length === 0 && ctx.axes.every(a => a.get(model) !== null);
 }
 
 /**
@@ -602,17 +601,16 @@ function computeRole(model: AiModel, ctx: PeerContext): string | null {
 
 /**
  * "#3 of 48 local · best up to 32 GB VRAM"; the #1 model has no role, because the rank says it already.
- * A deprecated model shows the rank it would have if it joined the active models.
+ * A deprecated model starts with "Deprecated · ".
  */
 function computeHeadline(model: AiModel, ctx: PeerContext): string {
-  const prefix = model.deprecated ? 'Deprecated · would be ' : '';
+  const prefix = model.deprecated ? 'Deprecated · ' : '';
   const own = model.overallIntelligence;
-  if (own === null) return model.deprecated ? 'Deprecated · No benchmark' : 'No benchmark';
+  if (own === null) return `${prefix}No benchmark`;
   const scored = ctx.peers.filter(p => p.overallIntelligence !== null);
   const position = 1 + scored.filter(p => p.overallIntelligence! > own).length;
-  const count = scored.length + (model.deprecated ? 1 : 0);
-  const rank = `${prefix}#${position} of ${count} ${ctx.label}`;
-  const role = position === 1 || model.deprecated ? null : computeRole(model, ctx);
+  const rank = `${prefix}#${position} of ${scored.length} ${ctx.label}`;
+  const role = position === 1 ? null : computeRole(model, ctx);
   return role ? `${rank} · ${role}` : rank;
 }
 
@@ -620,17 +618,16 @@ function computeHeadline(model: AiModel, ctx: PeerContext): string {
 export class ModelBadgesService {
   /**
    * @param displayModels the models to profile
-   * @param peerModels the models to rate against; the deprecated ones are left out
+   * @param peerModels the models to rate against, deprecated ones included
    */
   computeProfiles(
     displayModels: AiModel[],
     peerModels: AiModel[],
     balancedIds: BalancedIds,
   ): ProfileEntry[] {
-    const active = peerModels.filter(m => !m.deprecated);
     const contexts: Record<PeerGroup, PeerContext> = {
-      api: buildContext('api', active.filter(m => peerGroupOf(m) === 'api')),
-      local: buildContext('local', active.filter(m => peerGroupOf(m) === 'local')),
+      api: buildContext('api', peerModels.filter(m => peerGroupOf(m) === 'api')),
+      local: buildContext('local', peerModels.filter(m => peerGroupOf(m) === 'local')),
     };
 
     return displayModels.map(model => {
