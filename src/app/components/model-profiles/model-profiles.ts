@@ -28,10 +28,10 @@ export class ModelProfilesComponent {
   readonly sortOptions = Object.entries(PROFILE_SORT_LABELS) as [ProfileSort, string][];
   readonly groupingOptions = Object.entries(PROFILE_GROUPING_LABELS) as [ProfileGrouping, string][];
 
-  /** The "best balanced" model or effort level id of each peer group: closest-to-ideal in (cost ↓, intelligence ↑). */
+  /** The "best balanced" model or effort level id of each peer group: closest-to-ideal in (log2 cost ↓, intelligence ↑). */
   readonly balancedIds = computed<BalancedIds>(() => {
     const models = this.state.paretoCandidates().filter(m => m.costsToRun !== null && m.overallIntelligence !== null);
-    const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun!, higherIsBetter: false};
+    const cost: BalancedAxis = {get: m => m.costsToRun === 0 ? 0.001 : m.costsToRun!, higherIsBetter: false, log: true};
     const axes = [cost, {get: (m: AiModel) => m.overallIntelligence!, higherIsBetter: true}];
     return {
       api: bestBalancedId(models.filter(m => !m.localModel), axes),

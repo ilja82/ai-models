@@ -422,7 +422,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     if (by) axisBestIds.add(by);
 
     const balancedId = bestBalancedId(candidates, [
-      {get: p => p.x, higherIsBetter: higherXIsBetter, log: this.isLogX(this.state.plotType())},
+      {get: p => p.x, higherIsBetter: higherXIsBetter, log: plotDef.supportsLogX},
       {get: p => p.y, higherIsBetter: higherYIsBetter, log: plotDef.logY},
     ], this.allRankedPoints());
 

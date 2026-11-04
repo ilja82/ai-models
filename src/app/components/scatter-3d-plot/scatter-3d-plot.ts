@@ -308,7 +308,7 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
 
     const balancedId = bestBalancedId(
       candidates,
-      axes.map(a => ({get: (m: AiModel) => a.get(m)!, higherIsBetter: a.higherIsBetter, log: this.isLogAxis(a)})),
+      axes.map(a => ({get: (m: AiModel) => a.get(m)!, higherIsBetter: a.higherIsBetter, log: a.logCandidate})),
     );
     return {axisBestIds, balancedId};
   });

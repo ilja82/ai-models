@@ -81,11 +81,10 @@ describe('ScatterPlotComponent plot types', () => {
 
   it('keeps the best balanced model when the filter hides an extreme model', () => {
     state.allModels.set([
-      testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40}),
+      testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 30}),
       testModel({id: 'mid', costsToRun: 10, overallIntelligence: 50}),
       testModel({id: 'pricey', costsToRun: 1000, overallIntelligence: 0}),
     ]);
-    state.logScaleX.set(false);
     state.plotType.set('cost');
     expect(c.specialMarkers2d().balancedId).toBe('mid');
     state.toggleModel('pricey');
