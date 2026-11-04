@@ -85,6 +85,7 @@ export function effortVariant(model: AiModel, level: EffortLevel): AiModel {
     inputProcessingTime: level.inputProcessingTime,
     thinkingTime: level.thinkingTime,
     outputTime: level.outputTime,
+    timesEstimated: level.timesEstimated,
     costsToRun: level.costsToRun,
   };
 }

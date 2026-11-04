@@ -31,13 +31,13 @@ describe('BarChartComponent Pareto only', () => {
     expect(ids()).toEqual(['no-speed', 'best', 'cheap']);
   });
 
-  it('passes the bars to the outdated benchmark hint only for a metric that keeps the index version of its run', () => {
+  it('passes the bars to the estimated times hint only for a speed or time metric', () => {
     state.barMetric.set('tokensPerSecond');
-    expect(c.versionedModels().map(m => m.id)).toEqual(ids());
+    expect(c.timeModels().map(m => m.id)).toEqual(ids());
     state.barMetric.set('inputCosts');
-    expect(c.versionedModels()).toEqual([]);
+    expect(c.timeModels()).toEqual([]);
     state.barMetric.set('intelligence');
-    expect(c.versionedModels()).toEqual([]);
+    expect(c.timeModels()).toEqual([]);
   });
 
   it('keeps the value axis when Pareto only is toggled', () => {
@@ -85,7 +85,7 @@ describe('BarChartComponent effort levels', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
     effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 100, inputTokensPerRun: 90,
     outputTokensPerRun: 10, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-    outputTime: 3,
+    outputTime: 3, timesEstimated: false,
   });
 
   beforeEach(() => {

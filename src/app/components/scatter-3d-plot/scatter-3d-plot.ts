@@ -5,10 +5,10 @@ import {AiModel, hasEstimatedScore, releaseTimeOf, responseTimeOf} from '../../m
 import {buildModelTooltipLines, ESTIMATED_SCORE_TITLE} from '../../models/tooltip.util';
 import {darken, getPlotColors} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
-import {AxisField, VERSIONED_AXIS_FIELDS} from '../../models/view-types';
+import {AxisField, TIME_AXIS_FIELDS} from '../../models/view-types';
 import {paretoIds} from '../../models/pareto.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
-import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
+import {EstimatedTimesHintComponent} from '../estimated-times-hint/estimated-times-hint';
 import {effortSeries, effortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {Rect, Shift, spreadLabels} from '../../models/label-layout.util';
 import {percentile} from '../../models/median.util';
@@ -185,7 +185,7 @@ export function shiftsFromRects(labels: Label3d[], rects: (Rect | null)[], curre
 @Component({
   selector: 'app-scatter-3d-plot',
   standalone: true,
-  imports: [MissingDataHintComponent, OutdatedBenchmarkHintComponent],
+  imports: [MissingDataHintComponent, EstimatedTimesHintComponent],
   templateUrl: './scatter-3d-plot.html',
   styleUrl: './scatter-3d-plot.scss',
 })
@@ -228,9 +228,9 @@ export class Scatter3dPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** The plotted models while an axis keeps the index version of its run, else none. */
-  readonly versionedModels = computed(() =>
-    this.axes().some(a => VERSIONED_AXIS_FIELDS.has(a.key)) ? this.plotModels() : []);
+  /** The plotted models while an axis is a speed or a time, else none. */
+  readonly timeModels = computed(() =>
+    this.axes().some(a => TIME_AXIS_FIELDS.has(a.key)) ? this.plotModels() : []);
 
   private readonly intelligenceShown = computed(() => this.axes().some(a => a.key === 'intelligence'));
 

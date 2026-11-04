@@ -11,7 +11,7 @@ describe('show only Pareto best', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
     effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
     outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-    outputTime: 3,
+    outputTime: 3, timesEstimated: false,
   });
 
   let state: AppState;
@@ -115,7 +115,7 @@ describe('Pareto set per plot type', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
     effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
     outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-    outputTime: 3,
+    outputTime: 3, timesEstimated: false,
   });
 
   let state: AppState;
@@ -146,9 +146,9 @@ describe('Pareto set per plot type', () => {
 
   it('ranks lower values as better on a reversed y axis', () => {
     state.allModels.set([
-      testModel({id: 'quick', costsToRun: 10, inputProcessingTime: 0, thinkingTime: 0, outputTime: 1}),
-      testModel({id: 'slow', costsToRun: 10, inputProcessingTime: 0, thinkingTime: 9, outputTime: 1}),
-      testModel({id: 'cheap', costsToRun: 1, inputProcessingTime: 0, thinkingTime: 20, outputTime: 1}),
+      testModel({id: 'quick', costsToRun: 10, inputProcessingTime: 0, thinkingTime: 0, outputTime: 1, timesEstimated: false}),
+      testModel({id: 'slow', costsToRun: 10, inputProcessingTime: 0, thinkingTime: 9, outputTime: 1, timesEstimated: false}),
+      testModel({id: 'cheap', costsToRun: 1, inputProcessingTime: 0, thinkingTime: 20, outputTime: 1, timesEstimated: false}),
     ]);
     const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
     state.plotType.set('costVsResponse');

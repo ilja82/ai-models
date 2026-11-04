@@ -4,7 +4,6 @@ import {
   costPerRequestOf,
   effectiveCutoffDate,
   hasEstimatedScore,
-  isBenchmarkOutdated,
   Modality,
   MODALITY_LABELS,
   priceBlendLabel,
@@ -66,10 +65,9 @@ export function estimatedTokensText(
     : 'Estimated: the benchmark publishes no token counts for this model';
 }
 
-/** The text that marks the values of an outdated benchmark, for titles and tooltips. */
-export function outdatedBenchmarkText(model: Pick<AiModel, 'benchmarkVersion'>, latest: string | null): string {
-  return `Outdated benchmark: speed and times from Intelligence Index ${model.benchmarkVersion}, not comparable with ${latest}`;
-}
+/** The text that marks a speed or time converted from the older measurement, for titles and tooltips. */
+export const ESTIMATED_TIMES_TEXT = 'Speed or times estimated: converted from the artificialanalysis.ai measurement '
+  + 'before 2026-11-04';
 
 /** The title of the "Estimated score" legend item. */
 export const ESTIMATED_SCORE_TITLE = 'Estimated from the score of an older Intelligence Index version, '
@@ -109,7 +107,7 @@ export function buildModelTooltipLines(model: AiModel, latest: string | null = n
     `${model.publicName}`,
     model.deprecated ? `⚠️ Deprecated: ${model.deprecationInfo}` : '',
     intelligenceLine(model, model, latest),
-    isBenchmarkOutdated(model, latest) ? outdatedBenchmarkText(model, latest) : '',
+    model.timesEstimated ? ESTIMATED_TIMES_TEXT : '',
     model.effort ? `★ Effort: ${model.effort}${model.efforts.length > 1 ? ` (${model.efforts.length} levels measured)` : ''}` : '',
     `★ Speed: ${model.tokensPerSecond === null ? MISSING : `${model.tokensPerSecond} tok/s`}`,
     responseTime === null

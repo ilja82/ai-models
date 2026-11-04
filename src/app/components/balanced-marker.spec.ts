@@ -11,7 +11,7 @@ describe('special marker sizes', () => {
   const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
     effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
     outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-    outputTime: 3,
+    outputTime: 3, timesEstimated: false,
   });
   const cheap = testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40});
   const pricey = testModel({id: 'pricey', costsToRun: 1000, overallIntelligence: 50});
@@ -142,7 +142,7 @@ describe('best balanced effort level label in 3D', () => {
     const level = (effort: string, overallIntelligence: number, costsToRun: number): EffortLevel => ({
       effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
       outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-      outputTime: 3,
+      outputTime: 3, timesEstimated: false,
     });
     state.allModels.set([
       testModel({id: 'cheap', costsToRun: 1, overallIntelligence: 40}),

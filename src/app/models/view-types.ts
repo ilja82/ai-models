@@ -23,22 +23,16 @@ export const BAR_METRIC_KEYS: readonly BarMetric[] = [
   'tokensPerSecond', 'latency', 'responseTime',
 ];
 
-/**
- * The bar metrics from the benchmark that keep the index version of their run. An older score and run cost are
- * estimated for the newest version instead.
- */
-export const VERSIONED_BAR_METRICS: ReadonlySet<BarMetric> = new Set<BarMetric>(
+/** The bar metrics of the speed and time measurement, which can hold a value converted from the older measurement. */
+export const TIME_BAR_METRICS: ReadonlySet<BarMetric> = new Set<BarMetric>(
   ['tokensPerSecond', 'latency', 'responseTime']);
 
 export const PLOT_TYPE_KEYS: readonly PlotType[] = [
   'price', 'cost', 'release', 'context', 'speed', 'responseVsIntel', 'responseVsSpeed', 'costVsResponse',
 ];
 
-/**
- * The 3D axes from the benchmark that keep the index version of their run. An older score and run cost are estimated
- * for the newest version instead.
- */
-export const VERSIONED_AXIS_FIELDS: ReadonlySet<AxisField> = new Set<AxisField>([
+/** The 3D axes of the speed and time measurement, which can hold a value converted from the older measurement. */
+export const TIME_AXIS_FIELDS: ReadonlySet<AxisField> = new Set<AxisField>([
   'tokensPerSecond', 'inputProcessingTime', 'thinkingTime', 'outputTime', 'responseTime',
 ]);
 

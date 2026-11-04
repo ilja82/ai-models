@@ -134,7 +134,7 @@ describe('ModelBadgesService alternative and Pareto front', () => {
     const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
       effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
       outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-      outputTime: 3,
+      outputTime: 3, timesEstimated: false,
     });
     const sonnet = testModel({
       id: 'sonnet', publicName: 'Sonnet', overallIntelligence: 56, costsToRun: 7700, effort: 'xhigh',
@@ -152,7 +152,7 @@ describe('ModelBadgesService alternative and Pareto front', () => {
     const level = (effort: string, overallIntelligence: number, costsToRun: number) => ({
       effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
       outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-      outputTime: 3,
+      outputTime: 3, timesEstimated: false,
     });
     const sonnet = testModel({
       id: 'sonnet', publicName: 'Sonnet', overallIntelligence: 56, costsToRun: 7720, effort: 'max',

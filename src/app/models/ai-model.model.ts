@@ -80,6 +80,8 @@ export interface AiModel {
   inputProcessingTime: number | null;
   thinkingTime: number | null;
   outputTime: number | null;
+  /** True if the speed or a time is converted from the older artificialanalysis.ai measurement, not measured. */
+  timesEstimated: boolean;
   deprecated: boolean;
   deprecationInfo: string;
   /** Effort level of the values above, or null if the source names none. */
@@ -101,6 +103,8 @@ export interface EffortLevelInput {
   inputProcessingTime: number | null;
   thinkingTime: number | null;
   outputTime: number | null;
+  /** True if the speed or a time is converted from the older artificialanalysis.ai measurement, not measured. */
+  timesEstimated: boolean;
 }
 
 export interface EffortLevel extends EffortLevelInput {

@@ -12,7 +12,7 @@ import {
   PROVIDER_LABELS,
   responseTimeOf,
 } from '../../models/ai-model.model';
-import {estimatedScoreText, estimatedTokensText, formatUsd, modalityNames, outdatedBenchmarkText, scoreText,} from '../../models/tooltip.util';
+import {ESTIMATED_TIMES_TEXT, estimatedScoreText, estimatedTokensText, formatUsd, modalityNames, scoreText,} from '../../models/tooltip.util';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime' | 'costPerRequest';
@@ -245,8 +245,8 @@ export class DataTableComponent {
     return model.tokensPerRunEstimated ? estimatedTokensText(model, this.state.latestBenchmarkVersion()) : null;
   }
 
-  outdatedTitle(model: AiModel): string {
-    return outdatedBenchmarkText(model, this.state.latestBenchmarkVersion());
+  timesTitle(model: AiModel): string | null {
+    return model.timesEstimated ? ESTIMATED_TIMES_TEXT : null;
   }
 
   readonly hasEstimatedScore = hasEstimatedScore;

@@ -5,7 +5,7 @@ import {AppState} from '../../state/app.state';
 import {BalancedIds, ModelBadgesService} from '../../services/model-badges.service';
 import {ProfileEntry, ProfileGrouping, ProfileSection, ProfileSort} from '../../models/profile.model';
 import {groupProfiles, PROFILE_GROUPING_LABELS, PROFILE_SORT_LABELS, sortProfiles} from '../../models/profile.util';
-import {buildModelTooltipLines, outdatedBenchmarkText} from '../../models/tooltip.util';
+import {buildModelTooltipLines, ESTIMATED_TIMES_TEXT} from '../../models/tooltip.util';
 import {BalancedAxis, bestBalancedId} from '../../models/balanced.util';
 import {AiModel, MODALITY_ICONS, MODALITY_LABELS} from '../../models/ai-model.model';
 
@@ -59,9 +59,7 @@ export class ModelProfilesComponent {
     return buildModelTooltipLines(entry.model, this.state.latestBenchmarkVersion()).join('\n');
   }
 
-  outdatedTitle(model: AiModel): string {
-    return outdatedBenchmarkText(model, this.state.latestBenchmarkVersion());
-  }
+  readonly estimatedTimesText = ESTIMATED_TIMES_TEXT;
 
   rankTitle(entry: ProfileEntry, rank: number | null): string {
     return rank === null ? '' : `Better than or equal to ${Math.round(rank * 100)}% of the other ${entry.group === 'local' ? 'local' : 'API'} models`;

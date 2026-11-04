@@ -1,4 +1,5 @@
 import {
+  AiModel,
   blendedPriceOf,
   byIntelligenceDesc,
   compareBenchmarkVersions,
@@ -21,9 +22,10 @@ import {
   scaleRunTokens,
 } from './ai-model.model';
 import {testModel} from '../../testing/model-fixture';
-import {buildModelTooltipLines, formatUsd, formatUsdTick, scoreText} from './tooltip.util';
+import {buildModelTooltipLines, ESTIMATED_TIMES_TEXT, formatUsd, formatUsdTick, scoreText} from './tooltip.util';
 import {AI_MODELS} from './ai-models.data';
 import {TOKEN_SCALES} from './token-scale.data';
+import {AI_MODEL_EFFORTS} from './ai-model-efforts.data';
 
 const BLEND_7_2_1 = {cache: 7, input: 2, reasoning: 0, output: 1};
 
@@ -157,17 +159,17 @@ describe('missing measurements', () => {
       'Tokens per run: 100M (in: 90M, out: 10M) estimated');
   });
 
-  it('names an estimated score and the values of an outdated benchmark in the tooltip', () => {
+  it('names an estimated score and estimated speed or times in the tooltip', () => {
     const old = testModel({benchmarkVersion: 'v4.3.2', overallIntelligence: 31.2, intelligenceEstimatedFrom: 43.6});
-    const outdatedLine = 'Outdated benchmark: speed and times from Intelligence Index v4.3.2, not comparable with v5.0';
     const lines = buildModelTooltipLines(old, 'v5.0');
     expect(lines).toContain('★ Overall Intelligence: ~31.2 (estimated for v5.0 from the v4.3.2 score 43.6)');
-    expect(lines).toContain(outdatedLine);
+    expect(lines).not.toContain(ESTIMATED_TIMES_TEXT);
     expect(buildModelTooltipLines(old)).toContain('★ Overall Intelligence: ~31.2 (estimated from the v4.3.2 score 43.6)');
-    expect(buildModelTooltipLines(old)).not.toContain(outdatedLine);
+    expect(buildModelTooltipLines(testModel({timesEstimated: true}), 'v5.0')).toContain(
+      'Speed or times estimated: converted from the artificialanalysis.ai measurement before 2026-11-04');
     const current = buildModelTooltipLines(testModel(), 'v5.0');
     expect(current).toContain('★ Overall Intelligence: 40');
-    expect(current.some(l => l.startsWith('Outdated benchmark'))).toBe(false);
+    expect(current).not.toContain(ESTIMATED_TIMES_TEXT);
   });
 
   it('marks an estimated score with ~ and keeps a missing score as a fallback text', () => {
@@ -198,6 +200,18 @@ describe('benchmark versions', () => {
     for (const m of AI_MODELS) {
       if (m.overallIntelligence === null) expect(m.benchmarkVersion, m.id).toBeNull();
       else expect(m.benchmarkVersion, m.id).toMatch(/^v\d+(\.\d+)*$/);
+    }
+  });
+
+  it('marks estimated speed or times only on data entries and effort levels with a speed or a time', () => {
+    const timed = (v: Pick<AiModel, 'tokensPerSecond' | 'inputProcessingTime' | 'thinkingTime' | 'outputTime'>) =>
+      [v.tokensPerSecond, v.inputProcessingTime, v.thinkingTime, v.outputTime].some(x => x !== null);
+    for (const m of AI_MODELS) {
+      if (m.timesEstimated) expect(timed(m), m.id).toBe(true);
+      m.efforts.forEach((level, i) => {
+        expect(level.timesEstimated, `${m.id} ${level.effort}`).toBe(AI_MODEL_EFFORTS[m.id].levels[i].timesEstimated);
+        if (level.timesEstimated) expect(timed(level), `${m.id} ${level.effort}`).toBe(true);
+      });
     }
   });
 

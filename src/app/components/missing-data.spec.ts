@@ -80,7 +80,8 @@ describe('charts with missing measurements', () => {
       tokensPerSecond: 50,
       inputProcessingTime: 1,
       thinkingTime: 2,
-      outputTime: 3
+      outputTime: 3,
+      timesEstimated: false,
     }));
     state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
 
@@ -111,7 +112,8 @@ describe('charts with missing measurements', () => {
       cacheHitRate: null,
       inputProcessingTime: 1,
       thinkingTime: 2,
-      outputTime: 3
+      outputTime: 3,
+      timesEstimated: false,
     }));
     state.allModels.set([testModel({id: 'e', effort: 'high', efforts: levels}), testModel({id: 'mid', overallIntelligence: 30, costsToRun: 5})]);
 

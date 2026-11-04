@@ -76,7 +76,7 @@ describe('run cost with estimated tokens and cost per request', () => {
     const level = (effort: string, costsToRun: number | null, overallIntelligence: number): EffortLevel => ({
       effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: null,
       inputTokensPerRun: null, outputTokensPerRun: null, cacheHitRate: null, tokensPerSecond: 50,
-      inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+      inputProcessingTime: 1, thinkingTime: 2, outputTime: 3, timesEstimated: false,
     });
     const m = testModel({
       id: 'e', effort: 'high', costsToRun: 30, overallIntelligence: 40, tokensPerRunEstimated: true,

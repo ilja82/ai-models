@@ -9,7 +9,7 @@ export function testModel(overrides: Partial<AiModel> = {}): AiModel {
     outputModalities: ['text'], totalTokens: 1, totalSpend: 0, totalRequests: 0, tokensPerRun: 100,
     inputTokensPerRun: 90, outputTokensPerRun: 10, cacheHitRate: null, tokensPerRunEstimated: false,
     tokensPerRunScaled: false, usesCache: false, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-    outputTime: 3, deprecated: false, deprecationInfo: '', effort: null, efforts: [],
+    outputTime: 3, timesEstimated: false, deprecated: false, deprecationInfo: '', effort: null, efforts: [],
     ...overrides,
   };
 }

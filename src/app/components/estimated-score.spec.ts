@@ -13,7 +13,7 @@ import {PlotType} from '../models/view-types';
 describe('estimated scores', () => {
   const level = (effort: string, overallIntelligence: number, intelligenceEstimatedFrom: number | null): EffortLevel => ({
     effort, overallIntelligence, intelligenceEstimatedFrom, costsToRun: 10, tokensPerRun: 100, inputTokensPerRun: 90,
-    outputTokensPerRun: 10, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    outputTokensPerRun: 10, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3, timesEstimated: false,
   });
   const measured = testModel({id: 'measured', publicName: 'Measured', overallIntelligence: 50, costsToRun: 20});
   const estimated = testModel({
@@ -54,11 +54,11 @@ describe('estimated scores', () => {
     expect(c.pointFillOf({...dashed, hollow: true})).toBe('transparent');
   });
 
-  it('scatter plot passes the models to the outdated benchmark hint only on plots with speed or response time', () => {
+  it('scatter plot passes the models to the estimated times hint only on plots with speed or response time', () => {
     const c = TestBed.createComponent(ScatterPlotComponent).componentInstance;
     const hinted = (plotType: PlotType) => {
       state.plotType.set(plotType);
-      return c.versionedModels().map(m => m.id);
+      return c.timeModels().map(m => m.id);
     };
     for (const plotType of ['responseVsIntel', 'costVsResponse', 'speed', 'responseVsSpeed'] as PlotType[]) {
       expect(hinted(plotType), plotType).toEqual(['measured', 'estimated']);
@@ -100,13 +100,13 @@ describe('estimated scores', () => {
     const item = c.legendItems().find(i => i.label === 'Estimated score')!;
     expect(item.border).toMatch(/dashed/);
     expect(item.title).toMatch(/^Estimated from the score of an older Intelligence Index version/);
-    expect(c.versionedModels()).toEqual([]);
+    expect(c.timeModels()).toEqual([]);
     state.barMetric.set('costsToRun');
     expect(c.chartData().segments[0].dashed).toEqual([false, false]);
     expect(c.legendItems().map(i => i.label)).not.toContain('Estimated score');
-    expect(c.versionedModels()).toEqual([]);
+    expect(c.timeModels()).toEqual([]);
     state.barMetric.set('tokensPerSecond');
-    expect(c.versionedModels().map(m => m.id)).toEqual(['measured', 'estimated']);
+    expect(c.timeModels().map(m => m.id)).toEqual(['measured', 'estimated']);
   });
 
   it('3D scatter shows a model with an estimated score faint, only while intelligence is an axis', () => {
@@ -123,14 +123,14 @@ describe('estimated scores', () => {
     expect(c.estimatedShown()).toBe(false);
   });
 
-  it('3D scatter passes the models to the outdated benchmark hint only while speed or a time is an axis', () => {
+  it('3D scatter passes the models to the estimated times hint only while speed or a time is an axis', () => {
     const c = TestBed.createComponent(Scatter3dPlotComponent).componentInstance;
     state.scatter3dX.set('costsToRun');
     state.scatter3dY.set('intelligence');
     state.scatter3dZ.set('contextWindow');
-    expect(c.versionedModels()).toEqual([]);
+    expect(c.timeModels()).toEqual([]);
     state.scatter3dZ.set('thinkingTime');
-    expect(c.versionedModels().map(m => m.id)).toEqual(['measured', 'estimated']);
+    expect(c.timeModels().map(m => m.id)).toEqual(['measured', 'estimated']);
   });
 
   it('profiles show an estimated score and an estimated level score with ~', () => {
@@ -154,7 +154,7 @@ describe('token counts scaled from an older index run', () => {
   const level = (effort: string, tokensPerRun: number | null): EffortLevel => ({
     effort, overallIntelligence: 30, intelligenceEstimatedFrom: 40, costsToRun: tokensPerRun === null ? null : 5, tokensPerRun,
     inputTokensPerRun: tokensPerRun === null ? null : 90, outputTokensPerRun: tokensPerRun === null ? null : 10,
-    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3,
+    cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2, outputTime: 3, timesEstimated: false,
   });
   const measured = testModel({id: 'measured', publicName: 'Measured', overallIntelligence: 50, costsToRun: 20});
   const scaled = testModel({

@@ -4,7 +4,7 @@ import {testModel} from '../../testing/model-fixture';
 const lvl = (effort: string) => ({
   effort, overallIntelligence: 0, intelligenceEstimatedFrom: null, costsToRun: 0, tokensPerRun: null,
   inputTokensPerRun: null, outputTokensPerRun: null, cacheHitRate: null, tokensPerSecond: null,
-  inputProcessingTime: null, thinkingTime: null, outputTime: null,
+  inputProcessingTime: null, thinkingTime: null, outputTime: null, timesEstimated: false,
 });
 const efforts = [lvl('low'), lvl('medium'), lvl('high')];
 

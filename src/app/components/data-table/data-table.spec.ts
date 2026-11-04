@@ -26,16 +26,16 @@ describe('DataTableComponent provider column', () => {
   });
 });
 
-describe('DataTableComponent outdated benchmark', () => {
+describe('DataTableComponent estimated values', () => {
   afterEach(() => localStorage.clear());
 
-  it('marks the name of a model with an older benchmark version and its estimated score', () => {
+  it('marks the estimated score of a model with an older benchmark version and estimated speed and times', () => {
     const state = TestBed.inject(AppState);
     state.allModels.set([
       testModel({id: 'current', publicName: 'Current', overallIntelligence: 60}),
       testModel({
         id: 'old', modelName: 'old', publicName: 'Old', overallIntelligence: 31.2, intelligenceEstimatedFrom: 43.6,
-        benchmarkVersion: 'v4.3.2',
+        benchmarkVersion: 'v4.3.2', timesEstimated: true,
       }),
     ]);
     state.disabledModelIds.set(new Set());
@@ -44,16 +44,21 @@ describe('DataTableComponent outdated benchmark', () => {
     const fixture = TestBed.createComponent(DataTableComponent);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    const col = [...el.querySelectorAll('th')].findIndex(th => th.textContent!.includes('Overall'));
+    const heads = [...el.querySelectorAll('th')].map(th => th.textContent!);
+    const col = heads.findIndex(h => h.includes('Overall'));
+    const speedCol = heads.findIndex(h => h.includes('Tok/s'));
+    const responseCol = heads.findIndex(h => h.includes('Response Time'));
     const [current, old] = [...el.querySelectorAll('tbody tr')];
-    expect(current.querySelector('.outdated-badge')).toBeNull();
+    for (const c of [speedCol, responseCol]) {
+      const measured = current.querySelectorAll('td')[c];
+      expect([measured.classList.contains('estimated'), measured.getAttribute('title')]).toEqual([false, null]);
+      const estimated = old.querySelectorAll('td')[c];
+      expect([estimated.classList.contains('estimated'), estimated.getAttribute('title')]).toEqual([true,
+        'Speed or times estimated: converted from the artificialanalysis.ai measurement before 2026-11-04']);
+    }
     const currentScore = current.querySelectorAll('td')[col];
     expect([currentScore.textContent!.trim(), currentScore.classList.contains('estimated')]).toEqual(['60', false]);
     expect(currentScore.getAttribute('title')).toBeNull();
-    const badge = old.querySelector('.outdated-badge')!;
-    expect(badge.textContent!.trim()).toBe('v4.3.2');
-    expect(badge.getAttribute('title')).toBe(
-      'Outdated benchmark: speed and times from Intelligence Index v4.3.2, not comparable with v5.0');
     const score = old.querySelectorAll('td')[col];
     expect([score.textContent!.trim(), score.classList.contains('estimated')]).toEqual(['~31.2', true]);
     expect(score.getAttribute('title')).toBe('Score estimated for v5.0 from the v4.3.2 score 43.6');

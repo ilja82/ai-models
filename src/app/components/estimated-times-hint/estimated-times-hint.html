@@ -1,0 +1,6 @@
+@if (estimated().length) {
+  <p class="estimated-times-hint" [title]="names()">
+    Speed or times estimated from the artificialanalysis.ai measurement before 2026-11-04
+    ({{ estimated().length }} {{ estimated().length === 1 ? 'model' : 'models' }}): {{ names() }}
+  </p>
+}

@@ -22,7 +22,7 @@ function level(effort: string, overrides: Partial<EffortLevel> = {}): EffortLeve
     tokensPerSecond: 50,
     inputProcessingTime: 1,
     thinkingTime: 2,
-    outputTime: 3,
+    outputTime: 3, timesEstimated: false,
     costsToRun: 10,
     ...overrides,
   };
@@ -98,7 +98,7 @@ describe('effort labels', () => {
   });
 
   it('returns null when one time is missing', () => {
-    expect(effortResponseTime(level('high', {outputTime: null}))).toBeNull();
+    expect(effortResponseTime(level('high', {outputTime: null, timesEstimated: false}))).toBeNull();
     expect(effortResponseTime(level('high'))).toBe(6);
   });
 });

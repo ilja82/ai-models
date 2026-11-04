@@ -69,9 +69,6 @@
               @if (state.isNew()(model)) {
                 <span class="new-badge" [title]="newTitle">new</span>
               }
-              @if (state.isOutdated()(model)) {
-                <span class="outdated-badge" [title]="outdatedTitle(model)">{{ model.benchmarkVersion }}</span>
-              }
             </td>
             <td class="mono">{{ model.modelName }}</td>
             <td class="num hist" [style]="cellStyle(model, 'inputCosts')">{{ formatCost(model.inputCosts) }}</td>
@@ -98,12 +95,22 @@
             <td class="modalities" [title]="modalitiesTitle(model)" [attr.aria-label]="modalitiesTitle(model)">
               <span aria-hidden="true">{{ icons(model.inputModalities) }} → {{ icons(model.outputModalities) }}</span>
             </td>
-            <td class="num hist" [style]="cellStyle(model, 'tokensPerSecond')">{{ formatSpeed(model.tokensPerSecond) }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'inputProcessingTime')">{{ formatTime(model.inputProcessingTime) }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'thinkingTime')">{{ formatTime(model.thinkingTime) }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'outputTime')">{{ formatTime(model.outputTime) }}</td>
-            <td class="num hist" [style]="cellStyle(model, 'latency')">{{ formatTime(latency(model)) }}</td>
-            <td class="num hist"
+            <td class="num hist" [class.estimated]="model.timesEstimated" [attr.title]="timesTitle(model)"
+                [style]="cellStyle(model, 'tokensPerSecond')">{{ formatSpeed(model.tokensPerSecond) }}
+            </td>
+            <td class="num hist" [class.estimated]="model.timesEstimated" [attr.title]="timesTitle(model)"
+                [style]="cellStyle(model, 'inputProcessingTime')">{{ formatTime(model.inputProcessingTime) }}
+            </td>
+            <td class="num hist" [class.estimated]="model.timesEstimated" [attr.title]="timesTitle(model)"
+                [style]="cellStyle(model, 'thinkingTime')">{{ formatTime(model.thinkingTime) }}
+            </td>
+            <td class="num hist" [class.estimated]="model.timesEstimated" [attr.title]="timesTitle(model)"
+                [style]="cellStyle(model, 'outputTime')">{{ formatTime(model.outputTime) }}
+            </td>
+            <td class="num hist" [class.estimated]="model.timesEstimated" [attr.title]="timesTitle(model)"
+                [style]="cellStyle(model, 'latency')">{{ formatTime(latency(model)) }}
+            </td>
+            <td class="num hist" [class.estimated]="model.timesEstimated" [attr.title]="timesTitle(model)"
                 [style]="cellStyle(model, 'responseTime')">{{ formatTime(responseTime(model)) }}
             </td>
           </tr>

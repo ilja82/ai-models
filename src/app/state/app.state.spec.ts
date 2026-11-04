@@ -42,7 +42,7 @@ describe('AppState effort levels', () => {
     return {
       effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun, tokensPerRun: 1, inputTokensPerRun: 1,
       outputTokensPerRun: 0, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1, thinkingTime: 2,
-      outputTime: 3,
+      outputTime: 3, timesEstimated: false,
     };
   }
 

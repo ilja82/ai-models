@@ -9,11 +9,11 @@ describe('ScatterPlotComponent plot types', () => {
   const level = (effort: string, overallIntelligence: number, outputTime: number): EffortLevel => ({
     effort, overallIntelligence, intelligenceEstimatedFrom: null, costsToRun: 10, tokensPerRun: 100,
     inputTokensPerRun: 90, outputTokensPerRun: 10, cacheHitRate: null, tokensPerSecond: 50, inputProcessingTime: 1,
-    thinkingTime: 2, outputTime,
+    thinkingTime: 2, outputTime, timesEstimated: false,
   });
-  const fast = testModel({id: 'fast', inputProcessingTime: 0.5, thinkingTime: 0, outputTime: 0.5});
+  const fast = testModel({id: 'fast', inputProcessingTime: 0.5, thinkingTime: 0, outputTime: 0.5, timesEstimated: false});
   const slow = testModel({
-    id: 'slow', effort: 'high', overallIntelligence: 50, inputProcessingTime: 10, thinkingTime: 20, outputTime: 34,
+    id: 'slow', effort: 'high', overallIntelligence: 50, inputProcessingTime: 10, thinkingTime: 20, outputTime: 34, timesEstimated: false,
     efforts: [level('low', 30, 1), level('high', 50, 34)],
   });
 
@@ -70,10 +70,10 @@ describe('ScatterPlotComponent plot types', () => {
 
   it('splits the zones at the median y when the y axis is not intelligence', () => {
     state.allModels.set([
-      testModel({id: 'a', costsToRun: 1, outputTime: 1}),
-      testModel({id: 'b', costsToRun: 4, outputTime: 3}),
-      testModel({id: 'c', costsToRun: 9, outputTime: 5}),
-      testModel({id: 'd', costsToRun: 16, outputTime: 7}),
+      testModel({id: 'a', costsToRun: 1, outputTime: 1, timesEstimated: false}),
+      testModel({id: 'b', costsToRun: 4, outputTime: 3, timesEstimated: false}),
+      testModel({id: 'c', costsToRun: 9, outputTime: 5, timesEstimated: false}),
+      testModel({id: 'd', costsToRun: 16, outputTime: 7, timesEstimated: false}),
     ]);
     state.plotType.set('costVsResponse');
     expect(c.zoneSplit()).toEqual({x: 6.5, y: 7});
@@ -100,7 +100,7 @@ describe('ScatterPlotComponent plot types', () => {
 
   it('keeps the shown effort points inside the axes, also a level beyond every model', () => {
     state.allModels.set([fast, testModel({
-      id: 'deep', effort: 'high', overallIntelligence: 50, inputProcessingTime: 10, thinkingTime: 20, outputTime: 34,
+      id: 'deep', effort: 'high', overallIntelligence: 50, inputProcessingTime: 10, thinkingTime: 20, outputTime: 34, timesEstimated: false,
       efforts: [level('high', 50, 34), level('max', 60, 200)],
     })]);
     state.plotType.set('responseVsIntel');
@@ -144,10 +144,10 @@ describe('ScatterPlotComponent plot types', () => {
   }
 
   it('shows the run cost against the response time on a log y axis with lower is better on both axes', () => {
-    const cheap = testModel({id: 'cheap', costsToRun: 5, inputProcessingTime: 4, thinkingTime: 3, outputTime: 3});
-    const quick = testModel({id: 'quick', costsToRun: 20, inputProcessingTime: 0.5, thinkingTime: 0, outputTime: 0.5});
+    const cheap = testModel({id: 'cheap', costsToRun: 5, inputProcessingTime: 4, thinkingTime: 3, outputTime: 3, timesEstimated: false});
+    const quick = testModel({id: 'quick', costsToRun: 20, inputProcessingTime: 0.5, thinkingTime: 0, outputTime: 0.5, timesEstimated: false});
     const guessed = testModel({
-      id: 'guessed', costsToRun: 40, tokensPerRunEstimated: true, inputProcessingTime: 10, thinkingTime: 10, outputTime: 10,
+      id: 'guessed', costsToRun: 40, tokensPerRunEstimated: true, inputProcessingTime: 10, thinkingTime: 10, outputTime: 10, timesEstimated: false,
     });
     state.allModels.set([cheap, quick, guessed]);
     state.logScaleX.set(false);

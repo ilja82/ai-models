@@ -2,10 +2,10 @@ import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, View
 import {BarController, BarElement, CategoryScale, Chart, ChartConfiguration, Legend, LinearScale, Tooltip} from 'chart.js';
 import {AppState} from '../../state/app.state';
 import {AiModel, hasEstimatedScore, latencyOf, responseTimeOf} from '../../models/ai-model.model';
-import {BarMetric, VERSIONED_BAR_METRICS} from '../../models/view-types';
+import {BarMetric, TIME_BAR_METRICS} from '../../models/view-types';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
-import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
-import {ESTIMATED_SCORE_TITLE, estimatedScoreText, estimatedTokensText, outdatedBenchmarkText,} from '../../models/tooltip.util';
+import {EstimatedTimesHintComponent} from '../estimated-times-hint/estimated-times-hint';
+import {ESTIMATED_SCORE_TITLE, ESTIMATED_TIMES_TEXT, estimatedScoreText, estimatedTokensText,} from '../../models/tooltip.util';
 import {otherEffortVariants, parseEffortVariantId, shortEffortLabel} from '../../models/effort.util';
 import {effortLines, groupBars, highlightColors, modelIdOf} from '../../models/bar-groups.util';
 
@@ -120,7 +120,7 @@ function groupedLabels(models: AiModel[], fullLabels: string[]): string[] {
 @Component({
   selector: 'app-bar-chart',
   standalone: true,
-  imports: [MissingDataHintComponent, OutdatedBenchmarkHintComponent],
+  imports: [MissingDataHintComponent, EstimatedTimesHintComponent],
   templateUrl: './bar-chart.html',
   styleUrl: './bar-chart.scss',
 })
@@ -138,9 +138,9 @@ export class BarChartComponent implements OnInit, OnDestroy {
 
   readonly hasEffortBars = computed(() => this.chartData().models.some(isEffortLevel));
 
-  /** The shown models while the metric keeps the index version of its run, else none. */
-  readonly versionedModels = computed(() =>
-    VERSIONED_BAR_METRICS.has(this.state.barMetric()) ? this.chartData().models : []);
+  /** The shown models while the metric is a speed or a time, else none. */
+  readonly timeModels = computed(() =>
+    TIME_BAR_METRICS.has(this.state.barMetric()) ? this.chartData().models : []);
 
   private getTotalValue(m: AiModel, metric: BarMetric): number | null {
     switch (metric) {
@@ -440,8 +440,7 @@ export class BarChartComponent implements OnInit, OnDestroy {
         data.metricDef.key === 'costsToRun' && m?.tokensPerRunEstimated ? estimatedTokensText(m, latest) : '',
         m && data.metricDef.key === 'intelligence' && hasEstimatedScore(m)
           ? `Score ${estimatedScoreText(m, m, latest)}` : '',
-        m && VERSIONED_BAR_METRICS.has(data.metricDef.key) && this.state.isOutdated()(m)
-          ? outdatedBenchmarkText(m, latest) : '',
+        m && TIME_BAR_METRICS.has(data.metricDef.key) && m.timesEstimated ? ESTIMATED_TIMES_TEXT : '',
         m?.deprecated ? `⚠️ Deprecated: ${m.deprecationInfo}` : '',
       ].filter(Boolean);
     };

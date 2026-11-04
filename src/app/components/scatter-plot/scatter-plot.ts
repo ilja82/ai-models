@@ -17,22 +17,14 @@ import {
 import {drawPoint} from 'chart.js/helpers';
 import {AppState} from '../../state/app.state';
 import {ThemeState} from '../../state/theme.state';
-import {
-  AiModel,
-  blendedPriceOf,
-  hasEstimatedScore,
-  isBenchmarkOutdated,
-  priceBlendLabel,
-  releaseTimeOf,
-  responseTimeOf,
-} from '../../models/ai-model.model';
+import {AiModel, blendedPriceOf, hasEstimatedScore, priceBlendLabel, releaseTimeOf, responseTimeOf,} from '../../models/ai-model.model';
 import {
   buildModelTooltipLines,
   ESTIMATED_SCORE_TITLE,
+  ESTIMATED_TIMES_TEXT,
   formatUsd,
   formatUsdTick,
   intelligenceLine,
-  outdatedBenchmarkText,
 } from '../../models/tooltip.util';
 import {darken, getPlotColors, withAlpha} from '../../models/plot-colors';
 import {bestBalancedId} from '../../models/balanced.util';
@@ -41,7 +33,7 @@ import {EffortPoint, effortPoints, effortResponseTime, effortVariantId, shortEff
 import {paretoIds} from '../../models/pareto.util';
 import {median, percentile} from '../../models/median.util';
 import {MissingDataHintComponent} from '../missing-data-hint/missing-data-hint';
-import {OutdatedBenchmarkHintComponent} from '../outdated-benchmark-hint/outdated-benchmark-hint';
+import {EstimatedTimesHintComponent} from '../estimated-times-hint/estimated-times-hint';
 
 Chart.register(ScatterController, PointElement, LineElement, LinearScale, LogarithmicScale, Tooltip, Legend);
 
@@ -155,18 +147,18 @@ interface PlotTypeDef {
   showsEfforts: boolean;
   /** The percentile (0 to 1) of all y values where the zones split. */
   ySplit: number;
-  /** True if an axis shows speed or response time, which keep the index version of their run. */
-  versionedAxis: boolean;
+  /** True if an axis shows speed or response time, which can be converted from the older measurement. */
+  timeAxis: boolean;
 }
 
 const PLOT_TYPES: PlotTypeDef[] = [
   {
     key: 'cost', label: 'Cost vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false,
-    showsEfforts: true, ySplit: 0.75, versionedAxis: false
+    showsEfforts: true, ySplit: 0.75, timeAxis: false
   },
   {
     key: 'price', label: 'Price vs Intelligence', supportsLogX: true, reverseX: true, reverseY: false, logY: false,
-    showsEfforts: false, ySplit: 0.75, versionedAxis: false
+    showsEfforts: false, ySplit: 0.75, timeAxis: false
   },
   {
     key: 'responseVsIntel',
@@ -177,7 +169,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
     logY: false,
     showsEfforts: true,
     ySplit: 0.75,
-    versionedAxis: true
+    timeAxis: true
   },
   {
     key: 'costVsResponse',
@@ -188,7 +180,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
     logY: true,
     showsEfforts: true,
     ySplit: 0.5,
-    versionedAxis: true
+    timeAxis: true
   },
   {
     key: 'speed',
@@ -199,7 +191,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
     logY: false,
     showsEfforts: true,
     ySplit: 0.75,
-    versionedAxis: true
+    timeAxis: true
   },
   {
     key: 'responseVsSpeed',
@@ -210,7 +202,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
     logY: false,
     showsEfforts: true,
     ySplit: 0.5,
-    versionedAxis: true
+    timeAxis: true
   },
   {
     key: 'context',
@@ -221,7 +213,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
     logY: false,
     showsEfforts: false,
     ySplit: 0.75,
-    versionedAxis: false
+    timeAxis: false
   },
   {
     key: 'release',
@@ -232,7 +224,7 @@ const PLOT_TYPES: PlotTypeDef[] = [
     logY: false,
     showsEfforts: false,
     ySplit: 0.75,
-    versionedAxis: false
+    timeAxis: false
   },
 ];
 
@@ -257,7 +249,7 @@ function hasIntelligenceY(plotType: PlotType): boolean {
 @Component({
   selector: 'app-scatter-plot',
   standalone: true,
-  imports: [MissingDataHintComponent, OutdatedBenchmarkHintComponent],
+  imports: [MissingDataHintComponent, EstimatedTimesHintComponent],
   templateUrl: './scatter-plot.html',
   styleUrl: './scatter-plot.scss',
 })
@@ -342,8 +334,8 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
     return this.state.filteredModels().filter(m => !shown.has(m.id));
   });
 
-  /** The plotted models while an axis keeps the index version of its run, for the outdated benchmark hint. */
-  readonly versionedModels = computed(() => this.currentPlotDef().versionedAxis ? this.plotted().map(p => p.model) : []);
+  /** The plotted models while an axis is a speed or a time, for the estimated times hint. */
+  readonly timeModels = computed(() => this.currentPlotDef().timeAxis ? this.plotted().map(p => p.model) : []);
 
   /** The effort points of each plottable model with two or more, while the plot type shows effort levels. */
   private readonly allEffortPoints = computed(() => this.effortPointsOf(this.plottable().map(p => p.model)));
@@ -994,7 +986,7 @@ export class ScatterPlotComponent implements OnInit, OnDestroy {
       point.axisBest ? '★ Best on an axis' : '',
       point.useful ? '★ Pareto efficient' : '',
       intelligenceLine(l, curve.model, latest),
-      isBenchmarkOutdated(curve.model, latest) ? outdatedBenchmarkText(curve.model, latest) : '',
+      l.timesEstimated ? ESTIMATED_TIMES_TEXT : '',
       l.tokensPerSecond !== null ? `★ Speed: ${l.tokensPerSecond} tok/s` : '',
       responseTime !== null
         ? `★ Response time: ${responseTime.toFixed(1)}s (in: ${l.inputProcessingTime}s, think: ${l.thinkingTime}s, out: ${l.outputTime}s)`
