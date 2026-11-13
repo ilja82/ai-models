@@ -291,7 +291,7 @@ describe('providers of the data entries', () => {
     const active = AI_MODELS.filter(m => !m.localModel && !m.deprecated).map(m => m.id).sort();
     expect(active).toEqual([
       'claude-haiku-5.5', 'claude-opus-5.5', 'claude-sonnet-5.5', 'deepseek-v4.1-flash-1017',
-      'glm-5.3', 'glm-5.3-flash', 'kimi-k3',
+      'glm-5.3', 'glm-5.3-flash', 'kimi-k3.1-pro',
     ]);
   });
 
