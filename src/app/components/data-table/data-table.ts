@@ -13,6 +13,7 @@ import {
   responseTimeOf,
 } from '../../models/ai-model.model';
 import {ESTIMATED_TIMES_TEXT, estimatedScoreText, estimatedTokensText, formatUsd, modalityNames, scoreText,} from '../../models/tooltip.util';
+import {otherEffortVariants, shortEffortLabel} from '../../models/effort.util';
 
 type SortKey = keyof AiModel;
 type ComputedSortKey = 'latency' | 'responseTime' | 'costPerRequest';
@@ -35,6 +36,12 @@ interface ColMeta {
   get: (m: AiModel) => number | null;
   nullIfZeroOrNeg?: boolean;
   bounds: BoundsFn;
+}
+
+/** A table row: a model, or one of its other effort levels with `parentId` set to the model id. */
+interface TableRow {
+  model: AiModel;
+  parentId: string | null;
 }
 
 interface Extent {
@@ -114,6 +121,8 @@ export class DataTableComponent {
   readonly sortKey = signal<SortKey | null>('overallIntelligence');
   readonly computedSortKey = signal<ComputedSortKey | null>(null);
   readonly sortDir = signal<SortDir>('desc');
+  readonly expanded = signal<ReadonlySet<string>>(new Set());
+  readonly allEfforts = signal(false);
 
   readonly tableModels = computed(() => {
     const search = this.searchText().toLowerCase();
@@ -149,6 +158,16 @@ export class DataTableComponent {
       }
       return dir === 'asc' ? cmp : -cmp;
     });
+  });
+
+  /** The models of `tableModels`, each followed by its other effort levels while it is expanded. */
+  readonly rows = computed<TableRow[]>(() => {
+    const all = this.allEfforts();
+    const expanded = this.expanded();
+    return this.tableModels().flatMap(m => [
+      {model: m, parentId: null},
+      ...(all || expanded.has(m.id) ? otherEffortVariants(m) : []).map(v => ({model: v, parentId: m.id})),
+    ]);
   });
 
   /** The models that pass all filters, the "Pareto only" filter included. */
@@ -195,6 +214,46 @@ export class DataTableComponent {
     });
     return out;
   });
+
+  hasEffortLevels(model: AiModel): boolean {
+    return model.efforts.length >= 2;
+  }
+
+  isExpanded(id: string): boolean {
+    return this.allEfforts() || this.expanded().has(id);
+  }
+
+  /** Opens or closes the effort levels of one model. With "All effort levels" on, it closes this model only. */
+  toggleEfforts(id: string): void {
+    if (this.allEfforts()) {
+      this.allEfforts.set(false);
+      this.expanded.set(new Set(this.tableModels().filter(m => m.id !== id && this.hasEffortLevels(m)).map(m => m.id)));
+      return;
+    }
+    this.expanded.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  toggleAllEfforts(): void {
+    this.allEfforts.update(v => !v);
+    this.expanded.set(new Set());
+  }
+
+  effortLabel(model: AiModel): string {
+    return model.effort === null ? '—' : shortEffortLabel(model.effort);
+  }
+
+  effortToggleLabel(model: AiModel): string {
+    return `Effort levels of ${model.publicName}: ${model.efforts.length}`;
+  }
+
+  rowKey(row: TableRow): string {
+    return row.parentId ?? row.model.id;
+  }
 
   sort(key: SortKey): void {
     if (this.sortKey() === key && !this.computedSortKey()) {

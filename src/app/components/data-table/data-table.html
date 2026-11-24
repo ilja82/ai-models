@@ -15,6 +15,10 @@
       <input type="checkbox" [checked]="showHistogram()" (change)="showHistogram.update(v => !v)"/>
       Histogram cells
     </label>
+    <label class="toggle-label">
+      <input type="checkbox" [checked]="allEfforts()" (change)="toggleAllEfforts()"/>
+      All effort levels
+    </label>
     <span class="count">{{ tableModels().length }} models{{ filteredOutReasons().size ? `, ${filteredOutReasons().size} filtered out` : '' }}</span>
   </div>
 
@@ -23,6 +27,7 @@
       <thead>
         <tr>
           <th (click)="sort('publicName')" class="sortable">Name {{ sortIcon('publicName') }}</th>
+          <th title="Effort level of the values in the row">Effort</th>
           <th (click)="sort('modelName')" class="sortable">Model ID {{ sortIcon('modelName') }}</th>
           <th (click)="sort('inputCosts')" class="sortable">Input $/M {{ sortIcon('inputCosts') }}</th>
           <th (click)="sort('outputCosts')" class="sortable">Output $/M {{ sortIcon('outputCosts') }}</th>
@@ -55,21 +60,45 @@
         </tr>
       </thead>
       <tbody>
-        @for (model of tableModels(); track model.id) {
-          <tr [class.useful]="isUseful(model.id)" [class.filtered-out]="filteredOutReasons().has(model.id)"
-              [attr.title]="filteredOutReasons().has(model.id) ? 'Filtered out: ' + filteredOutReasons().get(model.id) : null">
-            <td class="name-cell" [class.deprecated]="model.deprecated">
-              @if (isUseful(model.id)) {
-                <span class="useful-badge" title="Pareto efficient model">★</span>
-              }
-              @if (model.deprecated) {
-                <span class="deprecation-badge" [title]="'Deprecated: ' + model.deprecationInfo">⚠️</span>
-              }
-              {{ model.publicName }}
-              @if (state.isNew()(model)) {
-                <span class="new-badge" [title]="newTitle">new</span>
-              }
-            </td>
+        @for (row of rows(); track row.model.id) {
+          @let model = row.model;
+          @let key = rowKey(row);
+          <tr [class.useful]="isUseful(model.id)" [class.filtered-out]="filteredOutReasons().has(key)"
+              [class.effort-row]="row.parentId !== null"
+              [attr.title]="filteredOutReasons().has(key) ? 'Filtered out: ' + filteredOutReasons().get(key) : null">
+            @if (row.parentId === null) {
+              <td class="name-cell" [class.deprecated]="model.deprecated">
+                @if (isUseful(model.id)) {
+                  <span class="useful-badge" title="Pareto efficient model">★</span>
+                }
+                @if (model.deprecated) {
+                  <span class="deprecation-badge" [title]="'Deprecated: ' + model.deprecationInfo">⚠️</span>
+                }
+                {{ model.publicName }}
+                @if (state.isNew()(model)) {
+                  <span class="new-badge" [title]="newTitle">new</span>
+                }
+              </td>
+              <td class="effort-cell" [attr.title]="model.effort">
+                <span class="effort-label">{{ effortLabel(model) }}</span>
+                @if (hasEffortLevels(model)) {
+                  <button type="button" class="effort-toggle" [attr.aria-expanded]="isExpanded(model.id)"
+                          [attr.aria-label]="effortToggleLabel(model)" (click)="toggleEfforts(model.id)">
+                    {{ isExpanded(model.id) ? '▾' : '▸' }} {{ model.efforts.length }}
+                  </button>
+                }
+              </td>
+            } @else {
+              <td class="name-cell effort-name">
+                @if (isUseful(model.id)) {
+                  <span class="useful-badge" title="Pareto efficient effort level">★</span>
+                }
+                <span class="effort-parent">{{ model.publicName }}</span>
+              </td>
+              <td class="effort-cell" [attr.title]="model.effort">
+                <span class="effort-label">{{ effortLabel(model) }}</span>
+              </td>
+            }
             <td class="mono">{{ model.modelName }}</td>
             <td class="num hist" [style]="cellStyle(model, 'inputCosts')">{{ formatCost(model.inputCosts) }}</td>
             <td class="num hist" [style]="cellStyle(model, 'outputCosts')">{{ formatCost(model.outputCosts) }}</td>
@@ -117,7 +146,7 @@
         }
         @empty {
           <tr>
-            <td colspan="24" class="empty">No models match the current filters.</td>
+            <td colspan="25" class="empty">No models match the current filters.</td>
           </tr>
         }
       </tbody>
