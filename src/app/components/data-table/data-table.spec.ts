@@ -297,7 +297,7 @@ describe('DataTableComponent effort levels', () => {
     fixture.detectChanges();
     toggle(el, 'Big').click();
     fixture.detectChanges();
-    expect(fixture.componentInstance.allEfforts()).toBeFalse();
+    expect(fixture.componentInstance.allEfforts()).toBe(false);
     expect(rows(el)).toEqual(['Big high', 'Small on', '  Small off', 'Single high', 'None —']);
   });
 
