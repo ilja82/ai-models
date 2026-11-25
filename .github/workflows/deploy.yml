@@ -15,6 +15,10 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,6 +34,10 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      # A failing test stops the deploy before anything is built or published.
+      - name: Run tests
+        run: npm test
 
       - name: Build Angular App
         run: npm run build -- --configuration production --base-href /${{ github.event.repository.name }}/
