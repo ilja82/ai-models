@@ -1,4 +1,4 @@
-@if (svc.updateAvailable() || svc.unrecoverable()) {
+@if (svc.showHint()) {
   <div class="update-banner" role="status" aria-live="polite">
     <span class="message">
       @if (svc.unrecoverable()) {
