@@ -132,11 +132,15 @@ describe('PwaUpdateService', () => {
     expect(reload).not.toHaveBeenCalled();
     expect(svc.showHint()).toBe(true);
 
+    let seenInActivate: {hash: string | undefined; hint: boolean} | null = null;
     const gate = deferred();
-    activateUpdate.mockReturnValue(gate.promise);
+    activateUpdate.mockImplementation(() => {
+      seenInActivate = {hash: store.get(KEY), hint: svc.showHint()};
+      return gate.promise;
+    });
     versionUpdates.next(ready('h2'));
     await flush();
-    expect(store.get(KEY)).toBe('h2');
+    expect(seenInActivate).toEqual({hash: 'h2', hint: false});
     expect(svc.showHint()).toBe(false);
     gate.resolve(true);
     await flush();
@@ -194,11 +198,16 @@ describe('PwaUpdateService', () => {
     const svc = create();
     versionUpdates.next(ready('hA'));
     await flush();
+    const setItem = vi.spyOn(win.sessionStorage, 'setItem');
+    const removeItem = vi.spyOn(win.sessionStorage, 'removeItem');
     versionUpdates.next(ready('hB'));
     await flush();
     expect(svc.showHint()).toBe(true);
     expect(activateUpdate).toHaveBeenCalledTimes(1);
     expect(reload).not.toHaveBeenCalled();
+    expect(setItem).not.toHaveBeenCalled();
+    expect(removeItem).not.toHaveBeenCalled();
+    expect(store.get(KEY)).toBe('hA');
     a.resolve(true);
     await flush();
     expect(activateUpdate).toHaveBeenCalledTimes(1);
@@ -231,5 +240,33 @@ describe('PwaUpdateService', () => {
     a.reject(new Error('fail'));
     await flush();
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives a later attempt its own reload after a manual reload threw', async () => {
+    const a = deferred();
+    activateUpdate.mockReturnValueOnce(a.promise).mockResolvedValue(true);
+    const svc = create();
+    versionUpdates.next(ready('hA'));
+    await flush();
+    reload.mockImplementationOnce(() => { throw new Error('blocked'); });
+    await expect(svc.applyUpdate()).rejects.toThrow('blocked');
+    a.resolve(true);
+    await flush();
+    expect(reload).toHaveBeenCalledTimes(1);
+    versionUpdates.next(ready('hB'));
+    await flush();
+    expect(activateUpdate).toHaveBeenCalledTimes(3);
+    expect(reload).toHaveBeenCalledTimes(2);
+    expect(svc.showHint()).toBe(false);
+  });
+
+  it('shows the hint for a later attempt whose activation fails after a click without pending attempt', async () => {
+    const svc = create();
+    await svc.applyUpdate();
+    activateUpdate.mockRejectedValueOnce(new Error('fail'));
+    versionUpdates.next(ready('hB'));
+    await flush();
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(svc.showHint()).toBe(true);
   });
 });

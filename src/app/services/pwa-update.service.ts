@@ -16,7 +16,7 @@ export class PwaUpdateService implements OnDestroy {
   readonly showHint = computed(() => this.updateAvailable() || this.unrecoverable());
 
   private current: Promise<void> | null = null;
-  private manualOwnsReload = false;
+  private pending: {manualOwnsReload: boolean} | null = null;
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private readonly subs = new Subscription();
   private readonly onVisibilityChange = () => {
@@ -52,15 +52,18 @@ export class PwaUpdateService implements OnDestroy {
       this.updateAvailable.set(true);
       return;
     }
-    this.current = this.attempt(hash);
+    const own = {manualOwnsReload: false};
+    this.pending = own;
+    this.current = this.attempt(hash, own);
     try {
       await this.current;
     } finally {
       this.current = null;
+      this.pending = null;
     }
   }
 
-  private async attempt(hash: string): Promise<void> {
+  private async attempt(hash: string, own: {manualOwnsReload: boolean}): Promise<void> {
     const storage = this.guardStorage();
     try {
       if (!storage || storage.getItem(RELOADED_HASH_KEY) === hash) {
@@ -75,12 +78,12 @@ export class PwaUpdateService implements OnDestroy {
     try {
       await this.swUpdate.activateUpdate();
     } catch {
-      if (!this.manualOwnsReload) {
+      if (!own.manualOwnsReload) {
         this.updateAvailable.set(true);
       }
       return;
     }
-    if (this.manualOwnsReload) {
+    if (own.manualOwnsReload) {
       return;
     }
     try {
@@ -99,7 +102,9 @@ export class PwaUpdateService implements OnDestroy {
   }
 
   async applyUpdate(): Promise<void> {
-    this.manualOwnsReload = true;
+    if (this.pending) {
+      this.pending.manualOwnsReload = true;
+    }
     if (this.swUpdate.isEnabled) {
       try {
         await this.swUpdate.activateUpdate();
