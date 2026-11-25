@@ -1,9 +1,10 @@
-import {DOCUMENT, inject, Injectable, OnDestroy, signal} from '@angular/core';
+import {DOCUMENT, computed, inject, Injectable, OnDestroy, signal} from '@angular/core';
 import {SwUpdate, VersionReadyEvent} from '@angular/service-worker';
 import {filter} from 'rxjs/operators';
 import {Subscription} from 'rxjs';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const RELOADED_HASH_KEY = 'pwa-update.reloaded-hash';
 
 @Injectable({providedIn: 'root'})
 export class PwaUpdateService implements OnDestroy {
@@ -12,7 +13,10 @@ export class PwaUpdateService implements OnDestroy {
 
   readonly updateAvailable = signal(false);
   readonly unrecoverable = signal(false);
+  readonly showHint = computed(() => this.updateAvailable() || this.unrecoverable());
 
+  private current: Promise<void> | null = null;
+  private manualOwnsReload = false;
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private readonly subs = new Subscription();
   private readonly onVisibilityChange = () => {
@@ -29,7 +33,7 @@ export class PwaUpdateService implements OnDestroy {
     this.subs.add(
       this.swUpdate.versionUpdates
         .pipe(filter((e): e is VersionReadyEvent => e.type === 'VERSION_READY'))
-        .subscribe(() => this.updateAvailable.set(true)),
+        .subscribe(e => void this.autoApply(e.latestVersion.hash)),
     );
 
     this.subs.add(
@@ -43,7 +47,59 @@ export class PwaUpdateService implements OnDestroy {
     this.document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
+  private async autoApply(hash: string): Promise<void> {
+    if (this.current) {
+      this.updateAvailable.set(true);
+      return;
+    }
+    this.current = this.attempt(hash);
+    try {
+      await this.current;
+    } finally {
+      this.current = null;
+    }
+  }
+
+  private async attempt(hash: string): Promise<void> {
+    const storage = this.guardStorage();
+    try {
+      if (!storage || storage.getItem(RELOADED_HASH_KEY) === hash) {
+        throw new Error('guard');
+      }
+      storage.setItem(RELOADED_HASH_KEY, hash);
+    } catch {
+      this.updateAvailable.set(true);
+      return;
+    }
+    this.updateAvailable.set(false);
+    try {
+      await this.swUpdate.activateUpdate();
+    } catch {
+      if (!this.manualOwnsReload) {
+        this.updateAvailable.set(true);
+      }
+      return;
+    }
+    if (this.manualOwnsReload) {
+      return;
+    }
+    try {
+      this.document.defaultView!.location.reload();
+    } catch {
+      this.updateAvailable.set(true);
+    }
+  }
+
+  private guardStorage(): Storage | null {
+    try {
+      return this.document.defaultView?.sessionStorage ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   async applyUpdate(): Promise<void> {
+    this.manualOwnsReload = true;
     if (this.swUpdate.isEnabled) {
       try {
         await this.swUpdate.activateUpdate();
